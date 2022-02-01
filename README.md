@@ -9,8 +9,15 @@
 
 # RasgoQL
 
-RasgoQL bridges the gap between dbt and pandas. We allow users to interact with data warehouse tables and views in a familiar python syntax. Under the covers we send sql queries to your warehouse, allowing efficient transformation of massive datasets.
+RasgoQL is a light-weight data transformation package to bridge the gap between dbt and pandas. It allow users to construct, print & run SQL queries using a familiar python syntax. Under the covers it sends all processing to your data warehouse, allowing efficient transformation of massive datasets.
 
+RasgoQL does these things well:
+- Pulls existing DataWarehouse tables into pandas DataFrames for analysis
+- Constructs SQL queries using a syntax that feels like pandas
+- Creates views in your DataWarehouse to save transformed data
+- Exports runnable sql in .sql files a dbt-compliant yml files
+- Offers dozens of free SQL transforms to use
+- Coming Soon: allows users to create & add custom transforms
 
 # Quick Start
 ```python
@@ -51,5 +58,12 @@ print(chn.sql())
 
 ```
 
+# Can RasgoQL help you?
+
+If you use pandas to build features, but you are working on a massive set of data that won't fit in your machine's memory. RasgoQL can help!
+
+If your organization uses dbt of another SQL tool to run production data flows, but you prefer to build features in pandas. RasgoQL can help!
+
+If you know pandas, but not SQL and want to learn how queries will translate. RasgoQL can help!
 
 <i>Built for Data Scientists, by Data Scientists</i>
