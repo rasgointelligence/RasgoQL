@@ -9,7 +9,21 @@
 
 # RasgoQL
 
-RasgoQL is a light-weight data transformation package to bridge the gap between dbt and pandas. It allow users to construct, print & run SQL queries using a familiar python syntax. Under the covers it sends all processing to your data warehouse, allowing efficient transformation of massive datasets.
+RasgoQL is a Python package that enables you to easily query and transform data housed in your database engine directly from your notebook or IDE of choice. Quickly create new features, filter and sample your data, change column types, create aggregates and so much more! All without having to write/wrangle SQL, or duplicate data to your local machine! 
+
+Choose from our library of predefined transformations or make your own to streamline the process of extracting, transforming and loading large amounts of data.
+
+[insert gif of RasgoQL transform in action]
+<!-- Gif of RasgoQL transform -->
+
+
+# Why is this project useful?
+Data scientists spend most of their time cleaning and preparing data in Python only to then go back and have to rewrite everything into SQL. We created RasgoQL as a data transformation package that gives users the ability to transform large amounts of data directly within their notebook by creating SQL that runs in the database.
+
+Learn more at [https://docs.rasgoql.com](https://docs.rasgoql.com). 
+
+# How does it work?
+Under the covers, it sends all processing to your data warehouse, enabling the efficient transformation of massive datasets without the duplication of data. Also RasgoQL only needs to basic metadata to execute transforms, so your private data remains secure and housed within the warehouse.
 
 RasgoQL does these things well:
 - Pulls existing DataWarehouse tables into pandas DataFrames for analysis
@@ -18,6 +32,22 @@ RasgoQL does these things well:
 - Exports runnable sql in .sql files a dbt-compliant yml files
 - Offers dozens of free SQL transforms to use
 - Coming Soon: allows users to create & add custom transforms
+
+Rasgoql’s initial release will focus on snowflake databases but we plan to add support for BigQuery and Postgres in the very near future. If you'd like to suggest another database type, submit your idea to our [GitHub Discussions page](https://github.com/rasgointelligence/RasgoQL/discussions) so that other community members can weight in and show their support. 
+
+# Can RasgoQL help you?
+
+* If you use pandas to build features, but you are working on a massive set of data that won't fit in your machine's memory. RasgoQL can help!
+
+* If your organization uses dbt of another SQL tool to run production data flows, but you prefer to build features in pandas. RasgoQL can help!
+
+* If you know pandas, but not SQL and want to learn how queries will translate. RasgoQL can help!
+
+# Where to get it
+Just run a simple pip install.
+
+`pip install rasgoql`
+
 
 # Quick Start
 ```python
@@ -58,12 +88,20 @@ print(chn.sql())
 
 ```
 
-# Can RasgoQL help you?
+# Advanced Examples
 
-If you use pandas to build features, but you are working on a massive set of data that won't fit in your machine's memory. RasgoQL can help!
+[2-3 advanced examples]
 
-If your organization uses dbt of another SQL tool to run production data flows, but you prefer to build features in pandas. RasgoQL can help!
+# Where do I go for help?
+If you have any questions please: 
 
-If you know pandas, but not SQL and want to learn how queries will translate. RasgoQL can help!
+1. [Docs](https://docs.rasgoql.com/)
+2. [Slack](https://join.slack.com/t/rasgousergroup/shared_invite/zt-nytkq6np-ANEJvbUSbT2Gkvc8JICp3g)
+3. [GitHub Issues](https://github.com/rasgointelligence/RasgoQL/issues)
+
+
+# How can I contribute? 
+Review the [contributors guide](https://github.com/rasgointelligence/RasgoQL/blob/main/CONTRIBUTING.md)
+
 
 <i>Built for Data Scientists, by Data Scientists</i>

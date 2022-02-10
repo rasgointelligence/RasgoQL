@@ -10,11 +10,16 @@ RasgoQL does these things well:
 - Offers dozens of free SQL transforms to use
 - Coming Soon: allows users to create & add custom transforms
 
-
-Visit us at https://www.rasgoml.com/ to turn your data into Features in minutes!
-
 Documentation is available at:
 https://docs.rasgoql.com
+
+## Ways RasgoQL can help
+
+* If you use pandas to build features, but you are working on a massive set of data that won't fit in your machine's memory. RasgoQL can help!
+
+* If your organization uses dbt of another SQL tool to run production data flows, but you prefer to build features in pandas. RasgoQL can help!
+
+* If you know pandas, but not SQL and want to learn how queries will translate. RasgoQL can help!
 
 
 ## Package Dependencies

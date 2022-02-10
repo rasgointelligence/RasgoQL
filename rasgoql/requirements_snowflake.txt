@@ -1,6 +1,2 @@
-pandas
-pyyaml
-python-dotenv
-rasgoudt
 snowflake-connector-python
 snowflake-connector-python[pandas]
