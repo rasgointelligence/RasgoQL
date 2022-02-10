@@ -7,9 +7,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 
 > And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which we would also be very happy about:
 >
-> <!-- Place this tag where you want the button to render. -->
-<a class="github-button" href="https://github.com/rasgointelligence/RasgoQL" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star rasgointelligence/RasgoQL on GitHub">Star</a>
->
+> * Star the RasgoQL Repo
 > * Tweet about it [#RasgoQL @RasgoQL](TODO)
 > * Tell all your friends/colleagues.
 > * Refer to this repo in your README.md 
