@@ -9,6 +9,8 @@
 
 # RasgoQL
 
+Transform data directly in python, no SQL required.
+
 RasgoQL is a Python package that enables you to easily query and transform data housed in your database engine directly from your notebook or IDE of choice. Quickly create new features, filter and sample your data, change column types, create aggregates and so much more! All without having to write/wrangle SQL, or duplicate data to your local machine! 
 
 Choose from our library of predefined transformations or make your own to streamline the process of extracting, transforming and loading large amounts of data.
@@ -90,7 +92,43 @@ print(chn.sql())
 
 # Advanced Examples
 
-[2-3 advanced examples]
+## Joins
+Easily join tables together using the `join` transform. 
+
+```python
+internet_sales = rasgoql.dataset('INTERNET_SALES')
+
+ds = internet_sales.join(
+  join_table='DIM_PRODUCT',
+  join_columns={'PRODUCTKEY':'PRODUCTKEY'},
+  join_type='LEFT',
+  join_prefix='product')
+```
+
+## Chain transforms together
+Below creates a rolling average aggregation and then drops unnecessary colomns. 
+
+```python
+ds_agg = ds.rolling_agg(
+    aggregations={"SALESAMOUNT": ["MAX", "MIN", "SUM"]},
+    order_by="ORDERDATE",
+    offsets=[-7, 7],
+    group_by=["PRODUCTKEY"],
+).drop_columns(exclude_cols=["ORDERDATEKEY"])
+```
+
+## Transpose unique values with pivots 
+Quickly generate pivot tables of your data.
+
+```python
+ds_pivot = ds_agg.pivot(
+    dimensions=['ORDERDATE'],
+    pivot_column='SALESAMOUNT',
+    value_column='PRODUCTKEY',
+    agg_method='SUM',
+    list_of_vals=['310', '345']
+)
+```
 
 # Where do I go for help?
 If you have any questions please: 
@@ -105,3 +143,5 @@ Review the [contributors guide](https://github.com/rasgointelligence/RasgoQL/blo
 
 
 <i>Built for Data Scientists, by Data Scientists</i>
+
+This project is sponspored by RasgoML. Find out at [https://www.rasgoml.com/](https://www.rasgoml.com/)
