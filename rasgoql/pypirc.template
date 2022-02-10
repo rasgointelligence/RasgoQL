@@ -1,0 +1,15 @@
+[distutils] # this tells distutils what package indexes you can push to
+index-servers =
+  pypi
+  pypitest
+
+[pypi]
+repository: https://upload.pypi.org/legacy/
+username: ${PYPI_USER}
+password: ${PYPI_PASSWORD}
+
+
+[pypitest]
+repository: https://test.pypi.org/legacy/
+username: ${PYPITEST_USER}
+password: ${PYPITEST_PASSWORD}
