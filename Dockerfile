@@ -1,7 +1,7 @@
-FROM python:3.7-slim AS pythonapp
+FROM python:3.9-slim AS pythonapp
 
 ARG PRIMARY_USER=rasgo
-ARG HOME_DIR=/var/lib/rasgo
+ARG HOME_DIR=/var/lib/rasgoql
 ARG UID=1001
 RUN adduser --system --uid ${UID} --home ${HOME_DIR} --shell /bin/false ${PRIMARY_USER}
 
@@ -25,7 +25,7 @@ WORKDIR ${HOME_DIR}
 
 
 FROM pythonapp AS rasgoql
-ARG HOME_DIR=/var/lib/rasgo
+ARG HOME_DIR=/var/lib/rasgoql
 COPY rasgoql/requirements.txt ${HOME_DIR}
 
 RUN cd ${HOME_DIR} && \
@@ -39,6 +39,6 @@ RUN pip install --upgrade twine
 COPY pypirc.template ${HOME_DIR}/.pypirc.template
 
 ARG PRIMARY_USER=rasgo
-ARG HOME_DIR=/var/lib/rasgo
+ARG HOME_DIR=/var/lib/rasgoql
 USER ${PRIMARY_USER}
 WORKDIR ${HOME_DIR}

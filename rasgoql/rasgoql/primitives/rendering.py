@@ -10,7 +10,7 @@ from typing import Callable, Dict, List, Optional
 
 import jinja2
 import pandas as pd
-from rasgoudt import serve_rasgo_transform_templates
+from rasgotransforms import serve_rasgo_transform_templates
 
 from rasgoql.errors import TransformRenderingError
 from .enums import check_table_type

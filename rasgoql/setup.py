@@ -50,6 +50,7 @@ setup(
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Database',
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: Software Development :: Code Generators'
