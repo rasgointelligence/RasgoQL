@@ -27,6 +27,8 @@ Learn more at [https://docs.rasgoql.com](https://docs.rasgoql.com).
 # How does it work?
 Under the covers, it sends all processing to your data warehouse, enabling the efficient transformation of massive datasets without the duplication of data. Also RasgoQL only needs to basic metadata to execute transforms, so your private data remains secure and housed within the warehouse.
 
+![RasgoQL workflow diagram](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/RasgoQL_Flow.png)
+
 RasgoQL does these things well:
 - Pulls existing DataWarehouse tables into pandas DataFrames for analysis
 - Constructs SQL queries using a syntax that feels like pandas
