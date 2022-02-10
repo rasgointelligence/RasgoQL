@@ -114,6 +114,7 @@ class Dataset(TransformableClass):
         database, schema, table_name = parse_fqtn(fqtn)
         self.namespace = f'{database}.{schema}'
         self.table_name = table_name
+        self._dw._validate_namespace(self.namespace)
 
         self.table_type = TableType.UNKNOWN
         self.table_state = TableState.UNKNOWN
@@ -225,7 +226,6 @@ class Transform:
         """
         Returns the fully qualified table name the transform would create if saved
         """
-        #TODO: check namespace convention...
         return self.namespace + '.' + self.output_alias
 
 
