@@ -1,15 +1,15 @@
 <!-- omit in toc -->
 # Contributing to RasgoQL
 
-First off, thanks for taking the time to contribute! RasgoQL thrives off of the contributions and input from users and we'd glad you're here.  
-
-There are several ways you can get involved and help improve the project (Big and Small). This guide will serve as a good starting point for anyone interested in contributing.
+First off, thanks for taking the time to contribute! RasgoQL thrives off of contributions and input from users, so we're glad you're here.
 
 All types of contributions are encouraged and valued. See the [Table of Contents](#table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and smooth out the experience for all involved. The community looks forward to your contributions. 🎉 
 
 > And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which we would also be very happy about:
 >
-> * [Star the project](TODO)
+> <!-- Place this tag where you want the button to render. -->
+<a class="github-button" href="https://github.com/rasgointelligence/RasgoQL" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star rasgointelligence/RasgoQL on GitHub">Star</a>
+>
 > * Tweet about it [#RasgoQL @RasgoQL](TODO)
 > * Tell all your friends/colleagues.
 > * Refer to this repo in your README.md 
@@ -39,7 +39,7 @@ to <opensource@rasgoml.com>.
 
 ## I Have a Question
 
-> If you want to ask a question, we assume that you have read the available [Documentation](#TODO).
+> If you want to ask a question, we assume that you have read the available [Documentation](https://docs.rasgoql.com).
 
 Before you ask a question, it is best to search for existing [Issues](/issues) that might help you. If you don't find the a similar issue then we recommend the following:
 
@@ -69,14 +69,12 @@ Transform suggestions are tracked as [GitHub issues](/issues). This section guid
 #### Before Submitting an request for a new transform
 
 - Make sure that you are using the latest version.
-- Read the [documentation](TODO) carefully and find out if the transform is already covered, maybe by an different name.
+- Read the [documentation](https://docs.rasgoql.com) carefully and find out if the transform is already covered, maybe by an different name.
 - Perform a [search](/issues) to see if the enhancement has already been suggested. If it has, add a comment to the existing issue instead of opening a new one.
 
 
 <!-- omit in toc -->
 #### What does a good new transform suggestion look like?
-
-Transform suggestions are tracked as [GitHub issues](/issues).
 
 - Uses a **clear and descriptive title** for the issue to identify the suggestion.
 - Provides a **step-by-step description of the suggested transform** in as many details as possible or includes any links to relevant examples.
@@ -92,7 +90,7 @@ Transform suggestions are tracked as [GitHub issues](/issues).
 A good bug report includes all the evidence as if you were taking this issue to court. Therefore, we ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.
 
 - Make sure that you are using the latest version.
-- Determine if your bug is really a bug and not an error on your side e.g. using incompatible environment components/versions (Make sure that you have read the [documentation](#)). If you are looking for support, you might want to check [this section](#i-have-a-question)).
+- Determine if your bug is really a bug and not an error on your side e.g. using incompatible environment components/versions (Make sure that you have read the [documentation](https://docs.rasgoql.com)). If you are looking for support, you might want to check [this section](#i-have-a-question)).
 - Collect information about the bug:
   - Stack trace (Traceback)
   - OS, Platform and Version (Windows, Linux, macOS, x86, ARM)
@@ -128,7 +126,7 @@ This section guides you through submitting an enhancement suggestion for core Ra
 #### Before Submitting an Request for Enhancement
 
 - Make sure that you are using the latest version.
-- Read the [documentation](TODO) carefully and find out if the functionality is already covered, maybe by an individual configuration.
+- Read the [documentation](https://docs.rasgoql.com) carefully and find out if the functionality is already covered, maybe by an individual configuration.
 - Perform a [search](/issues) to see if the enhancement has already been suggested. If it has, add a comment to the existing issue instead of opening a new one.
 - Feel free to run it past the team first on our [slack server](#TODO)
 
