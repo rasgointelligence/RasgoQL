@@ -2,10 +2,9 @@
   <img width="100%" href="https://rasgoml.com" target="_blank" src="https://files.gitbook.com/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F-MJDKltt3A57jhixTfmu%2Fuploads%2F4noR7wUu8mqIv8k8v1Uk%2Fimage%20(20).png?alt=media&token=47b0b328-4585-44d7-9230-54b4f391b9e6" />
 </p>
 
-[![PyPI version](https://badge.fury.io/py/pyrasgo.svg)](https://badge.fury.io/py/pyrasgo)
-[![Docs](https://img.shields.io/badge/PyRasgo-DOCS-GREEN.svg)](https://docs.rasgoml.com/)
+[![PyPI version](https://badge.fury.io/py/rasgoql.svg)](https://badge.fury.io/py/rasgoql)
+[![Docs](https://img.shields.io/badge/RasgoQL-DOCS-GREEN.svg)](https://docs.rasgoql.com/)
 [![Chat on Slack](https://img.shields.io/badge/chat-on%20Slack-brightgreen.svg)](https://join.slack.com/t/rasgousergroup/shared_invite/zt-nytkq6np-ANEJvbUSbT2Gkvc8JICp3g)
-[![Chat on Discourse](https://img.shields.io/discourse/status?server=https%3A%2F%2Fforum.rasgoml.com)](https://forum.rasgoml.com/)
 
 # RasgoQL
 
