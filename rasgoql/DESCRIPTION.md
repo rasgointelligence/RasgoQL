@@ -27,7 +27,7 @@ https://docs.rasgoql.com
 - pandas
 - pyyaml
 - python-dotenv
-- rasgoudt
+- rasgotransforms
 - snowflake-connector-python
 - snowflake-connector-python[pandas]
 

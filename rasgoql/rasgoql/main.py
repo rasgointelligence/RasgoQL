@@ -4,7 +4,7 @@ RasgoQL main class
 from typing import List
 
 import pandas as pd
-from rasgoudt import serve_rasgo_transform_templates
+from rasgotransforms import serve_rasgo_transform_templates
 
 from .data import DataWarehouse
 from .primitives import Dataset, SQLChain, TransformTemplate

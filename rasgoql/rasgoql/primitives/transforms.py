@@ -5,7 +5,7 @@ import logging
 from typing import Callable, List
 
 import pandas as pd
-from rasgoudt import serve_rasgo_transform_templates
+from rasgotransforms import serve_rasgo_transform_templates
 
 from rasgoql.errors import ParameterException
 from rasgoql.utils.decorators import require_dw, require_transforms
