@@ -1,7 +1,7 @@
 version: '3.4'
 
 services:
-  upload:
+  upload-pypi:
     build:
       context: ./
       target: rasgoql
@@ -10,5 +10,17 @@ services:
     environment:
       PYPI_USER: ${PYPI_USER}
       PYPI_PASSWORD: ${PYPI_PASSWORD}
+    volumes:
+      - ./:/var/lib/rasgo/mount/
+
+  test-pypi:
+    build:
+      context: ./
+      target: rasgoql
+    working_dir: /var/lib/rasgo/mount/rasgoql
+    command: ./bin/publish-pypi.sh pypitest
+    environment:
+      PYPI_USER: ${PYPITEST_USER}
+      PYPI_PASSWORD: ${PYPITEST_PASSWORD}
     volumes:
       - ./:/var/lib/rasgo/mount/
