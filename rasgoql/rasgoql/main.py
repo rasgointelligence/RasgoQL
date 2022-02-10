@@ -7,7 +7,7 @@ import pandas as pd
 from rasgoudt import serve_rasgo_transform_templates
 
 from .data import DataWarehouse
-from .primitives import check_data_warehouse, Dataset, SQLChain, TransformTemplate
+from .primitives import Dataset, SQLChain, TransformTemplate
 from .version import __version__
 
 class RasgoQL:
@@ -21,8 +21,6 @@ class RasgoQL:
             connection: DataWarehouse,
             credentials: dict
         ):
-        check_data_warehouse(connection.dw_type)
-
         self.credentials = credentials
         self._dw = connection()
         self._dw.connect(credentials)
