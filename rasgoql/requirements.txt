@@ -1,0 +1,9 @@
+# Core
+pandas
+pyyaml
+python-dotenv
+rasgoudt
+
+# DataWarehouse flavors: make option packages in the future
+snowflake-connector-python
+snowflake-connector-python[pandas]
