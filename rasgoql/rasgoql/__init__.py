@@ -27,7 +27,7 @@ def open_docs():
     """
     Open Rasgo Docs page
     """
-    url = 'https://github.com/rasgointelligence/RasgoQL'
+    url = 'https://docs.rasgoql.com'
     webbrowser.open(url)
     print(url)
 
