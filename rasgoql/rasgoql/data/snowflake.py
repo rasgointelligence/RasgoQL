@@ -3,6 +3,7 @@ Snowflake DataWarehouse classes
 """
 import logging
 import os
+import re
 from typing import List, Optional, Union
 
 import json
@@ -308,7 +309,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
         """
         select_clause = "SELECT TABLE_NAME, " \
                         "TABLE_CATALOG||'.'||TABLE_SCHEMA||'.'||TABLE_NAME AS FQTN, " \
-                        "ROW_COUNT, TABLE_OWNER, CREATED, LAST_ALTERED "
+                        "CASE TABLE_TYPE WHEN 'BASE TABLE' THEN 'TABLE' ELSE TABLE_TYPE END AS TABLE_TYPE, " \
+                        "ROW_COUNT, CREATED, LAST_ALTERED "
         from_clause = " FROM INFORMATION_SCHEMA.TABLES "
         if database:
             from_clause = f" FROM {database}.INFORMATION_SCHEMA.TABLES "
@@ -395,7 +397,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (database.schema.table)
         """
-        if namespace.count('.') == 2:
+        # Does this match a 'string.string' pattern?
+        if re.match(r'\w+\.\w+', namespace):
             return
         raise ParameterException("Snowflake namespaces should be format: DATABASE.SCHEMA")
 
