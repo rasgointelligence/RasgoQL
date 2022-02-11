@@ -334,3 +334,9 @@ class SQLChain(TransformableClass):
         if self.transforms:
             return self.transforms[-1]
         return None
+
+    def to_df(self) -> pd.DataFrame:
+        """
+        Returns data into a pandas DataFrame
+        """
+        return self._dw.execute_query(self.sql(), response='df')
