@@ -141,11 +141,11 @@ class SnowflakeDataWarehouse(DataWarehouse):
         if isinstance(credentials, SnowflakeCredentials):
             credentials = credentials.to_dict()
 
-        # This allows you to track what queries were run by Rasgo in your history tab
+        # This allows you to track what queries were run by RasgoQL in your history tab
         credentials.update({
-            "application": "rasgo",
+            "application": "rasgoql",
             "session_parameters": {
-                "QUERY_TAG": "rasgo_open_source_sdk"
+                "QUERY_TAG": "rasgoql"
             }
         })
         try:
