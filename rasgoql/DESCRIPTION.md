@@ -28,6 +28,7 @@ https://docs.rasgoql.com
 
 ## Package Dependencies
 -------------------------------------------------------------------------------
+- jinja2
 - pandas
 - pyyaml
 - python-dotenv
