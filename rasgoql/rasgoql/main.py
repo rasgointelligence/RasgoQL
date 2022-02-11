@@ -1,7 +1,7 @@
 """
 RasgoQL main class
 """
-from typing import List
+from typing import List, Type
 
 import pandas as pd
 from rasgotransforms import serve_rasgo_transform_templates
@@ -18,7 +18,7 @@ class RasgoQL:
 
     def __init__(
             self,
-            connection: DataWarehouse,
+            connection: Type[DataWarehouse],
             credentials: dict
         ):
         self.credentials = credentials
@@ -62,7 +62,7 @@ class RasgoQL:
                 udt = t
         if udt:
             return udt.define()
-        return ValueError(f'{name} is not a valid Tranform name. ' \
+        raise ValueError(f'{name} is not a valid Tranform name. ' \
                            'Run `.list_transforms()` to see available transforms.')
 
     def query(

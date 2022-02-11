@@ -33,6 +33,8 @@ def assemble_cte_chain(
     if table_type:
         table_type = check_table_type(table_type)
 
+    create_stmt, final_select = '', ''
+
     # Handle single transform chains
     if len(transforms) == 1:
         t = transforms[0]
@@ -197,7 +199,7 @@ def _run_query(
     Jinja Func to materialize a chain as a temporary view before running a query
     """
     try:
-        if running_sql > '':
+        if running_sql:
             create_sql = f"CREATE OR REPLACE VIEW {source_table} AS {running_sql} LIMIT {RUN_QUERY_LIMIT}"
             dw.execute_query(create_sql, response='none', acknowledge_risk=True)
         return dw.execute_query(query, response='df', acknowledge_risk=True)

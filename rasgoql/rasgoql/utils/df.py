@@ -24,7 +24,7 @@ def build_schema(
 
 def cleanse_sql_dataframe(
         df: pd.DataFrame
-    ) -> pd.DataFrame:
+    ):
     """
     Renames all columns in a pandas dataframe to SQL compliant names in place
     """

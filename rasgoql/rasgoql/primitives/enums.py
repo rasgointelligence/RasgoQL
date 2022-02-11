@@ -25,7 +25,7 @@ def check_data_warehouse(input_value: str):
     """
     try:
         DWType[input_value.upper()]
-    except:
+    except Exception:
         raise ParameterException(f'data_warehouse parameter accepts values: {SUPPORTED_DWS}')
     return input_value.upper()
 
@@ -46,7 +46,7 @@ def check_table_state(input_value: str):
     """
     try:
         TableState[input_value.upper()]
-    except:
+    except Exception:
         raise ParameterException(f'table_state parameter accepts values: {TABLE_STATES}')
     return input_value.upper()
 
@@ -67,7 +67,7 @@ def check_table_type(input_value: str):
     """
     try:
         TableType[input_value.upper()]
-    except:
+    except Exception:
         raise ParameterException(f'table_type parameter accepts values: {TABLE_TYPES}')
     return input_value.upper()
 
@@ -89,7 +89,7 @@ def check_render_method(input_value: str):
     """
     try:
         RenderMethod[input_value.upper()]
-    except:
+    except Exception:
         raise ParameterException(f'render_method parameter accepts values: {RENDER_METHODS}')
     return input_value.upper()
 
@@ -111,6 +111,6 @@ def check_response_type(input_value: str):
     """
     try:
         ResponseType[input_value.upper()]
-    except:
+    except Exception:
         raise ParameterException(f'response parameter accepts values: {RESPONSE_TYPES}')
     return input_value.upper()
