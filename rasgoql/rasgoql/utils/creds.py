@@ -3,6 +3,7 @@ DataWarehouse credential functions
 """
 import os
 import logging
+from pathlib import Path
 import yaml
 
 import dotenv
@@ -31,12 +32,17 @@ def load_yml(
     return contents
 
 def save_env(
-        creds: str
+        creds: str,
+        file_path: str = None,
+        overwrite: bool = False
     ):
     """
     Writes creds to a .env file
     """
-    file_path = os.getcwd() + '/.env'
+    file_path = Path(os.path.join(os.getcwd(), '.env'))
+    if file_path.exists() and not overwrite:
+        raise FileExistsError(f'File {file_path} already exist, pass in overwrite=True to overwrite it. '
+                              'Warning: this will overwrite all existing values in this .env file.')
     with open(file_path, "w") as _file:
         _file.write(creds)
     return file_path

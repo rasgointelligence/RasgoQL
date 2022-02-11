@@ -96,19 +96,20 @@ class SnowflakeCredentials(DWCredentials):
 
     def to_env(
             self,
-            file_path: str
+            file_path: str = None,
+            overwrite: bool = False
         ):
         """
         Saves credentials to a .env file on your machine
         """
-        creds = f'snowflake_account={self.account}\n',
-        creds += f'snowflake_user={self.user}\n',
-        creds += f'snowflake_password={self.password}\n',
-        creds += f'snowflake_role={self.role}\n',
-        creds += f'snowflake_warehouse={self.warehouse}\n',
-        creds += f'snowflake_database={self.database}\n',
+        creds = f'snowflake_account={self.account}\n'
+        creds += f'snowflake_user={self.user}\n'
+        creds += f'snowflake_password={self.password}\n'
+        creds += f'snowflake_role={self.role}\n'
+        creds += f'snowflake_warehouse={self.warehouse}\n'
+        creds += f'snowflake_database={self.database}\n'
         creds += f'snowflake_schema={self.schema}\n'
-        return save_env(creds)
+        return save_env(creds, file_path, overwrite)
 
 
 class SnowflakeDataWarehouse(DataWarehouse):
