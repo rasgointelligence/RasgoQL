@@ -5,7 +5,7 @@ import logging
 from typing import Callable, List
 
 import pandas as pd
-from rasgotransforms import serve_rasgo_transform_templates
+import rasgotransforms as rtx
 
 from rasgoql.errors import ParameterException
 from rasgoql.utils.decorators import require_dw, require_transforms
@@ -55,7 +55,7 @@ class TransformableClass:
         """
         Gather available transforms and create aliased functions for each
         """
-        for transform in serve_rasgo_transform_templates():
+        for transform in rtx.serve_rasgo_transform_templates():
             f = self._create_aliased_function(transform)
             setattr(self, transform.name, f)
 

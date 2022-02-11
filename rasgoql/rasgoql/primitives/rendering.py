@@ -10,7 +10,7 @@ from typing import Callable, Dict, List, Optional
 
 import jinja2
 import pandas as pd
-from rasgotransforms import serve_rasgo_transform_templates
+import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
 from .enums import check_table_type
@@ -128,7 +128,7 @@ def generate_transform_sql(
     """
     Returns the SQL for a Transform with applied arguments
     """
-    templates = serve_rasgo_transform_templates()
+    templates = rtx.serve_rasgo_transform_templates()
     udt: 'TransformTemplate' = [t for t in templates if t.name == name][0]
     if not udt:
         raise TransformRenderingError(f'Cannot find a transform named {name}')
