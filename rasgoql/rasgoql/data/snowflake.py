@@ -314,8 +314,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
                         "ROW_COUNT, CREATED, LAST_ALTERED "
         from_clause = " FROM INFORMATION_SCHEMA.TABLES "
         if database:
-            from_clause = f" FROM {database}.INFORMATION_SCHEMA.TABLES "
-        where_clause = f" WHERE TABLE_SCHEMA = '{schema}'" if schema else ""
+            from_clause = f" FROM {database.upper()}.INFORMATION_SCHEMA.TABLES "
+        where_clause = f" WHERE TABLE_SCHEMA = '{schema.upper()}'" if schema else ""
         sql = select_clause + from_clause + where_clause
         return self.execute_query(sql, response='df', acknowledge_risk=True)
 
