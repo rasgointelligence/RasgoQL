@@ -4,7 +4,7 @@ RasgoQL main class
 from typing import List, Type
 
 import pandas as pd
-from rasgotransforms import serve_rasgo_transform_templates
+import rasgotransforms as rtx
 
 from .data import DataWarehouse
 from .primitives import Dataset, SQLChain, TransformTemplate
@@ -41,7 +41,7 @@ class RasgoQL:
         """
         Returns a list of RasgoQL transforms
         """
-        return serve_rasgo_transform_templates()
+        return rtx.serve_rasgo_transform_templates()
 
     def dataset(
             self,
@@ -57,7 +57,7 @@ class RasgoQL:
         Returns full details of a RasgoQL transform
         """
         udt: TransformTemplate = None
-        for t in serve_rasgo_transform_templates():
+        for t in rtx.serve_rasgo_transform_templates():
             if t.name == name:
                 udt = t
         if udt:
