@@ -31,11 +31,15 @@ class RasgoQL:
         """
         self._dw.close_connection()
 
-    def list_tables(self):
+    def list_tables(
+            self,
+            database: str = None,
+            schema: str = None
+        ):
         """
         Returns a list of tables in your Data Warehouse
         """
-        return self._dw.list_tables()
+        return self._dw.list_tables(database, schema)
 
     def list_transforms(self) -> List[TransformTemplate]:
         """
