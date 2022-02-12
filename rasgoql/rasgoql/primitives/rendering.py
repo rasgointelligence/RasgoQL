@@ -38,10 +38,7 @@ def assemble_cte_chain(
     # Handle single transform chains
     if len(transforms) == 1:
         t = transforms[0]
-        if table_type in ['TABLE', 'VIEW']:
-            create_stmt = f'CREATE OR REPLACE {table_type} {t.fqtn} AS \n'
-        else:
-            create_stmt = ''
+        create_stmt = _set_create_statement(table_type, t.fqtn)
         final_select = generate_transform_sql(
             t.name,
             t.arguments,
@@ -54,39 +51,21 @@ def assemble_cte_chain(
     # Handle multi-transform chains
     t_list = []
     running_sql = None
-    i = 1
     for t in transforms:
-        logger.debug(f'Rendering transform {t.name} ({i} of {len(transforms)})')
-        i += 1
+        t_sql = generate_transform_sql(
+            t.name,
+            t.arguments,
+            t.source_table,
+            running_sql,
+            t._dw
+        )
 
         # Set final select & create statements from terminal transform
         if t == transforms[-1]:
-            final_select = generate_transform_sql(
-                t.name,
-                t.arguments,
-                t.source_table,
-                running_sql,
-                t._dw
-            )
-            if table_type in ['TABLE', 'VIEW']:
-                create_stmt = f'CREATE OR REPLACE {table_type} {t.fqtn} AS \n'
-            else:
-                create_stmt = ''
+            final_select = _set_final_select_statement(len(transforms), t_sql)
+            create_stmt = _set_create_statement(table_type, t.fqtn)
         else:
-            t_sql = generate_transform_sql(
-                t.name,
-                t.arguments,
-                t.source_table,
-                running_sql,
-                t._dw
-            )
-            # running_sql tracks the CTE chain up to this transform,
-            # this is consumed by the next transform if it needs to
-            # access the chain's data mid-state (e.g. confirming columns exits)
-            if len(t_list) == 0:
-                running_sql = t_sql
-            else:
-                running_sql = 'WITH ' + ', \n'.join(t_list) + t_sql
+            running_sql = _construct_running_sql(t_list, t_sql)
             t_cte_str = f'{t.output_alias} AS (\n{t_sql}\n) '
             t_list.append(t_cte_str)
     return create_stmt + 'WITH ' + ', \n'.join(t_list) + final_select
@@ -107,11 +86,8 @@ def assemble_view_chain(
             t.source_table,
             running_sql,
             t._dw
-            )
-        if len(cte_list) == 0:
-            running_sql = t_sql
-        else:
-            running_sql = 'WITH ' + ', \n'.join(cte_list) + t_sql
+        )
+        running_sql = _construct_running_sql(cte_list, t_sql)
         t_cte_str = f'{t.output_alias} AS (\n{t_sql}\n) '
         t_view_str = f'CREATE OR REPLACE VIEW {t.fqtn} AS {t_sql};'
         cte_list.append(t_cte_str)
@@ -181,6 +157,73 @@ def _cleanse_template_symbol(
     symbol = '_'+symbol if symbol[0].isdecimal() or not symbol else symbol
     return symbol
 
+def _collapse_cte(
+        sql: str
+    ) -> str:
+    """
+    Returns a collapsed CTE if sql is a CTE, or original sql
+    """
+    if sql.upper().startswith('WITH'):
+        return re.sub(r'^(WITH)\s', r', ', sql, 1, flags=re.IGNORECASE)
+    return sql
+
+def _construct_running_sql(
+        cte_list: List[str],
+        sql: str
+    ) -> str:
+    """
+    Constructs and returns a running sql statement
+    """
+    # running_sql tracks the CTE chain up to this transform,
+    # this is consumed by the next transform if it needs to
+    # access the chain's data mid-state (e.g. confirming columns exits)
+    if len(cte_list) == 0:
+        return sql
+    return 'WITH ' + ', \n'.join(cte_list) + _collapse_cte(sql)
+
+def _gen_udt_func_docstring(
+        transform: 'TransformTemplate'
+    ) -> str:
+    """
+    Generate and return a docstring for a transform func
+    with transform description, args, and return specified.
+    """
+    docstring = f"\n{transform.description}"
+
+    docstring = f"{docstring}\n  Args:"
+    for t_arg in transform.arguments:
+        docstring = f"{docstring}\n    {t_arg.get('name')}: {t_arg.get('description')}"
+    docstring = f"{docstring}\n    operation_name: Name to set for the operation"
+
+    docstring = f"{docstring}\n\n  Returns:\n    Returns an new dataset with the referenced " \
+                f"{transform.name!r} added to this dataset's definition"
+    return docstring
+
+def _gen_udt_func_signature(
+        udt_func: Callable,
+        transform: 'TransformTemplate'
+    ) -> inspect.Signature:
+    """
+    Creates and returns a UDT param signature.
+
+    This is shown documentation for the parameters when hitting shift tab in a notebook
+    """
+    sig = inspect.signature(udt_func)
+
+    udt_params = []
+    for t_arg in transform.arguments:
+        p = inspect.Parameter(name=t_arg.get('name'), kind=inspect.Parameter.KEYWORD_ONLY)
+        udt_params.append(p)
+
+    op_name_param = inspect.Parameter(
+        name='operation_name',
+        kind=inspect.Parameter.KEYWORD_ONLY,
+        annotation=Optional[str],
+        default=None
+    )
+    udt_params.append(op_name_param)
+    return sig.replace(parameters=udt_params)
+
 def _raise_exception(
         message: str
     ) -> None:
@@ -210,6 +253,28 @@ def _run_query(
             drop_sql = f"DROP VIEW IF EXISTS {source_table}"
             dw.execute_query(drop_sql, response='none', acknowledge_risk=True)
 
+def _set_create_statement(
+        table_type: str,
+        fqtn: str,
+    ) -> str:
+    """
+    Returns a create statement or a blank string
+    """
+    if table_type in ['TABLE', 'VIEW']:
+        return f'CREATE OR REPLACE {table_type} {fqtn} AS \n'
+    return ''
+
+def _set_final_select_statement(
+        transform_count: str,
+        sql: str,
+    ) -> str:
+    """
+    Returns a create statement or a blank string
+    """
+    if transform_count > 1:
+        return _collapse_cte(sql)
+    return sql
+
 def _source_code_functions(
         dw: 'DataWarehouse',
         source_table: str = None,
@@ -219,7 +284,12 @@ def _source_code_functions(
     Get custom functions to add to the template parser
     """
     return {
-        "run_query": functools.partial(_run_query, dw=dw, source_table=source_table, running_sql=running_sql),
+        "run_query": functools.partial(
+            _run_query,
+            dw=dw,
+            source_table=source_table,
+            running_sql=running_sql
+        ),
         "cleanse_name": _cleanse_template_symbol,
         "raise_exception": _raise_exception,
         "itertools": {
@@ -228,47 +298,3 @@ def _source_code_functions(
             "product": product
         }
     }
-
-def _gen_udt_func_signature(
-        udt_func: Callable,
-        transform: 'TransformTemplate'
-    ) -> inspect.Signature:
-    """
-    Creates and returns a UDT param signature.
-
-    This is shown documentation for the parameters when hitting shift tab in a notebook
-    """
-    sig = inspect.signature(udt_func)
-
-    udt_params = []
-    for t_arg in transform.arguments:
-        p = inspect.Parameter(name=t_arg.get('name'), kind=inspect.Parameter.KEYWORD_ONLY)
-        udt_params.append(p)
-
-    op_name_param = inspect.Parameter(
-        name='operation_name',
-        kind=inspect.Parameter.KEYWORD_ONLY,
-        annotation=Optional[str],
-        default=None
-    )
-    udt_params.append(op_name_param)
-    return sig.replace(parameters=udt_params)
-
-
-def _gen_udt_func_docstring(
-        transform: 'TransformTemplate'
-    ) -> str:
-    """
-    Generate and return a docstring for a transform func
-    with transform description, args, and return specified.
-    """
-    docstring = f"\n{transform.description}"
-
-    docstring = f"{docstring}\n  Args:"
-    for t_arg in transform.arguments:
-        docstring = f"{docstring}\n    {t_arg.get('name')}: {t_arg.get('description')}"
-    docstring = f"{docstring}\n    operation_name: Name to set for the operation"
-
-    docstring = f"{docstring}\n\n  Returns:\n    Returns an new dataset with the referenced " \
-                f"{transform.name!r} added to this dataset's definition"
-    return docstring
