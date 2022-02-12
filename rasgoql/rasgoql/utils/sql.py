@@ -44,6 +44,19 @@ def is_restricted_sql(
         return True
     return False
 
+def magic_fqtn_handler(
+    possible_fqtn: str,
+    default_database: str,
+    default_schema: str
+) -> str:
+    """
+    Makes all of your wildest dreams come true... well not *that* one
+    """
+    input_db, input_schema, table = parse_fqtn(possible_fqtn)
+    database = input_db or default_database
+    schema = input_schema or default_schema
+    return make_fqtn(database, schema, table)
+
 def make_fqtn(
         database: str,
         schema: str,

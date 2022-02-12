@@ -18,7 +18,7 @@ from rasgoql.errors import (
 from rasgoql.primitives.enums import check_response_type, check_table_type
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe
-from rasgoql.utils.sql import is_scary_sql, parse_fqtn
+from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
 
 from .base import DataWarehouse, DWCredentials
 
@@ -123,6 +123,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
         super().__init__()
         self.credentials: dict = None
         self.connection: connector.SnowflakeConnection = None
+        self.default_database = None
+        self.default_schema = None
 
     # ---------------------------
     # Core Data Warehouse methods
@@ -151,6 +153,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
         })
         try:
             self.credentials = credentials
+            self.default_database = credentials.get('database')
+            self.default_schema = credentials.get('schema')
             self.connection = connector.connect(**credentials)
         except connector.errors.DatabaseError as e:
             raise DWConnectionError(e)
@@ -197,13 +201,15 @@ class SnowflakeDataWarehouse(DataWarehouse):
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_table_type(table_type)
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
         if self._table_exists(fqtn) and not acknowledge_overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
                    'pass in acknowledge_overwrite=True and run this function again'
             raise TableConflictException(msg)
         query = f'CREATE OR REPLACE {table_type} {fqtn} AS {sql}'
-        return self.execute_query(query)
+        self.execute_query(query)
+        return fqtn
 
     def execute_query(
             self,
@@ -248,6 +254,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
         sql = f"SELECT GET_DDL('TABLE', '{fqtn}') AS DDL"
         query_response = self.execute_query(sql, response='dict')
         return query_response[0]['DDL']
@@ -268,6 +275,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             is rasgo object: bool
             object type: [table|view|unknown]
         """
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
         database, schema, table = parse_fqtn(fqtn)
         sql = f"SHOW OBJECTS LIKE '{table}' IN {database}.{schema}"
         result = self.execute_query(sql, response='dict')
@@ -290,6 +298,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
         sql = f"DESC TABLE {fqtn}"
         query_response = self.execute_query(sql, response='dict')
         return query_response
@@ -355,6 +364,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             and you know you want to overwrite it
             WARNING: This will completely overwrite data in the existing table
         """
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
         if self._table_exists(fqtn) and not acknowledge_overwrite:
             msg = f'A table named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
@@ -384,6 +394,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
         do_i_exist, _, _ = self.get_object_details(fqtn)
         return do_i_exist
 
