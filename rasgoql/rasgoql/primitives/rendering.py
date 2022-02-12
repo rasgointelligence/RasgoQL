@@ -265,7 +265,7 @@ def _set_create_statement(
     return ''
 
 def _set_final_select_statement(
-        transform_count: str,
+        transform_count: int,
         sql: str,
     ) -> str:
     """
