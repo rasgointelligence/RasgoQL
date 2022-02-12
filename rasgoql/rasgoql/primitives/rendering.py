@@ -30,9 +30,6 @@ def assemble_cte_chain(
     """
     Returns a nested CTE statement to render input Transforms
     """
-    if table_type:
-        table_type = check_table_type(table_type)
-
     create_stmt, final_select = '', ''
 
     # Handle single transform chains
@@ -260,6 +257,8 @@ def _set_create_statement(
     """
     Returns a create statement or a blank string
     """
+    if table_type:
+        table_type = check_table_type(table_type)
     if table_type in ['TABLE', 'VIEW']:
         return f'CREATE OR REPLACE {table_type} {fqtn} AS \n'
     return ''
