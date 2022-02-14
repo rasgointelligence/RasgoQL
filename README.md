@@ -9,37 +9,42 @@
 
 # RasgoQL
 
-RasgoQL is a Python package that enables you to easily query and transform data housed in your database engine directly from your notebook or IDE of choice. Quickly create new features, filter and sample your data, change column types, create aggregates and so much more! All without having to write/wrangle SQL, or duplicate data to your local machine! 
+RasgoQL is a Python package that enables you to easily query and transform tables in your Data Warehouse directly from a notebook. 
 
-Choose from our library of predefined transformations or make your own to streamline the process of extracting, transforming and loading large amounts of data.
+You can quickly create new features, sample data, apply complex aggregates... all without having to write SQL! 
 
-[insert gif of RasgoQL transform in action]
-<!-- Gif of RasgoQL transform -->
+Choose from our library of predefined transformations or make your own to streamline the feature engineering process.
 
 
-# Why is this project useful?
-Data scientists spend most of their time cleaning and preparing data in Python only to then go back and have to rewrite everything into SQL. We created RasgoQL as a data transformation package that gives users the ability to transform large amounts of data directly within their notebook by creating SQL that runs in the database.
+# Why is this package useful?
+Data scientists spend much of their time in pandas preparing data for modelling. When they are ready to deploy or scale, two pain points arise:
+1. pandas cannot handle larger volumes of data, forcing the use of VMs or code refactoring.
+2. feature data must be added to the Enterprise Data Warehouse for future processing, requiring refactoring to SQL
+
+We created RasgoQL to solve these two pain points.
 
 Learn more at [https://docs.rasgoql.com](https://docs.rasgoql.com). 
 
 # How does it work?
-Under the covers, it sends all processing to your data warehouse, enabling the efficient transformation of massive datasets without the duplication of data. Also RasgoQL only needs to basic metadata to execute transforms, so your private data remains secure and housed within the warehouse.
+Under the covers, RasgoQL sends all processing to your Data Warehouse, enabling the efficient transformation of massive datasets. RasgoQL only needs basic metadata to execute transforms, so your private data remains secure.
+
+![RasgoQL workflow diagram](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/RasgoQL_Flow.png)
 
 RasgoQL does these things well:
-- Pulls existing DataWarehouse tables into pandas DataFrames for analysis
+- Pulls existing Data Warehouse tables into pandas DataFrames for analysis
 - Constructs SQL queries using a syntax that feels like pandas
-- Creates views in your DataWarehouse to save transformed data
-- Exports runnable sql in .sql files a dbt-compliant yml files
+- Creates views in your Data Warehouse to save transformed data
+- Exports runnable sql in .sql files or dbt-compliant .yaml files
 - Offers dozens of free SQL transforms to use
 - Coming Soon: allows users to create & add custom transforms
 
-Rasgoql’s initial release will focus on snowflake databases but we plan to add support for BigQuery and Postgres in the very near future. If you'd like to suggest another database type, submit your idea to our [GitHub Discussions page](https://github.com/rasgointelligence/RasgoQL/discussions) so that other community members can weight in and show their support. 
+RasgoQL’s initial release will support connecting to your existing Snowflake Data Warehouse. We plan to add support for BigQuery and Postgres in the very near future. If you'd like to suggest another database type, submit your idea to our [GitHub Discussions page](https://github.com/rasgointelligence/RasgoQL/discussions) so that other community members can weight in and show their support. 
 
 # Can RasgoQL help you?
 
 * If you use pandas to build features, but you are working on a massive set of data that won't fit in your machine's memory. RasgoQL can help!
 
-* If your organization uses dbt of another SQL tool to run production data flows, but you prefer to build features in pandas. RasgoQL can help!
+* If your organization uses dbt or another SQL tool to run production data flows, but you prefer to build features in pandas. RasgoQL can help!
 
 * If you know pandas, but not SQL and want to learn how queries will translate. RasgoQL can help!
 
@@ -54,7 +59,6 @@ Just run a simple pip install.
 pip install rasgoql --upgrade
 
 # Connect to your data warehouse
-# DW Creds helper class
 creds = rasgoql.SnowflakeCredentials(
     account="",
     user="",
@@ -64,38 +68,79 @@ creds = rasgoql.SnowflakeCredentials(
     database="",
     schema=""
 )
-print(creds)
-
-# Main Connection workflow
-rql = rasgoql.connect(dw='snowflake', credentials=creds)
+rql = rasgoql.connect(creds)
 print("rasgoQL connected!")
 
 # Allow rasgoQL to interact with an existing Table in your Data Warehouse
-tbl = rql.table(fqtn='RASGOLOCAL.PUBLIC.ABCD123')
-tbl.preview()
+ds = rql.dataset(fqtn='RASGOLOCAL.PUBLIC.ABCD123')
+ds.preview()
 
-# Create a Chain by applying Transform(s)
+# Create a SQL Chain by applying a Rasgo Transform
 chn = tbl.cast(
     casts={
       'LOC_ID':'STRING',
       'DATE':'STRING'
     }
 )
-chn
 
-# Print SQL
-print(chn.sql())
+# Print the SQL
+chn.sql()
 
 ```
 
 # Advanced Examples
 
-[2-3 advanced examples]
+## Joins
+Easily join tables together using the `join` transform. 
+
+```python
+internet_sales = rasgoql.dataset('ADVENTUREWORKS.PUBLIC.INTERNET_SALES')
+
+ds_join = internet_sales.join(
+  join_table='DIM_PRODUCT',
+  join_columns={'PRODUCTKEY': 'PRODUCTKEY'},
+  join_type='LEFT',
+  join_prefix='PRODUCT')
+
+ds_join.sql()
+ds_join.preview()
+```
+
+## Chain transforms together
+Create a rolling average aggregation and then drops unnecessary colomns. 
+
+```python
+ds_agg = ds.rolling_agg(
+    aggregations={"SALESAMOUNT": ["MAX", "MIN", "SUM"]},
+    order_by="ORDERDATE",
+    offsets=[-7, 7],
+    group_by=["PRODUCTKEY"],
+).drop_columns(exclude_cols=["ORDERDATEKEY"])
+
+ds_agg.sql()
+ds_agg.preview()
+```
+
+## Transpose unique values with pivots 
+Quickly generate pivot tables of your data.
+
+```python
+ds_pivot = ds_agg.pivot(
+    dimensions=['ORDERDATE'],
+    pivot_column='SALESAMOUNT',
+    value_column='PRODUCTKEY',
+    agg_method='SUM',
+    list_of_vals=['310', '345']
+)
+
+ds_pivot.sql()
+ds_pivot.preview()
+```
 
 # Where do I go for help?
 If you have any questions please: 
 
-1. [Docs](https://docs.rasgoql.com/)
+1. [RasgoQL Docs](https://docs.rasgoql.com/)
 2. [Slack](https://join.slack.com/t/rasgousergroup/shared_invite/zt-nytkq6np-ANEJvbUSbT2Gkvc8JICp3g)
 3. [GitHub Issues](https://github.com/rasgointelligence/RasgoQL/issues)
 
@@ -105,3 +150,5 @@ Review the [contributors guide](https://github.com/rasgointelligence/RasgoQL/blo
 
 
 <i>Built for Data Scientists, by Data Scientists</i>
+
+This project is sponspored by RasgoML. Find out at [https://www.rasgoml.com/](https://www.rasgoml.com/)
