@@ -50,7 +50,7 @@ def save_env(
 def save_yml(
         creds: str,
         file_path: str = None,
-        acknowledge_overwrite: bool = True
+        overwrite: bool = True
     ):
     """
     Write creds to a .yml file
@@ -66,11 +66,11 @@ def save_yml(
         file_path += ".yml"
 
     if os.path.exists(file_path):
-        if acknowledge_overwrite:
+        if overwrite:
             logger.warning(f"Overwriting existing file {file_path}")
         else:
             raise FileExistsError(f'{file_path} already exists. If you wish to overwrite it, ' \
-                                   'pass acknowledge_overwrite=True and run this function again.')
+                                   'pass overwrite=True and run this function again.')
 
     with open(file_path, "w") as _yaml:
         yaml.dump(data=creds, Dumper=yaml.SafeDumper, stream=_yaml)
