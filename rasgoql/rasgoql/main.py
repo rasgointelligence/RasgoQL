@@ -1,10 +1,10 @@
 """
 RasgoQL main class
 """
-from typing import List
+from typing import List, Type
 
 import pandas as pd
-from rasgoudt import serve_rasgo_transform_templates
+import rasgotransforms as rtx
 
 from .data import DataWarehouse
 from .primitives import Dataset, SQLChain, TransformTemplate
@@ -18,7 +18,7 @@ class RasgoQL:
 
     def __init__(
             self,
-            connection: DataWarehouse,
+            connection: Type[DataWarehouse],
             credentials: dict
         ):
         self.credentials = credentials
@@ -31,17 +31,21 @@ class RasgoQL:
         """
         self._dw.close_connection()
 
-    def list_tables(self):
+    def list_tables(
+            self,
+            database: str = None,
+            schema: str = None
+        ):
         """
         Returns a list of tables in your Data Warehouse
         """
-        return self._dw.list_tables()
+        return self._dw.list_tables(database, schema)
 
     def list_transforms(self) -> List[TransformTemplate]:
         """
         Returns a list of RasgoQL transforms
         """
-        return serve_rasgo_transform_templates()
+        return rtx.serve_rasgo_transform_templates()
 
     def dataset(
             self,
@@ -57,12 +61,12 @@ class RasgoQL:
         Returns full details of a RasgoQL transform
         """
         udt: TransformTemplate = None
-        for t in serve_rasgo_transform_templates():
+        for t in rtx.serve_rasgo_transform_templates():
             if t.name == name:
                 udt = t
         if udt:
             return udt.define()
-        return ValueError(f'{name} is not a valid Tranform name. ' \
+        raise ValueError(f'{name} is not a valid Tranform name. ' \
                            'Run `.list_transforms()` to see available transforms.')
 
     def query(

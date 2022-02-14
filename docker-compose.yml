@@ -5,22 +5,22 @@ services:
     build:
       context: ./
       target: rasgoql
-    working_dir: /var/lib/rasgo/mount/rasgoql
+    working_dir: /var/lib/rasgoql/mount/rasgoql
     command: ./bin/publish-pypi.sh pypi
     environment:
       PYPI_USER: ${PYPI_USER}
       PYPI_PASSWORD: ${PYPI_PASSWORD}
     volumes:
-      - ./:/var/lib/rasgo/mount/
+      - ./:/var/lib/rasgoql/mount/
 
   test-pypi:
     build:
       context: ./
       target: rasgoql
-    working_dir: /var/lib/rasgo/mount/rasgoql
+    working_dir: /var/lib/rasgoql/mount/rasgoql
     command: ./bin/publish-pypi.sh pypitest
     environment:
-      PYPI_USER: ${PYPITEST_USER}
-      PYPI_PASSWORD: ${PYPITEST_PASSWORD}
+      PYPITEST_USER: ${PYPITEST_USER}
+      PYPITEST_PASSWORD: ${PYPITEST_PASSWORD}
     volumes:
-      - ./:/var/lib/rasgo/mount/
+      - ./:/var/lib/rasgoql/mount/

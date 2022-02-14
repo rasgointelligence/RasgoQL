@@ -1,6 +1,7 @@
+jinja2
 pandas
 pyyaml
 python-dotenv
-rasgoudt
+rasgotransforms
 snowflake-connector-python
 snowflake-connector-python[pandas]

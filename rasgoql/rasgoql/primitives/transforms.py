@@ -5,7 +5,7 @@ import logging
 from typing import Callable, List
 
 import pandas as pd
-from rasgoudt import serve_rasgo_transform_templates
+import rasgotransforms as rtx
 
 from rasgoql.errors import ParameterException
 from rasgoql.utils.decorators import require_dw, require_transforms
@@ -55,7 +55,7 @@ class TransformableClass:
         """
         Gather available transforms and create aliased functions for each
         """
-        for transform in serve_rasgo_transform_templates():
+        for transform in rtx.serve_rasgo_transform_templates():
             f = self._create_aliased_function(transform)
             setattr(self, transform.name, f)
 
@@ -314,7 +314,7 @@ class SQLChain(TransformableClass):
             self,
             table_name: str = None,
             table_type: str = 'view',
-            acknowledge_overwrite: bool = False
+            overwrite: bool = False
         ):
         """
         Materializes this Transform Chain into SQL objects
@@ -323,8 +323,13 @@ class SQLChain(TransformableClass):
         if table_type == 'UNKNOWN':
             raise ValueError("table_type must be 'VIEW' or 'TABLE'")
         table_name = table_name or self.output_table.fqtn
-        self._dw.create(self.sql(), table_name, table_type, acknowledge_overwrite)
-        return Dataset(self.output_table.fqtn, self._dw)
+        new_table = self._dw.create(
+            self.sql(),
+            table_name,
+            table_type,
+            overwrite
+        )
+        return Dataset(new_table, self._dw)
 
     @property
     def ternimal_transform(self) -> Transform:
@@ -334,3 +339,9 @@ class SQLChain(TransformableClass):
         if self.transforms:
             return self.transforms[-1]
         return None
+
+    def to_df(self) -> pd.DataFrame:
+        """
+        Returns data into a pandas DataFrame
+        """
+        return self._dw.execute_query(self.sql(), response='df')

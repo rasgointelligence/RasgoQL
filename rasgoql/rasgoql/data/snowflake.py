@@ -3,6 +3,7 @@ Snowflake DataWarehouse classes
 """
 import logging
 import os
+import re
 from typing import List, Optional, Union
 
 import json
@@ -17,7 +18,7 @@ from rasgoql.errors import (
 from rasgoql.primitives.enums import check_response_type, check_table_type
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe
-from rasgoql.utils.sql import is_scary_sql, parse_fqtn
+from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
 
 from .base import DataWarehouse, DWCredentials
 
@@ -95,19 +96,20 @@ class SnowflakeCredentials(DWCredentials):
 
     def to_env(
             self,
-            file_path: str
+            file_path: str = None,
+            overwrite: bool = False
         ):
         """
         Saves credentials to a .env file on your machine
         """
-        creds = f'snowflake_account={self.account}\n',
-        creds += f'snowflake_user={self.user}\n',
-        creds += f'snowflake_password={self.password}\n',
-        creds += f'snowflake_role={self.role}\n',
-        creds += f'snowflake_warehouse={self.warehouse}\n',
-        creds += f'snowflake_database={self.database}\n',
+        creds = f'snowflake_account={self.account}\n'
+        creds += f'snowflake_user={self.user}\n'
+        creds += f'snowflake_password={self.password}\n'
+        creds += f'snowflake_role={self.role}\n'
+        creds += f'snowflake_warehouse={self.warehouse}\n'
+        creds += f'snowflake_database={self.database}\n'
         creds += f'snowflake_schema={self.schema}\n'
-        return save_env(creds)
+        return save_env(creds, file_path, overwrite)
 
 
 class SnowflakeDataWarehouse(DataWarehouse):
@@ -121,6 +123,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
         super().__init__()
         self.credentials: dict = None
         self.connection: connector.SnowflakeConnection = None
+        self.default_database = None
+        self.default_schema = None
 
     # ---------------------------
     # Core Data Warehouse methods
@@ -140,15 +144,17 @@ class SnowflakeDataWarehouse(DataWarehouse):
         if isinstance(credentials, SnowflakeCredentials):
             credentials = credentials.to_dict()
 
-        # This allows you to track what queries were run by Rasgo in your history tab
+        # This allows you to track what queries were run by RasgoQL in your history tab
         credentials.update({
-            "application": "rasgo",
+            "application": "rasgoql",
             "session_parameters": {
-                "QUERY_TAG": "rasgo_open_source_sdk"
+                "QUERY_TAG": "rasgoql"
             }
         })
         try:
             self.credentials = credentials
+            self.default_database = credentials.get('database')
+            self.default_schema = credentials.get('schema')
             self.connection = connector.connect(**credentials)
         except connector.errors.DatabaseError as e:
             raise DWConnectionError(e)
@@ -176,7 +182,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             sql: str,
             fqtn: str,
             table_type: str = 'VIEW',
-            acknowledge_overwrite: bool = False
+            overwrite: bool = False
         ):
         """
         Create a view or table from given SQL
@@ -189,19 +195,21 @@ class SnowflakeDataWarehouse(DataWarehouse):
             Name for the new table
         `table_type`: str:
             One of values: [view, table]
-        `acknowledge_overwrite`: bool
+        `overwrite`: bool
             pass True when this table name already exists in your DataWarehouse
             and you know you want to overwrite it
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_table_type(table_type)
-        if self._table_exists(fqtn) and not acknowledge_overwrite:
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        if self._table_exists(fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
-                   'pass in acknowledge_overwrite=True and run this function again'
+                   'pass in overwrite=True and run this function again'
             raise TableConflictException(msg)
         query = f'CREATE OR REPLACE {table_type} {fqtn} AS {sql}'
-        return self.execute_query(query)
+        self.execute_query(query, acknowledge_risk=True, response='None')
+        return fqtn
 
     def execute_query(
             self,
@@ -246,6 +254,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
         sql = f"SELECT GET_DDL('TABLE', '{fqtn}') AS DDL"
         query_response = self.execute_query(sql, response='dict')
         return query_response[0]['DDL']
@@ -266,6 +275,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             is rasgo object: bool
             object type: [table|view|unknown]
         """
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
         database, schema, table = parse_fqtn(fqtn)
         sql = f"SHOW OBJECTS LIKE '{table}' IN {database}.{schema}"
         result = self.execute_query(sql, response='dict')
@@ -288,6 +298,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
         sql = f"DESC TABLE {fqtn}"
         query_response = self.execute_query(sql, response='dict')
         return query_response
@@ -308,11 +319,12 @@ class SnowflakeDataWarehouse(DataWarehouse):
         """
         select_clause = "SELECT TABLE_NAME, " \
                         "TABLE_CATALOG||'.'||TABLE_SCHEMA||'.'||TABLE_NAME AS FQTN, " \
-                        "ROW_COUNT, TABLE_OWNER, CREATED, LAST_ALTERED "
+                        "CASE TABLE_TYPE WHEN 'BASE TABLE' THEN 'TABLE' ELSE TABLE_TYPE END AS TABLE_TYPE, " \
+                        "ROW_COUNT, CREATED, LAST_ALTERED "
         from_clause = " FROM INFORMATION_SCHEMA.TABLES "
         if database:
-            from_clause = f" FROM {database}.INFORMATION_SCHEMA.TABLES "
-        where_clause = f" WHERE TABLE_SCHEMA = '{schema}'" if schema else ""
+            from_clause = f" FROM {database.upper()}.INFORMATION_SCHEMA.TABLES "
+        where_clause = f" WHERE TABLE_SCHEMA = '{schema.upper()}'" if schema else ""
         sql = select_clause + from_clause + where_clause
         return self.execute_query(sql, response='df', acknowledge_risk=True)
 
@@ -336,7 +348,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self,
             df: pd.DataFrame,
             fqtn: str,
-            acknowledge_overwrite: bool = False
+            overwrite: bool = False
         ):
         """
         Creates a table in Snowflake from a pandas Dataframe
@@ -347,15 +359,16 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualied table name (database.schema.table)
             Name for the new table
-        `acknowledge_overwrite`: bool
+        `overwrite`: bool
             pass True when this table name already exists in your DataWarehouse
             and you know you want to overwrite it
             WARNING: This will completely overwrite data in the existing table
         """
-        if self._table_exists(fqtn) and not acknowledge_overwrite:
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        if self._table_exists(fqtn) and not overwrite:
             msg = f'A table named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
-                   'pass in acknowledge_overwrite=True and run this function again'
+                   'pass in overwrite=True and run this function again'
             raise TableConflictException(msg)
         try:
             return connector.pandas_tools.write_pandas(
@@ -381,6 +394,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
+        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
         do_i_exist, _, _ = self.get_object_details(fqtn)
         return do_i_exist
 
@@ -395,7 +409,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (database.schema.table)
         """
-        if namespace.count('.') == 2:
+        # Does this match a 'string.string' pattern?
+        if re.match(r'\w+\.\w+', namespace):
             return
         raise ParameterException("Snowflake namespaces should be format: DATABASE.SCHEMA")
 

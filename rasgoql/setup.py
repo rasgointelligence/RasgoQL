@@ -37,7 +37,12 @@ setup(
     'Rasgo': 'https://www.rasgoml.com/',
     },
     license='GNU Affero General Public License v3 or later (AGPLv3+)',
-    packages=['rasgoql'],
+    packages=[
+        'rasgoql',
+        'rasgoql.data',
+        'rasgoql.primitives',
+        'rasgoql.utils'
+        ],
     install_requires=requirements,
     extras_require={
         "snowflake":  sf_requirements,
@@ -50,6 +55,7 @@ setup(
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Database',
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: Software Development :: Code Generators'

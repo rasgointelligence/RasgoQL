@@ -10,7 +10,7 @@ from typing import Callable, Dict, List, Optional
 
 import jinja2
 import pandas as pd
-from rasgoudt import serve_rasgo_transform_templates
+import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
 from .enums import check_table_type
@@ -30,16 +30,12 @@ def assemble_cte_chain(
     """
     Returns a nested CTE statement to render input Transforms
     """
-    if table_type:
-        table_type = check_table_type(table_type)
+    create_stmt, final_select = '', ''
 
     # Handle single transform chains
     if len(transforms) == 1:
         t = transforms[0]
-        if table_type in ['TABLE', 'VIEW']:
-            create_stmt = f'CREATE OR REPLACE {table_type} {t.fqtn} AS \n'
-        else:
-            create_stmt = ''
+        create_stmt = _set_create_statement(table_type, t.fqtn)
         final_select = generate_transform_sql(
             t.name,
             t.arguments,
@@ -52,39 +48,21 @@ def assemble_cte_chain(
     # Handle multi-transform chains
     t_list = []
     running_sql = None
-    i = 1
     for t in transforms:
-        logger.debug(f'Rendering transform {t.name} ({i} of {len(transforms)})')
-        i += 1
+        t_sql = generate_transform_sql(
+            t.name,
+            t.arguments,
+            t.source_table,
+            running_sql,
+            t._dw
+        )
 
         # Set final select & create statements from terminal transform
         if t == transforms[-1]:
-            final_select = generate_transform_sql(
-                t.name,
-                t.arguments,
-                t.source_table,
-                running_sql,
-                t._dw
-            )
-            if table_type in ['TABLE', 'VIEW']:
-                create_stmt = f'CREATE OR REPLACE {table_type} {t.fqtn} AS \n'
-            else:
-                create_stmt = ''
+            final_select = _set_final_select_statement(len(transforms), t_sql)
+            create_stmt = _set_create_statement(table_type, t.fqtn)
         else:
-            t_sql = generate_transform_sql(
-                t.name,
-                t.arguments,
-                t.source_table,
-                running_sql,
-                t._dw
-            )
-            # running_sql tracks the CTE chain up to this transform,
-            # this is consumed by the next transform if it needs to
-            # access the chain's data mid-state (e.g. confirming columns exits)
-            if len(t_list) == 0:
-                running_sql = t_sql
-            else:
-                running_sql = 'WITH ' + ', \n'.join(t_list) + t_sql
+            running_sql = _construct_running_sql(t_list, t_sql)
             t_cte_str = f'{t.output_alias} AS (\n{t_sql}\n) '
             t_list.append(t_cte_str)
     return create_stmt + 'WITH ' + ', \n'.join(t_list) + final_select
@@ -105,11 +83,8 @@ def assemble_view_chain(
             t.source_table,
             running_sql,
             t._dw
-            )
-        if len(cte_list) == 0:
-            running_sql = t_sql
-        else:
-            running_sql = 'WITH ' + ', \n'.join(cte_list) + t_sql
+        )
+        running_sql = _construct_running_sql(cte_list, t_sql)
         t_cte_str = f'{t.output_alias} AS (\n{t_sql}\n) '
         t_view_str = f'CREATE OR REPLACE VIEW {t.fqtn} AS {t_sql};'
         cte_list.append(t_cte_str)
@@ -126,7 +101,7 @@ def generate_transform_sql(
     """
     Returns the SQL for a Transform with applied arguments
     """
-    templates = serve_rasgo_transform_templates()
+    templates = rtx.serve_rasgo_transform_templates()
     udt: 'TransformTemplate' = [t for t in templates if t.name == name][0]
     if not udt:
         raise TransformRenderingError(f'Cannot find a transform named {name}')
@@ -179,53 +154,47 @@ def _cleanse_template_symbol(
     symbol = '_'+symbol if symbol[0].isdecimal() or not symbol else symbol
     return symbol
 
-def _raise_exception(
-        message: str
-    ) -> None:
+def _collapse_cte(
+        sql: str
+    ) -> str:
     """
-    Raise an exception to return to users of a template
+    Returns a collapsed CTE if sql is a CTE, or original sql
     """
-    raise TransformRenderingError(message)
+    if sql.upper().startswith('WITH'):
+        return re.sub(r'^(WITH)\s', r', ', sql, 1, flags=re.IGNORECASE)
+    return sql
 
-def _run_query(
-        query: str,
-        source_table: str = None,
-        running_sql: str = None,
-        dw: 'DataWarehouse' = None
-    ) -> pd.DataFrame:
+def _construct_running_sql(
+        cte_list: List[str],
+        sql: str
+    ) -> str:
     """
-    Jinja Func to materialize a chain as a temporary view before running a query
+    Constructs and returns a running sql statement
     """
-    try:
-        if running_sql > '':
-            create_sql = f"CREATE OR REPLACE VIEW {source_table} AS {running_sql} LIMIT {RUN_QUERY_LIMIT}"
-            dw.execute_query(create_sql, response='none', acknowledge_risk=True)
-        return dw.execute_query(query, response='df', acknowledge_risk=True)
-    except Exception as e:
-        raise TransformRenderingError(e)
-    finally:
-        if running_sql:
-            drop_sql = f"DROP VIEW IF EXISTS {source_table}"
-            dw.execute_query(drop_sql, response='none', acknowledge_risk=True)
+    # running_sql tracks the CTE chain up to this transform,
+    # this is consumed by the next transform if it needs to
+    # access the chain's data mid-state (e.g. confirming columns exits)
+    if len(cte_list) == 0:
+        return sql
+    return 'WITH ' + ', \n'.join(cte_list) + _collapse_cte(sql)
 
-def _source_code_functions(
-        dw: 'DataWarehouse',
-        source_table: str = None,
-        running_sql: str = None
-    ) -> Dict[str, Callable]:
+def _gen_udt_func_docstring(
+        transform: 'TransformTemplate'
+    ) -> str:
     """
-    Get custom functions to add to the template parser
+    Generate and return a docstring for a transform func
+    with transform description, args, and return specified.
     """
-    return {
-        "run_query": functools.partial(_run_query, dw=dw, source_table=source_table, running_sql=running_sql),
-        "cleanse_name": _cleanse_template_symbol,
-        "raise_exception": _raise_exception,
-        "itertools": {
-            "combinations": combinations,
-            "permutations": permutations,
-            "product": product
-        }
-    }
+    docstring = f"\n{transform.description}"
+
+    docstring = f"{docstring}\n  Args:"
+    for t_arg in transform.arguments:
+        docstring = f"{docstring}\n    {t_arg.get('name')}: {t_arg.get('description')}"
+    docstring = f"{docstring}\n    operation_name: Name to set for the operation"
+
+    docstring = f"{docstring}\n\n  Returns:\n    Returns an new dataset with the referenced " \
+                f"{transform.name!r} added to this dataset's definition"
+    return docstring
 
 def _gen_udt_func_signature(
         udt_func: Callable,
@@ -252,21 +221,79 @@ def _gen_udt_func_signature(
     udt_params.append(op_name_param)
     return sig.replace(parameters=udt_params)
 
+def _raise_exception(
+        message: str
+    ) -> None:
+    """
+    Raise an exception to return to users of a template
+    """
+    raise TransformRenderingError(message)
 
-def _gen_udt_func_docstring(
-        transform: 'TransformTemplate'
+def _run_query(
+        query: str,
+        source_table: str = None,
+        running_sql: str = None,
+        dw: 'DataWarehouse' = None
+    ) -> pd.DataFrame:
+    """
+    Jinja Func to materialize a chain as a temporary view before running a query
+    """
+    try:
+        if running_sql:
+            create_sql = f"CREATE OR REPLACE VIEW {source_table} AS {running_sql} LIMIT {RUN_QUERY_LIMIT}"
+            dw.execute_query(create_sql, response='none', acknowledge_risk=True)
+        return dw.execute_query(query, response='df', acknowledge_risk=True)
+    except Exception as e:
+        raise TransformRenderingError(e)
+    finally:
+        if running_sql:
+            drop_sql = f"DROP VIEW IF EXISTS {source_table}"
+            dw.execute_query(drop_sql, response='none', acknowledge_risk=True)
+
+def _set_create_statement(
+        table_type: str,
+        fqtn: str,
     ) -> str:
     """
-    Generate and return a docstring for a transform func
-    with transform description, args, and return specified.
+    Returns a create statement or a blank string
     """
-    docstring = f"\n{transform.description}"
+    if table_type:
+        table_type = check_table_type(table_type)
+    if table_type in ['TABLE', 'VIEW']:
+        return f'CREATE OR REPLACE {table_type} {fqtn} AS \n'
+    return ''
 
-    docstring = f"{docstring}\n  Args:"
-    for t_arg in transform.arguments:
-        docstring = f"{docstring}\n    {t_arg.get('name')}: {t_arg.get('description')}"
-    docstring = f"{docstring}\n    operation_name: Name to set for the operation"
+def _set_final_select_statement(
+        transform_count: int,
+        sql: str,
+    ) -> str:
+    """
+    Returns a create statement or a blank string
+    """
+    if transform_count > 1:
+        return _collapse_cte(sql)
+    return sql
 
-    docstring = f"{docstring}\n\n  Returns:\n    Returns an new dataset with the referenced " \
-                f"{transform.name!r} added to this dataset's definition"
-    return docstring
+def _source_code_functions(
+        dw: 'DataWarehouse',
+        source_table: str = None,
+        running_sql: str = None
+    ) -> Dict[str, Callable]:
+    """
+    Get custom functions to add to the template parser
+    """
+    return {
+        "run_query": functools.partial(
+            _run_query,
+            dw=dw,
+            source_table=source_table,
+            running_sql=running_sql
+        ),
+        "cleanse_name": _cleanse_template_symbol,
+        "raise_exception": _raise_exception,
+        "itertools": {
+            "combinations": combinations,
+            "permutations": permutations,
+            "product": product
+        }
+    }

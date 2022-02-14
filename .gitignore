@@ -122,3 +122,4 @@ dmypy.json
 # IDEs
 .vscode
 .DS_Store
+.idea
