@@ -182,7 +182,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             sql: str,
             fqtn: str,
             table_type: str = 'VIEW',
-            acknowledge_overwrite: bool = False
+            overwrite: bool = False
         ):
         """
         Create a view or table from given SQL
@@ -195,20 +195,20 @@ class SnowflakeDataWarehouse(DataWarehouse):
             Name for the new table
         `table_type`: str:
             One of values: [view, table]
-        `acknowledge_overwrite`: bool
+        `overwrite`: bool
             pass True when this table name already exists in your DataWarehouse
             and you know you want to overwrite it
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_table_type(table_type)
         fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
-        if self._table_exists(fqtn) and not acknowledge_overwrite:
+        if self._table_exists(fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
-                   'pass in acknowledge_overwrite=True and run this function again'
+                   'pass in overwrite=True and run this function again'
             raise TableConflictException(msg)
         query = f'CREATE OR REPLACE {table_type} {fqtn} AS {sql}'
-        self.execute_query(query)
+        self.execute_query(query, acknowledge_risk=True, response='None')
         return fqtn
 
     def execute_query(
@@ -348,7 +348,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self,
             df: pd.DataFrame,
             fqtn: str,
-            acknowledge_overwrite: bool = False
+            overwrite: bool = False
         ):
         """
         Creates a table in Snowflake from a pandas Dataframe
@@ -359,16 +359,16 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualied table name (database.schema.table)
             Name for the new table
-        `acknowledge_overwrite`: bool
+        `overwrite`: bool
             pass True when this table name already exists in your DataWarehouse
             and you know you want to overwrite it
             WARNING: This will completely overwrite data in the existing table
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
-        if self._table_exists(fqtn) and not acknowledge_overwrite:
+        if self._table_exists(fqtn) and not overwrite:
             msg = f'A table named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
-                   'pass in acknowledge_overwrite=True and run this function again'
+                   'pass in overwrite=True and run this function again'
             raise TableConflictException(msg)
         try:
             return connector.pandas_tools.write_pandas(

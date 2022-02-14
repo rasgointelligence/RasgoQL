@@ -314,7 +314,7 @@ class SQLChain(TransformableClass):
             self,
             table_name: str = None,
             table_type: str = 'view',
-            acknowledge_overwrite: bool = False
+            overwrite: bool = False
         ):
         """
         Materializes this Transform Chain into SQL objects
@@ -327,7 +327,7 @@ class SQLChain(TransformableClass):
             self.sql(),
             table_name,
             table_type,
-            acknowledge_overwrite
+            overwrite
         )
         return Dataset(new_table, self._dw)
 

@@ -83,7 +83,7 @@ class DataWarehouse(ABC):
             sql: str,
             fqtn: str,
             table_type: str = 'VIEW',
-            acknowledge_overwrite: bool = False
+            overwrite: bool = False
         ):
         """
         Create a view or table from given SQL
@@ -152,7 +152,7 @@ class DataWarehouse(ABC):
             self,
             df: pd.DataFrame,
             fqtn: str,
-            acknowledge_overwrite: bool = False
+            overwrite: bool = False
         ):
         """
         Creates a table in this DataWarehouse from a pandas Dataframe
