@@ -9,15 +9,18 @@ from typing import List, Optional, Union
 import json
 import pandas as pd
 from snowflake import connector
+from snowflake.connector.pandas_tools import write_pandas
 
 from rasgoql.errors import (
     DWConnectionError, DWQueryError,
     ParameterException, SQLException,
     TableAccessError, TableConflictException
 )
-from rasgoql.primitives.enums import check_response_type, check_table_type
+from rasgoql.primitives.enums import (
+    check_response_type, check_table_type, check_write_method
+)
 from rasgoql.utils.creds import load_env, save_env
-from rasgoql.utils.df import cleanse_sql_dataframe
+from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
 from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
 
 from .base import DataWarehouse, DWCredentials
@@ -348,7 +351,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self,
             df: pd.DataFrame,
             fqtn: str,
-            overwrite: bool = False
+            method: str = None
         ):
         """
         Creates a table in Snowflake from a pandas Dataframe
@@ -359,24 +362,36 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualied table name (database.schema.table)
             Name for the new table
-        `overwrite`: bool
-            pass True when this table name already exists in your DataWarehouse
-            and you know you want to overwrite it
-            WARNING: This will completely overwrite data in the existing table
+        `method`: str
+            Values: [append, replace]
+            when this table already exists in your DataWarehouse,
+            pass append: to add dataframe rows to it
+            pass replace: to overwrite it with dataframe rows
+                WARNING: This will completely overwrite data in the existing table
         """
+        if method:
+            method = check_write_method(method)
         fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
-        if self._table_exists(fqtn) and not overwrite:
-            msg = f'A table named {fqtn} already exists. ' \
-                   'If you are sure you want to overwrite it, ' \
-                   'pass in overwrite=True and run this function again'
+        table_exists = self._table_exists(fqtn)
+        if table_exists and not method:
+            msg = f"A table named {fqtn} already exists. " \
+                   "If you are sure you want to write over it, pass in " \
+                   "method='append' or method='replace' and run this function again"
             raise TableConflictException(msg)
         try:
-            return connector.pandas_tools.write_pandas(
+            cleanse_sql_dataframe(df)
+            # If the table does not exist or we've received instruction to replace
+            # Issue a create or replace statement before we insert data
+            if not table_exists or method == 'REPLACE':
+                create_stmt = generate_dataframe_ddl(df, fqtn)
+                self.execute_query(create_stmt, response='None', acknowledge_risk=True)
+            success, chunks, rows, output = write_pandas(
                 conn=self.connection,
-                df=cleanse_sql_dataframe(df),
+                df=df,
                 table_name=fqtn,
                 quote_identifiers=False
             )
+            return success, chunks, rows, output
         except Exception as e:
             raise e
 
