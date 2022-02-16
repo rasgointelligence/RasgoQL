@@ -31,6 +31,19 @@ def load_yml(
         contents = yaml.load(yml_file, Loader=yaml.Loader)
     return contents
 
+def read_file(
+        file_path: str = None
+    ) -> str:
+    """
+    Reads the contents of a file
+    """
+    file_path = Path(file_path)
+    if not file_path.exists():
+        raise FileNotFoundError(f'File {file_path} does not exist')
+    with open(file_path, "r") as _file:
+        contents = _file.read()
+    return contents
+
 def save_env(
         creds: str,
         file_path: str = None,

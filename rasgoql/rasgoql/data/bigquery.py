@@ -1,10 +1,11 @@
 """
-Snowflake DataWarehouse classes
+BigQuery Data Warehouse classes
 """
+
 import logging
 import os
 import re
-from typing import List, Optional, Union
+from typing import List, Union
 
 import json
 import pandas as pd
@@ -20,48 +21,38 @@ from rasgoql.utils.df import cleanse_sql_dataframe
 from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
 
 from .base import DataWarehouse, DWCredentials
-from .imports import sf_connector
+from .imports import bq, gcp_exc, gcp_flow, gcp_svc
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class SnowflakeCredentials(DWCredentials):
+class BigQueryCredentials(DWCredentials):
     """
-    Snowflake Credentials
+    BigQuery Credentials
     """
-    dw_type = 'snowflake'
+    dw_type = 'bigquery'
 
     def __init__(
             self,
-            account: str,
-            user: str,
-            password: str,
-            role: str,
-            warehouse: str,
-            database: str,
-            schema: str
+            secret_type: str,
+            secret_filepath: str,
+            project: str = None,
+            dataset: str = None
         ):
-        if sf_connector is None:
-            raise ImportError('Missing a required python package to run Snowflake. '
-                              'Please download the Snowflake package by running: '
-                              '`pip install snowflake-connector-python[pandas]`')
-        self.account = account
-        self.user = user
-        self.password = password
-        self.role = role
-        self.warehouse = warehouse
-        self.database = database
-        self.schema = schema
+        self.secret_type = secret_type
+        self.secret_filepath = secret_filepath
+        self.project = project
+        self.dataset = dataset
 
     def __repr__(self) -> str:
         return json.dumps(
             {
-                "account": self.account,
-                "user": self.user,
-                "role": self.role,
-                "warehouse": self.warehouse,
+                "secret_type": self.secret_type,
+                "secret_filepath": self.secret_filepath,
+                "project": self.project,
+                "dataset": self.dataset
             }
         )
 
@@ -69,19 +60,16 @@ class SnowflakeCredentials(DWCredentials):
     def from_env(
             cls,
             filepath: str = None
-        ) -> 'SnowflakeCredentials':
+        ) -> 'BigQueryCredentials':
         """
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
         return cls(
-            os.getenv('snowflake_account'),
-            os.getenv('snowflake_user'),
-            os.getenv('snowflake_password'),
-            os.getenv('snowflake_role'),
-            os.getenv('snowflake_warehouse'),
-            os.getenv('snowflake_database'),
-            os.getenv('snowflake_schema')
+            os.getenv('bigquery_secret_type'),
+            os.getenv('bigquery_secret_filepath'),
+            os.getenv('bigquery_project'),
+            os.getenv('bigquery_dataset')
         )
 
     def to_dict(self) -> dict:
@@ -89,13 +77,10 @@ class SnowflakeCredentials(DWCredentials):
         Returns a dict of the credentials
         """
         return {
-            "account": self.account,
-            "user": self.user,
-            "password": self.password,
-            "role": self.role,
-            "warehouse": self.warehouse,
-            "database": self.database,
-            "schema": self.schema
+            "secret_type": self.secret_type,
+            "secret_filepath": self.secret_filepath,
+            "project": self.project,
+            "dataset": self.dataset
         }
 
     def to_env(
@@ -106,27 +91,29 @@ class SnowflakeCredentials(DWCredentials):
         """
         Saves credentials to a .env file on your machine
         """
-        creds = f'snowflake_account={self.account}\n'
-        creds += f'snowflake_user={self.user}\n'
-        creds += f'snowflake_password={self.password}\n'
-        creds += f'snowflake_role={self.role}\n'
-        creds += f'snowflake_warehouse={self.warehouse}\n'
-        creds += f'snowflake_database={self.database}\n'
-        creds += f'snowflake_schema={self.schema}\n'
+        creds = f'bigquery_secret_type={self.secret_type}\n'
+        creds += f'bigquery_secret_filepath={self.secret_filepath}\n'
+        creds += f'bigquery_project={self.project}\n'
+        creds += f'bigquery_dataset={self.dataset}\n'
         return save_env(creds, filepath, overwrite)
 
 
-class SnowflakeDataWarehouse(DataWarehouse):
+class BigQueryDataWarehouse(DataWarehouse):
     """
-    Snowflake DataWarehouse
+    Google BigQuery DataWarehouse
     """
-    dw_type = 'snowflake'
-    credentials_class = SnowflakeCredentials
+    dw_type = 'bigquery'
+    credentials_class = BigQueryCredentials
 
     def __init__(self):
+        if bq is None:
+            raise ImportError('Missing a required python package to run BigQuery. '
+                              'Please download the BigQuery package by running: '
+                              '`pip install google-cloud-bigquery[bqstorage,pandas]`')
+
         super().__init__()
         self.credentials: dict = None
-        self.connection: sf_connector.SnowflakeConnection = None
+        self.connection: bq.Client = None
         self.default_database = None
         self.default_schema = None
 
@@ -136,48 +123,45 @@ class SnowflakeDataWarehouse(DataWarehouse):
 
     def connect(
             self,
-            credentials: Union[dict, SnowflakeCredentials]
+            credentials: Union[dict, BigQueryCredentials]
         ):
         """
-        Connect to Snowflake
+        Connect to BigQuery
 
         Params:
         `credentials`: dict:
             dict (or DWCredentials class) holding the connection credentials
         """
-        if isinstance(credentials, SnowflakeCredentials):
+        if isinstance(credentials, BigQueryCredentials):
             credentials = credentials.to_dict()
 
-        # This allows you to track what queries were run by RasgoQL in your history tab
-        credentials.update({
-            "application": "rasgoql",
-            "session_parameters": {
-                "QUERY_TAG": "rasgoql"
-            }
-        })
         try:
-            self.credentials = credentials
-            self.default_database = credentials.get('database')
-            self.default_schema = credentials.get('schema')
-            self.connection = sf_connector.connect(**credentials)
-        except sf_connector.errors.DatabaseError as e:
-            raise DWConnectionError(e)
-        except sf_connector.errors.ForbiddenError as e:
-            raise DWConnectionError(e)
+            self.default_database = credentials.get('project')
+            self.default_schema = credentials.get('dataset')
+            if credentials.get('secret_type') == 'service':
+                self.credentials = self._get_service_credentials(
+                    credentials.get('secret_filepath')
+                )
+            else:
+                self.credentials = self._get_appflow_credentials(
+                    credentials.get('secret_filepath')
+                )
+            self.connection = bq.Client(
+                credentials=self.credentials,
+                project=self.default_database
+            )
         except Exception as e:
             raise e
 
     def close_connection(self):
         """
-        Close connection to Snowflake
+        Close connection to BigQuery
         """
         try:
             if self.connection:
                 self.connection.close()
             self.connection = None
-            logger.info("Connection to Snowflake closed")
-        except sf_connector.errors.DatabaseError as e:
-            raise DWConnectionError(e)
+            logger.info("Connection to BigQuery closed")
         except Exception as e:
             raise e
 
@@ -243,9 +227,9 @@ class SnowflakeDataWarehouse(DataWarehouse):
         logger.debug('>>>Executing SQL:')
         logger.debug(sql)
         if response == 'DICT':
-            return self._execute_dict_cursor(sql)
+            raise NotImplementedError("BigQuery doesn't do that")
         if response == 'DF':
-            return self._execute_df_cursor(sql)
+            return self._query_into_pandas(sql)
         return self._execute_string(sql, ignore_results=(response == 'NONE'))
 
     def get_ddl(
@@ -259,9 +243,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             Fully-qualified Table Name (database.schema.table)
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
-        sql = f"SELECT GET_DDL('TABLE', '{fqtn}') AS DDL"
-        query_response = self.execute_query(sql, response='dict')
-        return query_response[0]['DDL']
+        proj, ds, tbl = parse_fqtn(fqtn)
+        sql = f"SELECT DDL FROM {proj}.{ds}.INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='{tbl}'"
+        query_response = self.execute_query(sql)
+        return query_response[0]
 
     def get_object_details(
             self,
@@ -280,16 +265,20 @@ class SnowflakeDataWarehouse(DataWarehouse):
             object type: [table|view|unknown]
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
-        database, schema, table = parse_fqtn(fqtn)
-        sql = f"SHOW OBJECTS LIKE '{table}' IN {database}.{schema}"
-        result = self.execute_query(sql, response='dict')
-        obj_exists = len(result) > 0
+        obj_exists = False
         is_rasgo_obj = False
         obj_type = 'unknown'
-        if obj_exists:
-            is_rasgo_obj = (result[0].get('comment') == 'rasgoql')
-            obj_type = result[0].get('kind')
-        return obj_exists, is_rasgo_obj, obj_type
+        try:
+            table = self.connection.get_table(fqtn)
+            obj_exists = True
+            obj_type = table.table_type
+            if table.labels:
+                for label, value in table.labels.items():
+                    if value == 'rasgoql':
+                        is_rasgo_obj = True
+            return obj_exists, is_rasgo_obj, obj_type
+        except gcp_exc.NotFound:
+            return obj_exists, is_rasgo_obj, obj_type
 
     def get_schema(
             self,
@@ -321,16 +310,27 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `schema`: str:
             override schema
         """
-        select_clause = "SELECT TABLE_NAME, " \
-                        "TABLE_CATALOG||'.'||TABLE_SCHEMA||'.'||TABLE_NAME AS FQTN, " \
-                        "CASE TABLE_TYPE WHEN 'BASE TABLE' THEN 'TABLE' ELSE TABLE_TYPE END AS TABLE_TYPE, " \
-                        "ROW_COUNT, CREATED, LAST_ALTERED "
-        from_clause = " FROM INFORMATION_SCHEMA.TABLES "
-        if database:
-            from_clause = f" FROM {database.upper()}.INFORMATION_SCHEMA.TABLES "
-        where_clause = f" WHERE TABLE_SCHEMA = '{schema.upper()}'" if schema else ""
-        sql = select_clause + from_clause + where_clause
-        return self.execute_query(sql, response='df', acknowledge_risk=True)
+        project = database or self.default_database
+        dataset = schema or self.default_schema
+        namespace = f'{project}.{dataset}'
+        try:
+            tables = self.connection.list_tables(namespace)
+            project_ids = []
+            dataset_ids = []
+            table_ids = []
+            for tbl in tables:
+                project_ids.append(tbl.project)
+                dataset_ids.append(tbl.dataset_id)
+                table_ids.append(tbl.table_id)
+            return pd.DataFrame(
+                {
+                    "project": project_ids,
+                    "dataset": dataset_ids,
+                    "table": table_ids
+                }
+            )
+        except Exception as e:
+            raise e
 
     def preview(
             self,
@@ -375,14 +375,19 @@ class SnowflakeDataWarehouse(DataWarehouse):
                    'pass in overwrite=True and run this function again'
             raise TableConflictException(msg)
         try:
-            return sf_connector.pandas_tools.write_pandas(
-                conn=self.connection,
-                df=cleanse_sql_dataframe(df),
-                table_name=fqtn,
-                quote_identifiers=False
+            # TODO: Handle overwrite ?
+            job_config = bq.LoadJobConfig()
+            job_config.autodetect = True
+            job = self.connection.load_table_from_dataframe(
+                df,
+                fqtn,
+                job_config=job_config
             )
+            # Wait for the job to complete
+            # job.result()
         except Exception as e:
             raise e
+
 
     # ---------------------------
     # Core Data Warehouse helpers
@@ -399,24 +404,27 @@ class SnowflakeDataWarehouse(DataWarehouse):
             Fully-qualified table name (database.schema.table)
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
-        do_i_exist, _, _ = self.get_object_details(fqtn)
-        return do_i_exist
+        try:
+            self.connection.get_table(fqtn)
+            return True
+        except gcp_exc.NotFound:
+            return False
 
     def _validate_namespace(
             self,
             namespace: str
         ):
         """
-        Checks a namespace string for compliance with Snowflake format
+        Checks a namespace string for compliance with BigQuery format
 
         Params:
         `namespace`: str:
-            namespace (database.schema.table)
+            namespace (project.dataset)
         """
         # Does this match a 'string.string' pattern?
         if re.match(r'\w+\.\w+', namespace):
             return
-        raise ParameterException("Snowflake namespaces should be format: DATABASE.SCHEMA")
+        raise ParameterException("Bigquery namespaces should be format: PROJECT.DATASET")
 
     # --------------------------
     # Snowflake specific helpers
@@ -427,68 +435,56 @@ class SnowflakeDataWarehouse(DataWarehouse):
             ignore_results: bool = False
         ) -> List[tuple]:
         """
-        Execute a query string against the Data Warehouse connection and fetch all results
+        Execute a query string against the DataWarehouse connection and fetch all results
         """
-        query_returns = []
-        cursor = None
         try:
-            for cursor in self.connection.execute_string(query, return_cursors=(not ignore_results)):
-                for query_return in cursor:
-                    query_returns.append(query_return)
-            return query_returns
-        except sf_connector.errors.ProgrammingError as e:
-            raise DWQueryError(e)
+            query_job = self.connection.query(query)
+            if ignore_results:
+                return
+            return list(query_job.result())
         except Exception as e:
             raise e
-        finally:
-            if cursor:
-                cursor.close()
-
-    def _execute_dict_cursor(
+    
+    def _query_into_pandas(
             self,
             query: str
-        ) -> List[dict]:
+    ) -> pd.DataFrame:
         """
-        Run a query string and return results in a Snowflake DictCursor
-
-        PRO:
-        Results are callable by column name
-        for row in data:
-            row['COL_NAME']
-
-        CON:
-        Query string must be a single statement (only one ;) or Snowflake returns an error
+        Return results of query in a pandas DataFrame
         """
-        cursor = None
         try:
-            cursor = self.connection.cursor(sf_connector.DictCursor)
-            query_return = cursor.execute(query).fetchall()
-            return query_return
-        except sf_connector.errors.ProgrammingError as e:
-            raise DWQueryError(e)
+            return self.connection.query(query) \
+                .result() \
+                .to_dataframe()
         except Exception as e:
             raise e
-        finally:
-            if cursor:
-                cursor.close()
 
-    def _execute_df_cursor(
+    def _get_appflow_credentials(
             self,
-            query: str,
-            params: Optional[dict] = None
-        ) -> pd.DataFrame:
-        """
-        Run a query string and return results in a pandas DataFrame
-        """
-        cursor = None
-        try:
-            cursor = self.connection.cursor()
-            query_return = cursor.execute(query, params).fetch_pandas_all()
-            return query_return
-        except sf_connector.errors.ProgrammingError as e:
-            raise DWQueryError(e)
-        except Exception as e:
-            raise e
-        finally:
-            if cursor:
-                cursor.close()
+            filepath: str
+        ):
+        if gcp_flow is None:
+            raise ImportError('Missing a required python package to run BigQuery. '
+                              'Please download the BigQuery Auth package by running: '
+                              '`pip install google-auth-oauthlib`')
+        appflow = gcp_flow.InstalledAppFlow.from_client_secrets_file(
+            filepath,
+            scopes=["https://www.googleapis.com/auth/bigquery"]
+        )
+        appflow.run_local_server()
+        #appflow.run_console()
+        return appflow.credentials
+
+    def _get_service_credentials(
+            self,
+            filepath: str
+        ):
+        if gcp_svc is None:
+            raise ImportError('Missing a required python package to run BigQuery. '
+                              'Please download the BigQuery Auth package by running: '
+                              '`pip install google-auth-oauthlib`')
+        credentials = gcp_svc.Credentials.from_service_account_file(
+            filepath,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+        return credentials

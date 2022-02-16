@@ -12,7 +12,7 @@ class DWCredentials(ABC):
     Base DW Credentials
     """
     dw_type = None
-    
+
     @classmethod
     def from_dict(
             cls,
@@ -26,7 +26,7 @@ class DWCredentials(ABC):
     @classmethod
     def from_env(
             cls,
-            file_path: str = None
+            filepath: str = None
         ) -> 'DWCredentials':
         """
         Creates an instance of this Class from a .env file on your machine
@@ -41,7 +41,7 @@ class DWCredentials(ABC):
 
     def to_env(
             self,
-            file_path: str
+            filepath: str
         ):
         """
         Saves credentials to a .env file on your machine
@@ -54,7 +54,7 @@ class DataWarehouse(ABC):
     """
     dw_type = None
     credentials_class = DWCredentials
-    
+
     def __init__(self):
         self.credentials = None
         self.connection = None
