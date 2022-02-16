@@ -2,4 +2,4 @@ jinja2
 pandas
 pyyaml
 python-dotenv
-rasgotransforms
+rasgotransforms>=0.0.3
