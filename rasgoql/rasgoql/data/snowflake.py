@@ -48,7 +48,7 @@ class SnowflakeCredentials(DWCredentials):
         if sf_connector is None:
             raise ImportError('Missing a required python package to run Snowflake. '
                               'Please download the Snowflake package by running: '
-                              '`pip install snowflake-connector-python`')
+                              'pip install rasgoql[snowflake]')
         self.account = account
         self.user = user
         self.password = password
@@ -213,7 +213,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
                    'If you are sure you want to overwrite it, ' \
                    'pass in overwrite=True and run this function again'
             raise TableConflictException(msg)
-        query = f'CREATE OR REPLACE {table_type} {fqtn} AS {sql}'
+        query = f"CREATE OR REPLACE {table_type} {fqtn} COMMENT='rasgoql' AS {sql}"
         self.execute_query(query, acknowledge_risk=True, response='None')
         return fqtn
 
@@ -376,10 +376,6 @@ class SnowflakeDataWarehouse(DataWarehouse):
             pass replace: to overwrite it with dataframe rows
                 WARNING: This will completely overwrite data in the existing table
         """
-        if write_pandas is None:
-            raise ImportError('Missing a required python package to run Snowflake. '
-                              'Please download the Snowflake package by running: '
-                              '`pip install snowflake-connector-python[pandas]`')
         if method:
             method = check_write_method(method)
         fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
@@ -395,6 +391,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             # Issue a create or replace statement before we insert data
             if not table_exists or method == 'REPLACE':
                 create_stmt = generate_dataframe_ddl(df, fqtn)
+                create_stmt += " COMMENT='rasgoql' "
                 self.execute_query(create_stmt, response='None', acknowledge_risk=True)
             success, chunks, rows, output = write_pandas(
                 conn=self.connection,
@@ -459,8 +456,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
                     query_returns.append(query_return)
             return query_returns
         except sf_connector.errors.ProgrammingError as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise DWQueryError(e)
         except Exception as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise e
         finally:
             if cursor:
@@ -487,8 +486,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             query_return = cursor.execute(query).fetchall()
             return query_return
         except sf_connector.errors.ProgrammingError as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise DWQueryError(e)
         except Exception as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise e
         finally:
             if cursor:
@@ -508,8 +509,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             query_return = cursor.execute(query, params).fetch_pandas_all()
             return query_return
         except sf_connector.errors.ProgrammingError as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise DWQueryError(e)
         except Exception as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise e
         finally:
             if cursor:

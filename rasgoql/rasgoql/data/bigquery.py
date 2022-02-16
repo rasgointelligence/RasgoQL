@@ -111,13 +111,13 @@ class BigQueryDataWarehouse(DataWarehouse):
         if bq is None:
             raise ImportError('Missing a required python package to run BigQuery. '
                               'Please download the BigQuery package by running: '
-                              '`pip install google-cloud-bigquery`')
+                              'pip install rasgoql[bigquery]')
 
         super().__init__()
         self.credentials: dict = None
         self.connection: bq.Client = None
-        self.default_database = None
-        self.default_schema = None
+        self.default_project = None
+        self.default_dataset = None
 
     # ---------------------------
     # Core Data Warehouse methods
@@ -138,8 +138,8 @@ class BigQueryDataWarehouse(DataWarehouse):
             credentials = credentials.to_dict()
 
         try:
-            self.default_database = credentials.get('project')
-            self.default_schema = credentials.get('dataset')
+            self.default_project = credentials.get('project')
+            self.default_dataset = credentials.get('dataset')
             if credentials.get('secret_type') == 'service':
                 self.credentials = self._get_service_credentials(
                     credentials.get('secret_filepath')
@@ -150,7 +150,7 @@ class BigQueryDataWarehouse(DataWarehouse):
                 )
             self.connection = bq.Client(
                 credentials=self.credentials,
-                project=self.default_database
+                project=self.default_project
             )
         except Exception as e:
             raise e
@@ -191,7 +191,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_table_type(table_type)
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
         if self._table_exists(fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
@@ -244,7 +244,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
         proj, ds, tbl = parse_fqtn(fqtn)
         sql = f"SELECT DDL FROM {proj}.{ds}.INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='{tbl}'"
         query_response = self.execute_query(sql)
@@ -266,7 +266,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             is rasgo object: bool
             object type: [table|view|unknown]
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
         obj_exists = False
         is_rasgo_obj = False
         obj_type = 'unknown'
@@ -293,7 +293,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
         try:
             table = self.connection.get_table(fqtn)
             return table.schema
@@ -314,22 +314,32 @@ class BigQueryDataWarehouse(DataWarehouse):
         `schema`: str:
             override schema
         """
-        project = database or self.default_database
-        dataset = schema or self.default_schema
+        project = database or self.default_project
+        dataset = schema or self.default_dataset
         namespace = f'{project}.{dataset}'
         try:
             tables = self.connection.list_tables(namespace)
             records = []
-            columns = ['TABLE_NAME', 'FQTN', 'TABLE_TYPE', 'ROW_COUNT', 'CREATED', 'LAST_ALTERED']
+            columns = [
+                'TABLE_NAME',
+                'FQTN',
+                'TABLE_TYPE',
+                'ROW_COUNT',
+                'CREATED',
+                'LAST_ALTERED'
+            ]
             for tbl in tables:
+                # TODO: This may be inefficient - do we need to return all this data?
                 table = self.connection.get_table(tbl)
                 records.append(
-                    (table.table_id, 
-                    f'{table.project}.{table.dataset_id}.{table.table_id}',
-                    table.table_type,
-                    table.num_rows,
-                    table.created,
-                    table.modified)
+                    (
+                        table.table_id,
+                        f'{table.project}.{table.dataset_id}.{table.table_id}',
+                        table.table_type,
+                        table.num_rows,
+                        table.created,
+                        table.modified
+                    )
                 )
             return pd.DataFrame(
                 records,
@@ -353,8 +363,8 @@ class BigQueryDataWarehouse(DataWarehouse):
             Records to return
         """
         return self.execute_query(
-            f'{sql} LIMIT {limit}', 
-            response='df', 
+            f'{sql} LIMIT {limit}',
+            response='df',
             acknowledge_risk=True
         )
 
@@ -380,7 +390,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         """
         if method:
             method = check_write_method(method)
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
         table_exists = self._table_exists(fqtn)
         if table_exists and not method:
             msg = f"A table named {fqtn} already exists. " \
@@ -391,7 +401,8 @@ class BigQueryDataWarehouse(DataWarehouse):
             cleanse_sql_dataframe(df)
             # TODO: Test write_disposition to handle overwrite vs append
             job_config = bq.LoadJobConfig(
-                write_disposition='WRITE_TRUNCATE' if method == 'REPLACE' else None
+                write_disposition='WRITE_TRUNCATE' if method == 'REPLACE' else None,
+                default_dataset=f'{self.default_project}.{self.default_dataset}'
             )
             job = self.connection.load_table_from_dataframe(
                 df,
@@ -399,7 +410,7 @@ class BigQueryDataWarehouse(DataWarehouse):
                 job_config=job_config
             )
             # Wait for the job to complete
-            # job.result()
+            #job.result()
         except Exception as e:
             raise e
 
@@ -418,7 +429,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
         try:
             self.connection.get_table(fqtn)
             return True
@@ -444,6 +455,12 @@ class BigQueryDataWarehouse(DataWarehouse):
     # --------------------------
     # BigQuery specific helpers
     # --------------------------
+    @property
+    def _default_job_config(self) -> bq.QueryJobConfig:
+        return bq.QueryJobConfig(
+            default_dataset=f'{self.default_project}.{self.default_dataset}'
+            )
+
     def _execute_string(
             self,
             query: str,
@@ -453,13 +470,17 @@ class BigQueryDataWarehouse(DataWarehouse):
         Execute a query string against the DataWarehouse connection and fetch all results
         """
         try:
-            query_job = self.connection.query(query)
+            query_job = self.connection.query(
+                query,
+                job_config=self._default_job_config
+            )
             if ignore_results:
                 return
             return list(query_job.result())
         except Exception as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise e
-    
+
     def _query_into_pandas(
             self,
             query: str
@@ -468,20 +489,20 @@ class BigQueryDataWarehouse(DataWarehouse):
         Return results of query in a pandas DataFrame
         """
         try:
-            return self.connection.query(query) \
+            return self.connection.query(
+                query,
+                job_config=self._default_job_config
+                ) \
                 .result() \
                 .to_dataframe()
         except Exception as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise e
 
     def _get_appflow_credentials(
             self,
             filepath: str
         ):
-        if gcp_flow is None:
-            raise ImportError('Missing a required python package to run BigQuery. '
-                              'Please download the BigQuery Auth package by running: '
-                              '`pip install google-auth-oauthlib`')
         appflow = gcp_flow.InstalledAppFlow.from_client_secrets_file(
             filepath,
             scopes=["https://www.googleapis.com/auth/bigquery"]
@@ -494,10 +515,6 @@ class BigQueryDataWarehouse(DataWarehouse):
             self,
             filepath: str
         ):
-        if gcp_svc is None:
-            raise ImportError('Missing a required python package to run BigQuery. '
-                              'Please download the BigQuery Auth package by running: '
-                              '`pip install google-auth-oauthlib`')
         credentials = gcp_svc.Credentials.from_service_account_file(
             filepath,
             scopes=["https://www.googleapis.com/auth/cloud-platform"]
