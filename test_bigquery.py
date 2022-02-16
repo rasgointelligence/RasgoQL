@@ -9,6 +9,12 @@ print('Connected!')
 tables = rql.list_tables()
 print(tables.head())
 
+transforms = rql.list_transforms()
+print(transforms)
+
+transform = rql.define_transform('bin')
+print(transform)
+
 results = rql.query("Select 'hello cupcake!'")
 print(results)
 

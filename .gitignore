@@ -101,7 +101,6 @@ ENV/
 env.bak/
 venv.bak/
 client_secrets.json
-service_account.json
 
 # Spyder project settings
 .spyderproject
