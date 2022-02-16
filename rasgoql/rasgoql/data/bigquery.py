@@ -15,7 +15,9 @@ from rasgoql.errors import (
     ParameterException, SQLException,
     TableAccessError, TableConflictException
 )
-from rasgoql.primitives.enums import check_response_type, check_table_type
+from rasgoql.primitives.enums import (
+    check_response_type, check_table_type, check_write_method
+)
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe
 from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
@@ -206,7 +208,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             acknowledge_risk: bool = False
         ):
         """
-        Run a query against Snowflake and return all results
+        Run a query against BigQuery and return all results
 
         `sql`: str:
             query text to execute
@@ -253,7 +255,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             fqtn: str
         ) -> tuple:
         """
-        Return details of a table or view in Snowflake
+        Return details of a table or view in BigQuery
 
         Params:
         `fqtn`: str:
@@ -292,9 +294,11 @@ class BigQueryDataWarehouse(DataWarehouse):
             Fully-qualified table name (database.schema.table)
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
-        sql = f"DESC TABLE {fqtn}"
-        query_response = self.execute_query(sql, response='dict')
-        return query_response
+        try:
+            table = self.connection.get_table(fqtn)
+            return table.schema
+        except gcp_exc.NotFound:
+            raise TableAccessError(f'Table {fqtn} does not exist')
 
     def list_tables(
             self,
@@ -315,19 +319,21 @@ class BigQueryDataWarehouse(DataWarehouse):
         namespace = f'{project}.{dataset}'
         try:
             tables = self.connection.list_tables(namespace)
-            project_ids = []
-            dataset_ids = []
-            table_ids = []
+            records = []
+            columns = ['TABLE_NAME', 'FQTN', 'TABLE_TYPE', 'ROW_COUNT', 'CREATED', 'LAST_ALTERED']
             for tbl in tables:
-                project_ids.append(tbl.project)
-                dataset_ids.append(tbl.dataset_id)
-                table_ids.append(tbl.table_id)
+                table = self.connection.get_table(tbl)
+                records.append(
+                    (table.table_id, 
+                    f'{table.project}.{table.dataset_id}.{table.table_id}',
+                    table.table_type,
+                    table.num_rows,
+                    table.created,
+                    table.modified)
+                )
             return pd.DataFrame(
-                {
-                    "project": project_ids,
-                    "dataset": dataset_ids,
-                    "table": table_ids
-                }
+                records,
+                columns=columns
             )
         except Exception as e:
             raise e
@@ -346,16 +352,20 @@ class BigQueryDataWarehouse(DataWarehouse):
         `limit`: int:
             Records to return
         """
-        return self.execute_query(f'{sql} LIMIT {limit}', response='df', acknowledge_risk=True)
+        return self.execute_query(
+            f'{sql} LIMIT {limit}', 
+            response='df', 
+            acknowledge_risk=True
+        )
 
     def save_df(
             self,
             df: pd.DataFrame,
             fqtn: str,
-            overwrite: bool = False
+            method: str = None
         ):
         """
-        Creates a table in Snowflake from a pandas Dataframe
+        Creates a table in BigQuery from a pandas Dataframe
 
         Params:
         `df`: pandas DataFrame:
@@ -368,16 +378,21 @@ class BigQueryDataWarehouse(DataWarehouse):
             and you know you want to overwrite it
             WARNING: This will completely overwrite data in the existing table
         """
+        if method:
+            method = check_write_method(method)
         fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
-        if self._table_exists(fqtn) and not overwrite:
-            msg = f'A table named {fqtn} already exists. ' \
-                   'If you are sure you want to overwrite it, ' \
-                   'pass in overwrite=True and run this function again'
+        table_exists = self._table_exists(fqtn)
+        if table_exists and not method:
+            msg = f"A table named {fqtn} already exists. " \
+                   "If you are sure you want to write over it, pass in " \
+                   "method='append' or method='replace' and run this function again"
             raise TableConflictException(msg)
         try:
-            # TODO: Handle overwrite ?
-            job_config = bq.LoadJobConfig()
-            job_config.autodetect = True
+            cleanse_sql_dataframe(df)
+            # TODO: Test write_disposition to handle overwrite vs append
+            job_config = bq.LoadJobConfig(
+                write_disposition='WRITE_TRUNCATE' if method == 'REPLACE' else None
+            )
             job = self.connection.load_table_from_dataframe(
                 df,
                 fqtn,
@@ -427,7 +442,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         raise ParameterException("Bigquery namespaces should be format: PROJECT.DATASET")
 
     # --------------------------
-    # Snowflake specific helpers
+    # BigQuery specific helpers
     # --------------------------
     def _execute_string(
             self,

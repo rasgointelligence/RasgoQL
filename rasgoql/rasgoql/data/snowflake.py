@@ -348,7 +348,11 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `limit`: int:
             Records to return
         """
-        return self.execute_query(f'{sql} LIMIT {limit}', response='df', acknowledge_risk=True)
+        return self.execute_query(
+            f'{sql} LIMIT {limit}',
+            response='df',
+            acknowledge_risk=True
+        )
 
     def save_df(
             self,
@@ -429,7 +433,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
 
         Params:
         `namespace`: str:
-            namespace (database.schema.table)
+            namespace (database.schema)
         """
         # Does this match a 'string.string' pattern?
         if re.match(r'\w+\.\w+', namespace):
