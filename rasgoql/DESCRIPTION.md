@@ -1,5 +1,5 @@
 <p align="left">
-  <img width="90%" href="https://rasgoml.com" target="_blank" src="https://gblobscdn.gitbook.com/assets%2F-MJDKltt3A57jhixTfmu%2F-MJZZeY9BhUCtGPyz6bm%2F-MJZiXHTjQnyVWs6YGPc%2Frasgo-logo-full-color-rgb%20(4).png?alt=media&token=64e56b18-4282-4140-836b-e19c8e2787dc" />
+  <img width="90%" href="https://rasgoml.com" target="_blank" src="https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/Rasgo_Logo_WBackground.png" />
 </p>
 
 # RasgoQL
