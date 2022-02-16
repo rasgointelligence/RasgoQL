@@ -1,7 +1,7 @@
 """
 Base DataWarehouse classes
 """
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Union
 
 import pandas as pd
@@ -41,7 +41,8 @@ class DWCredentials(ABC):
 
     def to_env(
             self,
-            filepath: str
+            filepath: str,
+            overwrite: bool
         ):
         """
         Saves credentials to a .env file on your machine
@@ -152,7 +153,7 @@ class DataWarehouse(ABC):
             self,
             df: pd.DataFrame,
             fqtn: str,
-            overwrite: bool = False
+            method: str = None
         ):
         """
         Creates a table in this DataWarehouse from a pandas Dataframe

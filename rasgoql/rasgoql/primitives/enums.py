@@ -81,7 +81,7 @@ class RenderMethod(Enum):
     VIEW = 'view'
     VIEWS = 'views'
 
-RENDER_METHODS = _wrap_in_quotes("', '".join([e.value for e in TableType]))
+RENDER_METHODS = _wrap_in_quotes("', '".join([e.value for e in RenderMethod]))
 
 def check_render_method(input_value: str):
     """
@@ -113,4 +113,25 @@ def check_response_type(input_value: str):
         ResponseType[input_value.upper()]
     except Exception:
         raise ParameterException(f'response parameter accepts values: {RESPONSE_TYPES}')
+    return input_value.upper()
+
+
+class WriteMethod(Enum):
+    """
+    Ways to write data
+    """
+    APPEND = 'append'
+    REPLACE = 'replace'
+    UPSERT = 'upsert'
+
+WRITE_METHODS = _wrap_in_quotes("', '".join([e.value for e in WriteMethod]))
+
+def check_write_method(input_value: str):
+    """
+    Warn if an incorrect write method is passed
+    """
+    try:
+        WriteMethod[input_value.upper()]
+    except Exception:
+        raise ParameterException(f'method parameter accepts values: {WRITE_METHODS}')
     return input_value.upper()

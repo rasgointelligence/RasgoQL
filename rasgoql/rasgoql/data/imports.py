@@ -8,6 +8,11 @@ except ImportError:
     sf_connector = None
 
 try:
+    from snowflake.connector.pandas_tools import write_pandas
+except ImportError:
+    write_pandas = None
+
+try:
     from google.cloud import bigquery as bq
 except ImportError:
     bq = None

@@ -109,7 +109,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         if bq is None:
             raise ImportError('Missing a required python package to run BigQuery. '
                               'Please download the BigQuery package by running: '
-                              '`pip install google-cloud-bigquery[bqstorage,pandas]`')
+                              '`pip install google-cloud-bigquery`')
 
         super().__init__()
         self.credentials: dict = None
