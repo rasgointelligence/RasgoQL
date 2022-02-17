@@ -10,7 +10,7 @@ _here = os.path.abspath(os.path.dirname(__file__))
 
 version = {}
 with open(os.path.join(_here, 'rasgoql', 'version.py')) as f:
-    exec(f.read(), version)
+    version = f.read()
 
 with open(os.path.join(_here, 'DESCRIPTION.md'), encoding='utf-8') as f:
     long_description = f.read()
@@ -19,11 +19,11 @@ with open(os.path.join(_here, 'requirements.txt'), encoding='utf-8') as f:
     req_lines = f.read()
     requirements = req_lines.splitlines()
 
-with open(os.path.join(_here, 'requirements_snowflake.txt'), encoding='utf-8') as f:
+with open(os.path.join(_here, 'requirements-snowflake.txt'), encoding='utf-8') as f:
     req_lines = f.read()
     sf_requirements = req_lines.splitlines()
 
-with open(os.path.join(_here, 'requirements_bigquery.txt'), encoding='utf-8') as f:
+with open(os.path.join(_here, 'requirements-bigquery.txt'), encoding='utf-8') as f:
     req_lines = f.read()
     bq_requirements = req_lines.splitlines()
 
