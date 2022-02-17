@@ -9,20 +9,19 @@ from typing import List, Optional, Union
 import json
 import pandas as pd
 
+from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
     DWConnectionError, DWQueryError,
-    ParameterException, SQLException,
-    TableAccessError, TableConflictException
+    PackageDependencyWarning, ParameterException,
+    SQLException, TableConflictException
 )
+from rasgoql.imports import sf_connector, write_pandas
 from rasgoql.primitives.enums import (
     check_response_type, check_table_type, check_write_method
 )
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
 from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
-
-from rasgoql.data.base import DataWarehouse, DWCredentials
-from rasgoql.data.imports import sf_connector, write_pandas
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -46,9 +45,10 @@ class SnowflakeCredentials(DWCredentials):
             schema: str
         ):
         if sf_connector is None:
-            raise ImportError('Missing a required python package to run Snowflake. '
-                              'Please download the Snowflake package by running: '
-                              'pip install rasgoql[snowflake]')
+            raise PackageDependencyWarning(
+                'Missing a required python package to run Snowflake. '
+                'Please download the Snowflake package by running: '
+                'pip install rasgoql[snowflake]')
         self.account = account
         self.user = user
         self.password = password
@@ -109,12 +109,12 @@ class SnowflakeCredentials(DWCredentials):
         Saves credentials to a .env file on your machine
         """
         creds = (f'snowflake_account={self.account}\n'
-            f'snowflake_user={self.user}\n'
-            f'snowflake_password={self.password}\n'
-            f'snowflake_role={self.role}\n'
-            f'snowflake_warehouse={self.warehouse}\n'
-            f'snowflake_database={self.database}\n'
-            f'snowflake_schema={self.schema}\n')
+                 f'snowflake_user={self.user}\n'
+                 f'snowflake_password={self.password}\n'
+                 f'snowflake_role={self.role}\n'
+                 f'snowflake_warehouse={self.warehouse}\n'
+                 f'snowflake_database={self.database}\n'
+                 f'snowflake_schema={self.schema}\n')
         return save_env(creds, filepath, overwrite)
 
 

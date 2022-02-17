@@ -22,7 +22,7 @@ def cleanse_sql_name(
     """
     Converts a string to a SQL compliant value
     """
-    return name.replace(" ", "_").replace("-", "_").replace('"', '').replace(".","_").upper()
+    return name.replace(" ", "_").replace("-", "_").replace('"', '').replace(".", "_").upper()
 
 def is_scary_sql(
         sql: str
@@ -45,10 +45,10 @@ def is_restricted_sql(
     return False
 
 def magic_fqtn_handler(
-    possible_fqtn: str,
-    default_database: str,
-    default_schema: str
-) -> str:
+        possible_fqtn: str,
+        default_database: str,
+        default_schema: str
+    ) -> str:
     """
     Makes all of your wildest dreams come true... well not *that* one
     """
@@ -86,6 +86,9 @@ def parse_fqtn(
     return database, schema, table
 
 def random_table_name() -> str:
+    """
+    Returns a random unique table name prefixed with "RQL"
+    """
     return 'RQL_'+''.join(random.choice(string.ascii_uppercase) for x in range(10))
 
 def validate_fqtn(
@@ -127,14 +130,14 @@ SQL_INJECTION_KEYWORDS = [
 ]
 
 SQL_RESTRICTED_KEYWORDS = [
-    'ACCOUNT','ALL','ALTER','AND','ANY','AS','BETWEEN','BY',
-    'CASE','CAST','CHECK','COLUMN','CONNECT','CONNECTION','CONSTRAINT',
-    'CREATE','CROSS','CURRENT','CURRENT_DATE','CURRENT_TIME','CURRENT_TIMESTAMP',
-    'CURRENT_USER','DATABASE','DELETE','DISTINCT','DROP','ELSE','EXISTS','FALSE',
-    'FOLLOWING','FOR','FROM','FULL','GRANT','GROUP','GSCLUSTER','HAVING','ILIKE',
-    'IN','INCREMENT','INNER','INSERT','INTERSECT','INTO','IS','ISSUE','JOIN','LATERAL',
-    'LEFT','LIKE','LOCALTIME','LOCALTIMESTAMP','MINUS','NATURAL','NOT','NULL','OF','ON',
-    'OR','ORDER','ORGANIZATION','QUALIFY','REGEXP','REVOKE','RIGHT','RLIKE','ROW','ROWS',
-    'SAMPLE','SCHEMA','SELECT','SET','SOME','START','TABLE','TABLESAMPLE','THEN','TO','TRIGGER',
-    'TRUE','TRY_CAST','UNION','UNIQUE','UPDATE','USING','VALUES','VIEW','WHEN','WHENEVER','WHERE','WITH'
+    'ACCOUNT', 'ALL', 'ALTER', 'AND', 'ANY', 'AS', 'BETWEEN', 'BY',
+    'CASE', 'CAST', 'CHECK', 'COLUMN', 'CONNECT', 'CONNECTION', 'CONSTRAINT',
+    'CREATE', 'CROSS', 'CURRENT', 'CURRENT_DATE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP',
+    'CURRENT_USER', 'DATABASE', 'DELETE', 'DISTINCT', 'DROP', 'ELSE', 'EXISTS', 'FALSE',
+    'FOLLOWING', 'FOR', 'FROM', 'FULL', 'GRANT', 'GROUP', 'GSCLUSTER', 'HAVING', 'ILIKE',
+    'IN', 'INCREMENT', 'INNER', 'INSERT', 'INTERSECT', 'INTO', 'IS', 'ISSUE', 'JOIN', 'LATERAL',
+    'LEFT', 'LIKE', 'LOCALTIME', 'LOCALTIMESTAMP', 'MINUS', 'NATURAL', 'NOT', 'NULL', 'OF', 'ON',
+    'OR', 'ORDER', 'ORGANIZATION', 'QUALIFY', 'REGEXP', 'REVOKE', 'RIGHT', 'RLIKE', 'ROW', 'ROWS',
+    'SAMPLE', 'SCHEMA', 'SELECT', 'SET', 'SOME', 'START', 'TABLE', 'TABLESAMPLE', 'THEN', 'TO', 'TRIGGER',
+    'TRUE', 'TRY_CAST', 'UNION', 'UNIQUE', 'UPDATE', 'USING', 'VALUES', 'VIEW', 'WHEN', 'WHENEVER', 'WHERE', 'WITH'
 ]
