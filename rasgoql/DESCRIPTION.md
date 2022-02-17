@@ -51,7 +51,7 @@ https://docs.rasgoql.com
 - v1.0.0 (Feb 22, 2022)
    - beta release
 
-See [Changelog](https://github.com/rasgointelligence/RasgoQL/blob/main/CHANGELOG.md) for full minor version release notes
+See [Changelog](https://github.com/rasgointelligence/RasgoQL/blob/main/rasgoql/CHANGELOG.md) for full minor version release notes
 
 ## About Us
 RasgoQL is maintained by *[Rasgo](https://rasgoml.com)*. Rasgo's enterprise feature store integrates with your data warehouse to help users build features faster, collaborate with team members, and serve features to models in production.

@@ -22,8 +22,8 @@ from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe
 from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
 
-from .base import DataWarehouse, DWCredentials
-from .imports import bq, gcp_exc, gcp_flow, gcp_svc
+from rasgoql.data.base import DataWarehouse, DWCredentials
+from rasgoql.data.imports import bq, gcp_exc, gcp_flow, gcp_svc
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -93,10 +93,10 @@ class BigQueryCredentials(DWCredentials):
         """
         Saves credentials to a .env file on your machine
         """
-        creds = f'bigquery_secret_type={self.secret_type}\n'
-        creds += f'bigquery_secret_filepath={self.secret_filepath}\n'
-        creds += f'bigquery_project={self.project}\n'
-        creds += f'bigquery_dataset={self.dataset}\n'
+        creds = (f'bigquery_secret_type={self.secret_type}\n'
+            f'bigquery_secret_filepath={self.secret_filepath}\n'
+            f'bigquery_project={self.project}\n'
+            f'bigquery_dataset={self.dataset}\n')
         return save_env(creds, filepath, overwrite)
 
 

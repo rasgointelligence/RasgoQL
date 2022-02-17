@@ -7,7 +7,7 @@ from rasgoql.errors import ParameterException
 
 
 def _wrap_in_quotes(string: str) -> str:
-    return "'"+string+"'"
+    return f"'{string}'"
 
 class DWType(Enum):
     """

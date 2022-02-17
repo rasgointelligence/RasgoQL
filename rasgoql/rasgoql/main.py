@@ -6,9 +6,9 @@ from typing import List, Type
 import pandas as pd
 import rasgotransforms as rtx
 
-from .data import DataWarehouse
-from .primitives import Dataset, SQLChain, TransformTemplate
-from .version import __version__
+from rasgoql.data import DataWarehouse
+from rasgoql.primitives import Dataset, SQLChain, TransformTemplate
+from rasgoql.version import __version__
 
 class RasgoQL:
     """
