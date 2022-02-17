@@ -12,7 +12,7 @@ RasgoQL is a Python package that enables you to easily query and transform data 
 
 You can quickly create new features, sample data, apply complex aggregates... all without having to write SQL!
 
-Choose from our library of predefined transformations or make your own to streamline the process of extracting, transforming and loading large amounts of data.
+Choose from our library of predefined transformations or make your own to streamline the feature engineering process.
 
 ![RasgoQL 30-second demo](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/rasgo_intro2.gif)
 
