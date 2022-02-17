@@ -3,14 +3,14 @@
 
 First off, thanks for taking the time to contribute! RasgoQL thrives off of contributions and input from users, so we're glad you're here.
 
-All types of contributions are encouraged and valued. See the [Table of Contents](#table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and smooth out the experience for all involved. The community looks forward to your contributions. 🎉 
+All types of contributions are encouraged and valued. See the [Table of Contents](#table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and smooth out the experience for all involved. The community looks forward to your contributions. 🎉
 
 > And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which we would also be very happy about:
 >
 > * Star the RasgoQL Repo
 > * Tweet about it [#RasgoQL @RasgoQL](TODO)
 > * Tell all your friends/colleagues.
-> * Refer to this repo in your README.md 
+> * Refer to this repo in your README.md
 
 <!-- omit in toc -->
 ## Table of Contents
@@ -41,12 +41,12 @@ to <opensource@rasgoml.com>.
 
 Before you ask a question, it is best to search for existing [Issues](/issues) that might help you. If you don't find the a similar issue then we recommend the following:
 
-- Joining our [slack server](#TODO) and asking your question there. 
+- Joining our [slack server](#TODO) and asking your question there.
 - Open a new [Issue](/issues/new).
 	- Follow the instuctions provide as much context as you can about what you're running into.
 	- Provide project and platform versions (nodejs, npm, etc), depending on what seems relevant.
 
-Each issue will be reviewed and then triaged by one of the maintainers. 
+Each issue will be reviewed and then triaged by one of the maintainers.
 
 ## I Want To Contribute
 
@@ -57,11 +57,11 @@ You also need to sign our [CLA agreement](#TODO)
 
 ### Setting up your dev environment
 
-TODO 
+TODO
 
-### Suggesting New Transforms 
+### Suggesting New Transforms
 
-Transform suggestions are tracked as [GitHub issues](/issues). This section guides you through submitting an issue requesting a new transform be added to the RasgoQL library, **including completely new functionality and minor improvements to existing transforms**. Following these guidelines will help maintainers and the community to understand your suggestion and find related suggestions. 
+Transform suggestions are tracked as [GitHub issues](/issues). This section guides you through submitting an issue requesting a new transform be added to the RasgoQL library, **including completely new functionality and minor improvements to existing transforms**. Following these guidelines will help maintainers and the community to understand your suggestion and find related suggestions.
 
 <!-- omit in toc -->
 #### Before Submitting an request for a new transform
@@ -104,7 +104,7 @@ A good bug report includes all the evidence as if you were taking this issue to 
 
 We use GitHub issues to track bugs and errors. If you run into an issue with the project:
 
-- Open an [Issue](/issues/new). 
+- Open an [Issue](/issues/new).
 - Explain the behavior you would expect and the actual behavior.
 - Please provide as much context as possible and describe the *reproduction steps* that someone else can follow to recreate the issue on their own. This usually includes your code. For good bug reports you should isolate the problem and create a reduced test case.
 - Provide the information you collected in the previous section.
@@ -132,13 +132,13 @@ This section guides you through submitting an enhancement suggestion for core Ra
 1. Fork the repository and create a new branch that includes a short description of your change (ie 'bigquery-support')
 2. Create a branch for your edits.
 3. Reference any relevant issues or supporting documentation in your PR (for example, “Closes #37”)
-2. Make sure to include all your changes in a single commit 
-4. Submit a pull request 
+2. Make sure to include all your changes in a single commit
+4. Submit a pull request
 
-The maintainers will then review the PR and notify you next steps in the PR request. 
+The maintainers will then review the PR and notify you next steps in the PR request.
 
 ### Improving The Documentation
-#TODO 
+#TODO
 
 ## Join The Project Team
 email <opensource@rasgoml.com>

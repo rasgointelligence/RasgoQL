@@ -1,9 +1,10 @@
-jinja2
-pandas
-pyyaml
-python-dotenv
-rasgotransforms>=0.0.2
 google-auth-oauthlib
 google-cloud-bigquery
+jinja2
+pandas
+pre-commit
+python-dotenv
+pyyaml
+rasgotransforms>=0.0.2
 snowflake-connector-python
 snowflake-connector-python[pandas]

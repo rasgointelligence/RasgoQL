@@ -264,7 +264,7 @@ class SQLChain(TransformableClass):
     def fqtn(self) -> str:
         """
         Returns the fully qualified table name the transform would create if saved
-        
+
         NOTE: This property will be dynamic until the Chain is finally saved
         """
         return self.output_table.fqtn
