@@ -6,9 +6,9 @@ from typing import List, Type
 import pandas as pd
 import rasgotransforms as rtx
 
-from .data import DataWarehouse
-from .primitives import Dataset, SQLChain, TransformTemplate
-from .version import __version__
+from rasgoql.data import DataWarehouse
+from rasgoql.primitives import Dataset, SQLChain, TransformTemplate
+from rasgoql.version import __version__
 
 class RasgoQL:
     """
@@ -56,7 +56,10 @@ class RasgoQL:
         """
         return Dataset(fqtn, self._dw)
 
-    def define_transform(self, name: str) -> str:
+    def define_transform(
+            self,
+            name: str
+        ) -> str:
         """
         Returns full details of a RasgoQL transform
         """

@@ -1,1 +1,1 @@
-from .transforms import Dataset, SQLChain, TransformTemplate
+from rasgoql.primitives.transforms import Dataset, SQLChain, TransformTemplate

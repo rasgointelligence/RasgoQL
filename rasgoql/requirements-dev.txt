@@ -1,0 +1,10 @@
+google-auth-oauthlib
+google-cloud-bigquery
+jinja2
+pandas
+pre-commit
+python-dotenv
+pyyaml
+rasgotransforms==1.0.0a1
+snowflake-connector-python
+snowflake-connector-python[pandas]

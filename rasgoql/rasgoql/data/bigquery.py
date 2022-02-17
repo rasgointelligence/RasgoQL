@@ -10,20 +10,20 @@ from typing import List, Union
 import json
 import pandas as pd
 
+from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
     DWConnectionError, DWQueryError,
-    ParameterException, SQLException,
-    TableAccessError, TableConflictException
+    ParameterException, PackageDependencyWarning,
+    SQLException, TableAccessError, TableConflictException
 )
+from rasgoql.imports import bq, gcp_exc, gcp_flow, gcp_svc
 from rasgoql.primitives.enums import (
-    check_response_type, check_table_type, check_write_method
+    check_bq_creds_type, check_response_type,
+    check_table_type, check_write_method
 )
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe
 from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
-
-from .base import DataWarehouse, DWCredentials
-from .imports import bq, gcp_exc, gcp_flow, gcp_svc
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class BigQueryCredentials(DWCredentials):
             project: str = None,
             dataset: str = None
         ):
-        self.secret_type = secret_type
+        self.secret_type = check_bq_creds_type(secret_type)
         self.secret_filepath = secret_filepath
         self.project = project
         self.dataset = dataset
@@ -93,10 +93,10 @@ class BigQueryCredentials(DWCredentials):
         """
         Saves credentials to a .env file on your machine
         """
-        creds = f'bigquery_secret_type={self.secret_type}\n'
-        creds += f'bigquery_secret_filepath={self.secret_filepath}\n'
-        creds += f'bigquery_project={self.project}\n'
-        creds += f'bigquery_dataset={self.dataset}\n'
+        creds = (f'bigquery_secret_type={self.secret_type}\n'
+                 f'bigquery_secret_filepath={self.secret_filepath}\n'
+                 f'bigquery_project={self.project}\n'
+                 f'bigquery_dataset={self.dataset}\n')
         return save_env(creds, filepath, overwrite)
 
 
@@ -109,9 +109,10 @@ class BigQueryDataWarehouse(DataWarehouse):
 
     def __init__(self):
         if bq is None:
-            raise ImportError('Missing a required python package to run BigQuery. '
-                              'Please download the BigQuery package by running: '
-                              'pip install rasgoql[bigquery]')
+            raise PackageDependencyWarning(
+                'Missing a required python package to run BigQuery. '
+                'Please download the BigQuery package by running: '
+                'pip install rasgoql[bigquery]')
 
         super().__init__()
         self.credentials: dict = None
@@ -140,7 +141,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         try:
             self.default_project = credentials.get('project')
             self.default_dataset = credentials.get('dataset')
-            if credentials.get('secret_type') == 'service':
+            if credentials.get('secret_type') == 'SERVICE':
                 self.credentials = self._get_service_credentials(
                     credentials.get('secret_filepath')
                 )
@@ -456,7 +457,7 @@ class BigQueryDataWarehouse(DataWarehouse):
     # BigQuery specific helpers
     # --------------------------
     @property
-    def _default_job_config(self) -> bq.QueryJobConfig:
+    def _default_job_config(self) -> 'bq.QueryJobConfig':
         return bq.QueryJobConfig(
             default_dataset=f'{self.default_project}.{self.default_dataset}'
             )

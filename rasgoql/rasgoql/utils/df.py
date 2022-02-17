@@ -4,7 +4,7 @@ Helpful DataFrame utilities
 import pandas as pd
 from pandas.io.json import build_table_schema
 
-from .sql import cleanse_sql_name
+from rasgoql.utils.sql import cleanse_sql_name
 
 
 def build_dataframe_schema(

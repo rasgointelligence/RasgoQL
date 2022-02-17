@@ -11,11 +11,11 @@ from rasgoql.errors import ParameterException
 from rasgoql.utils.decorators import require_dw, require_transforms
 from rasgoql.utils.sql import parse_fqtn, random_table_name, validate_fqtn
 
-from .enums import (
+from rasgoql.primitives.enums import (
     check_render_method, check_table_type,
     TableType, TableState
 )
-from .rendering import (
+from rasgoql.primitives.rendering import (
     assemble_cte_chain, assemble_view_chain,
     _gen_udt_func_docstring, _gen_udt_func_signature
 )
@@ -226,7 +226,7 @@ class Transform:
         """
         Returns the fully qualified table name the transform would create if saved
         """
-        return self.namespace + '.' + self.output_alias
+        return f'{self.namespace}.{self.output_alias}'
 
 
 class SQLChain(TransformableClass):
@@ -264,7 +264,7 @@ class SQLChain(TransformableClass):
     def fqtn(self) -> str:
         """
         Returns the fully qualified table name the transform would create if saved
-        
+
         NOTE: This property will be dynamic until the Chain is finally saved
         """
         return self.output_table.fqtn

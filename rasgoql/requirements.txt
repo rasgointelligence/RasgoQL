@@ -1,5 +1,5 @@
 jinja2
 pandas
-pyyaml
 python-dotenv
-rasgotransforms>=0.0.3
+pyyaml
+rasgotransforms==1.0.0a1

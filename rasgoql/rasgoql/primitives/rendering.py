@@ -13,7 +13,7 @@ import pandas as pd
 import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
-from .enums import check_table_type
+from rasgoql.primitives.enums import check_table_type
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)

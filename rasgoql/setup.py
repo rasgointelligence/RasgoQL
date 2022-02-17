@@ -2,15 +2,12 @@
 pypi setup
 """
 import os
-
 from setuptools import setup
 
+from rasgoql.version import __version__
 
 _here = os.path.abspath(os.path.dirname(__file__))
 
-version = {}
-with open(os.path.join(_here, 'rasgoql', 'version.py')) as f:
-    version = f.read()
 
 with open(os.path.join(_here, 'DESCRIPTION.md'), encoding='utf-8') as f:
     long_description = f.read()
@@ -29,7 +26,7 @@ with open(os.path.join(_here, 'requirements-bigquery.txt'), encoding='utf-8') as
 
 setup(
     name='rasgoql',
-    version=version['__version__'],
+    version=__version__,
     description=('Alpha version of rasgoQL open-source package.'),
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -61,6 +58,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Topic :: Database',
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: Software Development :: Code Generators'
