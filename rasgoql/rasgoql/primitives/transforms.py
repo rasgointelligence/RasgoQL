@@ -55,7 +55,7 @@ class TransformableClass:
         """
         Gather available transforms and create aliased functions for each
         """
-        for transform in rtx.serve_rasgo_transform_templates():
+        for transform in rtx.serve_rasgo_transform_templates(self._dw.dw_type):
             f = self._create_aliased_function(transform)
             setattr(self, transform.name, f)
 

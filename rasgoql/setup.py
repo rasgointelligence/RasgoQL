@@ -10,7 +10,7 @@ _here = os.path.abspath(os.path.dirname(__file__))
 
 version = {}
 with open(os.path.join(_here, 'rasgoql', 'version.py')) as f:
-    exec(f.read(), version)
+    version = f.read()
 
 with open(os.path.join(_here, 'DESCRIPTION.md'), encoding='utf-8') as f:
     long_description = f.read()
@@ -19,9 +19,13 @@ with open(os.path.join(_here, 'requirements.txt'), encoding='utf-8') as f:
     req_lines = f.read()
     requirements = req_lines.splitlines()
 
-with open(os.path.join(_here, 'requirements_snowflake.txt'), encoding='utf-8') as f:
+with open(os.path.join(_here, 'requirements-snowflake.txt'), encoding='utf-8') as f:
     req_lines = f.read()
     sf_requirements = req_lines.splitlines()
+
+with open(os.path.join(_here, 'requirements-bigquery.txt'), encoding='utf-8') as f:
+    req_lines = f.read()
+    bq_requirements = req_lines.splitlines()
 
 setup(
     name='rasgoql',
@@ -32,9 +36,9 @@ setup(
     author='Rasgo Intelligence',
     author_email='patrick@rasgoml.com',
     project_urls={
-    'Documentation': 'https://docs.rasgoql.com',
-    'Source': 'https://github.com/rasgointelligence/RasgoQL',
-    'Rasgo': 'https://www.rasgoml.com/',
+        'Documentation': 'https://docs.rasgoql.com',
+        'Source': 'https://github.com/rasgointelligence/RasgoQL',
+        'Rasgo': 'https://www.rasgoml.com/',
     },
     license='GNU Affero General Public License v3 or later (AGPLv3+)',
     packages=[
@@ -46,6 +50,7 @@ setup(
     install_requires=requirements,
     extras_require={
         "snowflake":  sf_requirements,
+        "bigquery": bq_requirements,
     },
     include_package_data=True,
     classifiers=[

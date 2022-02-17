@@ -5,7 +5,11 @@ from typing import Union
 
 import webbrowser
 
-from .data import DWCredentials, SnowflakeCredentials, SnowflakeDataWarehouse
+from .data import (
+    DWCredentials,
+    BigQueryCredentials, BigQueryDataWarehouse,
+    SnowflakeCredentials, SnowflakeDataWarehouse
+)
 from .errors import ParameterException
 from .main import RasgoQL
 from .version import __version__
@@ -18,7 +22,7 @@ __all__ = [
 
 DW_MAP = {
     'snowflake': SnowflakeDataWarehouse,
-    #'bigquery': BigQueryDataWarehouse,
+    'bigquery': BigQueryDataWarehouse,
     #'postgres': PostgresDataWarehouse,
 }
 

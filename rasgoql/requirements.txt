@@ -2,6 +2,4 @@ jinja2
 pandas
 pyyaml
 python-dotenv
-rasgotransforms
-snowflake-connector-python
-snowflake-connector-python[pandas]
+rasgotransforms>=0.0.3

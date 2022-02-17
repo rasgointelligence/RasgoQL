@@ -26,7 +26,7 @@ class DWCredentials(ABC):
     @classmethod
     def from_env(
             cls,
-            file_path: str = None
+            filepath: str = None
         ) -> 'DWCredentials':
         """
         Creates an instance of this Class from a .env file on your machine
@@ -41,7 +41,7 @@ class DWCredentials(ABC):
 
     def to_env(
             self,
-            file_path: str,
+            filepath: str,
             overwrite: bool
         ):
         """
