@@ -32,6 +32,12 @@ class ParameterException(RasgoQLException):
     """
     pass
 
+class PackageDependencyWarning(RasgoQLException):
+    """
+    Problem importing a required package dependency
+    """
+    pass
+
 class SQLException(RasgoQLException):
     """
     Possible problem with SQL text

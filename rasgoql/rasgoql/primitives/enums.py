@@ -9,6 +9,24 @@ from rasgoql.errors import ParameterException
 def _wrap_in_quotes(string: str) -> str:
     return f"'{string}'"
 
+class BQCredsType(Enum):
+    """
+    Ways to write data
+    """
+    USER = 'user'
+    SERVICE = 'service'
+
+def check_bq_creds_type(input_value: str):
+    """
+    Warn if an incorrect write method is passed
+    """
+    bq_creds_types = _wrap_in_quotes("', '".join([e.value for e in BQCredsType]))
+    try:
+        BQCredsType[input_value.upper()]
+    except Exception:
+        raise ParameterException(f'creds_type parameter accepts values: {bq_creds_types}')
+    return input_value.upper()
+
 class DWType(Enum):
     """
     Supported Data Warehouses

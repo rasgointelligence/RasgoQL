@@ -56,7 +56,10 @@ class RasgoQL:
         """
         return Dataset(fqtn, self._dw)
 
-    def define_transform(self, name: str) -> str:
+    def define_transform(
+            self,
+            name: str
+        ) -> str:
         """
         Returns full details of a RasgoQL transform
         """
