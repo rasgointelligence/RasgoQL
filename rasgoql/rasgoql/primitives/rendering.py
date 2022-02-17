@@ -13,7 +13,7 @@ import pandas as pd
 import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
-from .enums import check_table_type
+from rasgoql.primitives.enums import check_table_type
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -101,7 +101,7 @@ def generate_transform_sql(
     """
     Returns the SQL for a Transform with applied arguments
     """
-    templates = rtx.serve_rasgo_transform_templates()
+    templates = rtx.serve_rasgo_transform_templates(dw.dw_type)
     udt: 'TransformTemplate' = [t for t in templates if t.name == name][0]
     if not udt:
         raise TransformRenderingError(f'Cannot find a transform named {name}')

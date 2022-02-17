@@ -6,9 +6,9 @@ from typing import List, Type
 import pandas as pd
 import rasgotransforms as rtx
 
-from .data import DataWarehouse
-from .primitives import Dataset, SQLChain, TransformTemplate
-from .version import __version__
+from rasgoql.data import DataWarehouse
+from rasgoql.primitives import Dataset, SQLChain, TransformTemplate
+from rasgoql.version import __version__
 
 class RasgoQL:
     """
@@ -45,7 +45,7 @@ class RasgoQL:
         """
         Returns a list of RasgoQL transforms
         """
-        return rtx.serve_rasgo_transform_templates()
+        return rtx.serve_rasgo_transform_templates(self._dw.dw_type)
 
     def dataset(
             self,
@@ -61,7 +61,7 @@ class RasgoQL:
         Returns full details of a RasgoQL transform
         """
         udt: TransformTemplate = None
-        for t in rtx.serve_rasgo_transform_templates():
+        for t in rtx.serve_rasgo_transform_templates(self._dw.dw_type):
             if t.name == name:
                 udt = t
         if udt:

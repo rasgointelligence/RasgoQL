@@ -33,14 +33,25 @@ https://docs.rasgoql.com
 - pyyaml
 - python-dotenv
 - rasgotransforms
+
+[snowflake]
 - snowflake-connector-python
 - snowflake-connector-python[pandas]
 
+[bigquery]
+- google-auth-oauthlib
+- google-cloud-bigquery
 
-## Release Notes
+
+## Major Version Releases
 -------------------------------------------------------------------------------
 - v0.0.1 (Feb 10, 2022)
    - alpha release
+
+- v1.0.0 (Feb 22, 2022)
+   - beta release
+
+See [Changelog](https://github.com/rasgointelligence/RasgoQL/blob/main/rasgoql/CHANGELOG.md) for full minor version release notes
 
 ## About Us
 RasgoQL is maintained by *[Rasgo](https://rasgoml.com)*. Rasgo's enterprise feature store integrates with your data warehouse to help users build features faster, collaborate with team members, and serve features to models in production.

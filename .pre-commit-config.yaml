@@ -1,0 +1,26 @@
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+    # Identify invalid files
+    - id: check-ast
+    - id: check-yaml
+    - id: check-json
+    # git checks
+    - id: check-merge-conflict
+    - id: check-added-large-files
+    - id: detect-private-key
+    - id: check-case-conflict
+    # Python checks
+    - id: check-docstring-first
+    - id: debug-statements
+    - id: requirements-txt-fixer
+    - id: name-tests-test
+    # General quality checks
+    - id: mixed-line-ending
+    - id: trailing-whitespace
+      args: [--markdown-linebreak-ext=md]
+    - id: check-executables-have-shebangs
+    - id: end-of-file-fixer
+    - id: no-commit-to-branch

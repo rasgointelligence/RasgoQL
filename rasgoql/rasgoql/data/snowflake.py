@@ -8,8 +8,6 @@ from typing import List, Optional, Union
 
 import json
 import pandas as pd
-from snowflake import connector
-from snowflake.connector.pandas_tools import write_pandas
 
 from rasgoql.errors import (
     DWConnectionError, DWQueryError,
@@ -23,7 +21,8 @@ from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
 from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
 
-from .base import DataWarehouse, DWCredentials
+from rasgoql.data.base import DataWarehouse, DWCredentials
+from rasgoql.data.imports import sf_connector, write_pandas
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -46,6 +45,10 @@ class SnowflakeCredentials(DWCredentials):
             database: str,
             schema: str
         ):
+        if sf_connector is None:
+            raise ImportError('Missing a required python package to run Snowflake. '
+                              'Please download the Snowflake package by running: '
+                              'pip install rasgoql[snowflake]')
         self.account = account
         self.user = user
         self.password = password
@@ -67,12 +70,12 @@ class SnowflakeCredentials(DWCredentials):
     @classmethod
     def from_env(
             cls,
-            file_path: str = None
+            filepath: str = None
         ) -> 'SnowflakeCredentials':
         """
         Creates an instance of this Class from a .env file on your machine
         """
-        load_env(file_path)
+        load_env(filepath)
         return cls(
             os.getenv('snowflake_account'),
             os.getenv('snowflake_user'),
@@ -99,20 +102,20 @@ class SnowflakeCredentials(DWCredentials):
 
     def to_env(
             self,
-            file_path: str = None,
+            filepath: str = None,
             overwrite: bool = False
         ):
         """
         Saves credentials to a .env file on your machine
         """
-        creds = f'snowflake_account={self.account}\n'
-        creds += f'snowflake_user={self.user}\n'
-        creds += f'snowflake_password={self.password}\n'
-        creds += f'snowflake_role={self.role}\n'
-        creds += f'snowflake_warehouse={self.warehouse}\n'
-        creds += f'snowflake_database={self.database}\n'
-        creds += f'snowflake_schema={self.schema}\n'
-        return save_env(creds, file_path, overwrite)
+        creds = (f'snowflake_account={self.account}\n'
+            f'snowflake_user={self.user}\n'
+            f'snowflake_password={self.password}\n'
+            f'snowflake_role={self.role}\n'
+            f'snowflake_warehouse={self.warehouse}\n'
+            f'snowflake_database={self.database}\n'
+            f'snowflake_schema={self.schema}\n')
+        return save_env(creds, filepath, overwrite)
 
 
 class SnowflakeDataWarehouse(DataWarehouse):
@@ -125,7 +128,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
     def __init__(self):
         super().__init__()
         self.credentials: dict = None
-        self.connection: connector.SnowflakeConnection = None
+        self.connection: sf_connector.SnowflakeConnection = None
         self.default_database = None
         self.default_schema = None
 
@@ -158,10 +161,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self.credentials = credentials
             self.default_database = credentials.get('database')
             self.default_schema = credentials.get('schema')
-            self.connection = connector.connect(**credentials)
-        except connector.errors.DatabaseError as e:
+            self.connection = sf_connector.connect(**credentials)
+        except sf_connector.errors.DatabaseError as e:
             raise DWConnectionError(e)
-        except connector.errors.ForbiddenError as e:
+        except sf_connector.errors.ForbiddenError as e:
             raise DWConnectionError(e)
         except Exception as e:
             raise e
@@ -175,7 +178,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
                 self.connection.close()
             self.connection = None
             logger.info("Connection to Snowflake closed")
-        except connector.errors.DatabaseError as e:
+        except sf_connector.errors.DatabaseError as e:
             raise DWConnectionError(e)
         except Exception as e:
             raise e
@@ -210,7 +213,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
                    'If you are sure you want to overwrite it, ' \
                    'pass in overwrite=True and run this function again'
             raise TableConflictException(msg)
-        query = f'CREATE OR REPLACE {table_type} {fqtn} AS {sql}'
+        query = f"CREATE OR REPLACE {table_type} {fqtn} COMMENT='rasgoql' AS {sql}"
         self.execute_query(query, acknowledge_risk=True, response='None')
         return fqtn
 
@@ -345,7 +348,11 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `limit`: int:
             Records to return
         """
-        return self.execute_query(f'{sql} LIMIT {limit}', response='df', acknowledge_risk=True)
+        return self.execute_query(
+            f'{sql} LIMIT {limit}',
+            response='df',
+            acknowledge_risk=True
+        )
 
     def save_df(
             self,
@@ -384,6 +391,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             # Issue a create or replace statement before we insert data
             if not table_exists or method == 'REPLACE':
                 create_stmt = generate_dataframe_ddl(df, fqtn)
+                create_stmt += " COMMENT='rasgoql' "
                 self.execute_query(create_stmt, response='None', acknowledge_risk=True)
             success, chunks, rows, output = write_pandas(
                 conn=self.connection,
@@ -422,7 +430,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
 
         Params:
         `namespace`: str:
-            namespace (database.schema.table)
+            namespace (database.schema)
         """
         # Does this match a 'string.string' pattern?
         if re.match(r'\w+\.\w+', namespace):
@@ -434,7 +442,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
     # --------------------------
     def _execute_string(
             self,
-            query: str, *,
+            query: str,
             ignore_results: bool = False
         ) -> List[tuple]:
         """
@@ -447,9 +455,11 @@ class SnowflakeDataWarehouse(DataWarehouse):
                 for query_return in cursor:
                     query_returns.append(query_return)
             return query_returns
-        except connector.errors.ProgrammingError as e:
+        except sf_connector.errors.ProgrammingError as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise DWQueryError(e)
         except Exception as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise e
         finally:
             if cursor:
@@ -472,12 +482,14 @@ class SnowflakeDataWarehouse(DataWarehouse):
         """
         cursor = None
         try:
-            cursor = self.connection.cursor(connector.DictCursor)
+            cursor = self.connection.cursor(sf_connector.DictCursor)
             query_return = cursor.execute(query).fetchall()
             return query_return
-        except connector.errors.ProgrammingError as e:
+        except sf_connector.errors.ProgrammingError as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise DWQueryError(e)
         except Exception as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise e
         finally:
             if cursor:
@@ -496,9 +508,11 @@ class SnowflakeDataWarehouse(DataWarehouse):
             cursor = self.connection.cursor()
             query_return = cursor.execute(query, params).fetch_pandas_all()
             return query_return
-        except connector.errors.ProgrammingError as e:
+        except sf_connector.errors.ProgrammingError as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise DWQueryError(e)
         except Exception as e:
+            logger.info(f'Error occurred while running SQL: {query}')
             raise e
         finally:
             if cursor:

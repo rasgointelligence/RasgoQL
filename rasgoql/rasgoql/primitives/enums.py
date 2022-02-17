@@ -7,26 +7,25 @@ from rasgoql.errors import ParameterException
 
 
 def _wrap_in_quotes(string: str) -> str:
-    return "'"+string+"'"
+    return f"'{string}'"
 
 class DWType(Enum):
     """
     Supported Data Warehouses
     """
-    #FUTURE: BIGQUERY = 'bigquery'
+    BIGQUERY = 'bigquery'
     #FUTURE: POSTGRES = 'postgres'
     SNOWFLAKE = 'snowflake'
-
-SUPPORTED_DWS = _wrap_in_quotes("', '".join([e.value for e in DWType]))
 
 def check_data_warehouse(input_value: str):
     """
     Warn if an incorrect Data Warehouse is passed
     """
+    supported_dws = _wrap_in_quotes("', '".join([e.value for e in DWType]))
     try:
         DWType[input_value.upper()]
     except Exception:
-        raise ParameterException(f'data_warehouse parameter accepts values: {SUPPORTED_DWS}')
+        raise ParameterException(f'data_warehouse parameter accepts values: {supported_dws}')
     return input_value.upper()
 
 
@@ -38,16 +37,15 @@ class TableState(Enum):
     IN_MEMORY = 'in memory'
     UNKNOWN = 'unknown'
 
-TABLE_STATES = _wrap_in_quotes("', '".join([e.value for e in TableState]))
-
 def check_table_state(input_value: str):
     """
     Warn if an incorrect table state is passed
     """
+    table_states = _wrap_in_quotes("', '".join([e.value for e in TableState]))
     try:
         TableState[input_value.upper()]
     except Exception:
-        raise ParameterException(f'table_state parameter accepts values: {TABLE_STATES}')
+        raise ParameterException(f'table_state parameter accepts values: {table_states}')
     return input_value.upper()
 
 
@@ -59,16 +57,15 @@ class TableType(Enum):
     VIEW = 'view'
     UNKNOWN = 'unknown'
 
-TABLE_TYPES = _wrap_in_quotes("', '".join([e.value for e in TableType]))
-
 def check_table_type(input_value: str):
     """
     Warn if an incorrect table type is passed
     """
+    table_types = _wrap_in_quotes("', '".join([e.value for e in TableType]))
     try:
         TableType[input_value.upper()]
     except Exception:
-        raise ParameterException(f'table_type parameter accepts values: {TABLE_TYPES}')
+        raise ParameterException(f'table_type parameter accepts values: {table_types}')
     return input_value.upper()
 
 
@@ -81,16 +78,15 @@ class RenderMethod(Enum):
     VIEW = 'view'
     VIEWS = 'views'
 
-RENDER_METHODS = _wrap_in_quotes("', '".join([e.value for e in RenderMethod]))
-
 def check_render_method(input_value: str):
     """
     Warn if an incorrect render method is passed
     """
+    render_methods = _wrap_in_quotes("', '".join([e.value for e in RenderMethod]))
     try:
         RenderMethod[input_value.upper()]
     except Exception:
-        raise ParameterException(f'render_method parameter accepts values: {RENDER_METHODS}')
+        raise ParameterException(f'render_method parameter accepts values: {render_methods}')
     return input_value.upper()
 
 
@@ -103,16 +99,15 @@ class ResponseType(Enum):
     TUPLE = 'tuple'
     NONE = 'none'
 
-RESPONSE_TYPES = _wrap_in_quotes("', '".join([e.value for e in ResponseType]))
-
 def check_response_type(input_value: str):
     """
     Warn if an incorrect response type is passed
     """
+    response_types = _wrap_in_quotes("', '".join([e.value for e in ResponseType]))
     try:
         ResponseType[input_value.upper()]
     except Exception:
-        raise ParameterException(f'response parameter accepts values: {RESPONSE_TYPES}')
+        raise ParameterException(f'response parameter accepts values: {response_types}')
     return input_value.upper()
 
 
@@ -124,14 +119,13 @@ class WriteMethod(Enum):
     REPLACE = 'replace'
     UPSERT = 'upsert'
 
-WRITE_METHODS = _wrap_in_quotes("', '".join([e.value for e in WriteMethod]))
-
 def check_write_method(input_value: str):
     """
     Warn if an incorrect write method is passed
     """
+    write_methods = _wrap_in_quotes("', '".join([e.value for e in WriteMethod]))
     try:
         WriteMethod[input_value.upper()]
     except Exception:
-        raise ParameterException(f'method parameter accepts values: {WRITE_METHODS}')
+        raise ParameterException(f'method parameter accepts values: {write_methods}')
     return input_value.upper()
