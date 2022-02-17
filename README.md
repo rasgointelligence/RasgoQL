@@ -51,7 +51,7 @@ RasgoQL’s initial release will support connecting to your existing Snowflake D
 # Where to get it
 Just run a simple pip install.
 
-`pip install rasgoql`
+`pip install rasgoql~=1.0`
 
 
 # Quick Start
