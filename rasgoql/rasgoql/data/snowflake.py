@@ -21,8 +21,8 @@ from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
 from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
 
-from .base import DataWarehouse, DWCredentials
-from .imports import sf_connector, write_pandas
+from rasgoql.data.base import DataWarehouse, DWCredentials
+from rasgoql.data.imports import sf_connector, write_pandas
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -108,13 +108,13 @@ class SnowflakeCredentials(DWCredentials):
         """
         Saves credentials to a .env file on your machine
         """
-        creds = f'snowflake_account={self.account}\n'
-        creds += f'snowflake_user={self.user}\n'
-        creds += f'snowflake_password={self.password}\n'
-        creds += f'snowflake_role={self.role}\n'
-        creds += f'snowflake_warehouse={self.warehouse}\n'
-        creds += f'snowflake_database={self.database}\n'
-        creds += f'snowflake_schema={self.schema}\n'
+        creds = (f'snowflake_account={self.account}\n'
+            f'snowflake_user={self.user}\n'
+            f'snowflake_password={self.password}\n'
+            f'snowflake_role={self.role}\n'
+            f'snowflake_warehouse={self.warehouse}\n'
+            f'snowflake_database={self.database}\n'
+            f'snowflake_schema={self.schema}\n')
         return save_env(creds, filepath, overwrite)
 
 

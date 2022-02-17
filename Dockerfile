@@ -26,10 +26,10 @@ WORKDIR ${HOME_DIR}
 
 FROM pythonapp AS rasgoql
 ARG HOME_DIR=/var/lib/rasgoql
-COPY rasgoql/requirements.txt ${HOME_DIR}
+COPY rasgoql/requirements-dev.txt ${HOME_DIR}
 
 RUN cd ${HOME_DIR} && \
-    pip install -r requirements.txt
+    pip install -r requirements-dev.txt
 
 # Used to deploy to PyPi
 RUN pip install --upgrade twine

@@ -9,9 +9,9 @@
 
 # RasgoQL
 
-RasgoQL is a Python package that enables you to easily query and transform tables in your Data Warehouse directly from a notebook. 
+RasgoQL is a Python package that enables you to easily query and transform tables in your Data Warehouse directly from a notebook.
 
-You can quickly create new features, sample data, apply complex aggregates... all without having to write SQL! 
+You can quickly create new features, sample data, apply complex aggregates... all without having to write SQL!
 
 Choose from our library of predefined transformations or make your own to streamline the feature engineering process.
 
@@ -23,7 +23,7 @@ Data scientists spend much of their time in pandas preparing data for modelling.
 
 We created RasgoQL to solve these two pain points.
 
-Learn more at [https://docs.rasgoql.com](https://docs.rasgoql.com). 
+Learn more at [https://docs.rasgoql.com](https://docs.rasgoql.com).
 
 # How does it work?
 Under the covers, RasgoQL sends all processing to your Data Warehouse, enabling the efficient transformation of massive datasets. RasgoQL only needs basic metadata to execute transforms, so your private data remains secure.
@@ -38,7 +38,7 @@ RasgoQL does these things well:
 - Offers dozens of free SQL transforms to use
 - Coming Soon: allows users to create & add custom transforms
 
-RasgoQL’s initial release will support connecting to your existing Snowflake Data Warehouse. We plan to add support for BigQuery and Postgres in the very near future. If you'd like to suggest another database type, submit your idea to our [GitHub Discussions page](https://github.com/rasgointelligence/RasgoQL/discussions) so that other community members can weight in and show their support. 
+RasgoQL’s initial release will support connecting to your existing Snowflake Data Warehouse. We plan to add support for BigQuery and Postgres in the very near future. If you'd like to suggest another database type, submit your idea to our [GitHub Discussions page](https://github.com/rasgointelligence/RasgoQL/discussions) so that other community members can weight in and show their support.
 
 # Can RasgoQL help you?
 
@@ -91,7 +91,7 @@ chn.sql()
 # Advanced Examples
 
 ## Joins
-Easily join tables together using the `join` transform. 
+Easily join tables together using the `join` transform.
 
 ```python
 internet_sales = rasgoql.dataset('ADVENTUREWORKS.PUBLIC.INTERNET_SALES')
@@ -107,7 +107,7 @@ ds_join.preview()
 ```
 
 ## Chain transforms together
-Create a rolling average aggregation and then drops unnecessary colomns. 
+Create a rolling average aggregation and then drops unnecessary colomns.
 
 ```python
 ds_agg = ds.rolling_agg(
@@ -121,7 +121,7 @@ ds_agg.sql()
 ds_agg.preview()
 ```
 
-## Transpose unique values with pivots 
+## Transpose unique values with pivots
 Quickly generate pivot tables of your data.
 
 ```python
@@ -138,14 +138,14 @@ ds_pivot.preview()
 ```
 
 # Where do I go for help?
-If you have any questions please: 
+If you have any questions please:
 
 1. [RasgoQL Docs](https://docs.rasgoql.com/)
 2. [Slack](https://join.slack.com/t/rasgousergroup/shared_invite/zt-nytkq6np-ANEJvbUSbT2Gkvc8JICp3g)
 3. [GitHub Issues](https://github.com/rasgointelligence/RasgoQL/issues)
 
 
-# How can I contribute? 
+# How can I contribute?
 Review the [contributors guide](https://github.com/rasgointelligence/RasgoQL/blob/main/CONTRIBUTING.md)
 
 

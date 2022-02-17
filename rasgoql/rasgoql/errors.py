@@ -55,4 +55,3 @@ class TransformRenderingError(RasgoQLException):
     Error from Transform rendering activity
     """
     pass
-

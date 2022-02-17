@@ -6,7 +6,7 @@ services:
       context: ./
       target: rasgoql
     working_dir: /var/lib/rasgoql/mount/rasgoql
-    command: ./bin/publish-pypi.sh pypi
+    command: ./scripts/publish-pypi.sh pypi
     environment:
       PYPI_USER: ${PYPI_USER}
       PYPI_PASSWORD: ${PYPI_PASSWORD}
@@ -18,7 +18,7 @@ services:
       context: ./
       target: rasgoql
     working_dir: /var/lib/rasgoql/mount/rasgoql
-    command: ./bin/publish-pypi.sh pypitest
+    command: ./scripts/publish-pypi.sh pypitest
     environment:
       PYPITEST_USER: ${PYPITEST_USER}
       PYPITEST_PASSWORD: ${PYPITEST_PASSWORD}

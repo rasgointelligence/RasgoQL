@@ -5,14 +5,14 @@ from typing import Union
 
 import webbrowser
 
-from .data import (
+from rasgoql.data import (
     DWCredentials,
     BigQueryCredentials, BigQueryDataWarehouse,
     SnowflakeCredentials, SnowflakeDataWarehouse
 )
-from .errors import ParameterException
-from .main import RasgoQL
-from .version import __version__
+from rasgoql.errors import ParameterException
+from rasgoql.main import RasgoQL
+from rasgoql.version import __version__
 
 __all__ = [
     '__version__',
