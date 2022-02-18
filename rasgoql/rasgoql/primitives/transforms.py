@@ -8,7 +8,7 @@ import pandas as pd
 import rasgotransforms as rtx
 
 from rasgoql.errors import ParameterException
-from rasgoql.utils.decorators import require_dw, require_transforms
+from rasgoql.utils.decorators import beta, require_dw, require_transforms
 from rasgoql.utils.sql import parse_fqtn, random_table_name, validate_fqtn
 
 from rasgoql.primitives.enums import (
@@ -16,7 +16,7 @@ from rasgoql.primitives.enums import (
     TableType, TableState
 )
 from rasgoql.primitives.rendering import (
-    assemble_cte_chain, assemble_view_chain,
+    assemble_cte_chain, assemble_view_chain, create_dbt_files,
     _gen_udt_func_docstring, _gen_udt_func_signature
 )
 
@@ -343,6 +343,17 @@ class SQLChain(TransformableClass):
         if self.transforms:
             return self.transforms[-1]
         return None
+
+    @beta
+    def to_dbt(
+            self,
+            filepath: str,
+            render_method: str = 'view'
+        ) -> str:
+        """
+        Saves a dbt_project.yml and model.sql files to a directory
+        """
+        return create_dbt_files(self.transforms, filepath, render_method)
 
     def to_df(self) -> pd.DataFrame:
         """
