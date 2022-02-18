@@ -8,13 +8,13 @@
 [![Chat on Slack](https://img.shields.io/badge/chat-on%20Slack-brightgreen.svg)](https://join.slack.com/t/rasgousergroup/shared_invite/zt-nytkq6np-ANEJvbUSbT2Gkvc8JICp3g)
 
 # RasgoQL
-
 RasgoQL is a Python package that enables you to easily query and transform tables in your Data Warehouse directly from a notebook.
 
 You can quickly create new features, sample data, apply complex aggregates... all without having to write SQL!
 
 Choose from our library of predefined transformations or make your own to streamline the feature engineering process.
 
+![RasgoQL 30-second demo](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/rasgo_intro2.gif)
 
 # Why is this package useful?
 Data scientists spend much of their time in pandas preparing data for modelling. When they are ready to deploy or scale, two pain points arise:
@@ -68,24 +68,33 @@ creds = rasgoql.SnowflakeCredentials(
     database="",
     schema=""
 )
+
+# Connect to DW 
 rql = rasgoql.connect(creds)
-print("rasgoQL connected!")
+
+# List available tables
+rql.list_tables('ADVENTUREWORKS').head(10)
 
 # Allow rasgoQL to interact with an existing Table in your Data Warehouse
-ds = rql.dataset(fqtn='RASGOLOCAL.PUBLIC.ABCD123')
-ds.preview()
+dataset = rql.dataset('ADVENTUREWORKS.PUBLIC.FACTINTERNETSALES')
 
-# Create a SQL Chain by applying a Rasgo Transform
-chn = tbl.cast(
-    casts={
-      'LOC_ID':'STRING',
-      'DATE':'STRING'
-    }
-)
+# Take a peek at the data
+dataset.preview()
+
+# Use the datetrunc transform to seperate things into weeks
+weekly_sales = dataset.datetrunc(dates={'ORDERDATE':'week'})
+
+# Aggregate to sum of sales for each week
+agg_weekly_sales = weekly_sales.aggregate(
+    group_by=['PRODUCTKEY', 'ORDERDATE_WEEK'],
+    aggregations={'SALESAMOUNT': ['SUM']},
+    )
+
+# Quickly validate output 
+agg_weekly_sales.to_df()
 
 # Print the SQL
-chn.sql()
-
+agg_weekly_sales.sql()
 ```
 
 # Advanced Examples
@@ -94,48 +103,54 @@ chn.sql()
 Easily join tables together using the `join` transform.
 
 ```python
-internet_sales = rasgoql.dataset('ADVENTUREWORKS.PUBLIC.INTERNET_SALES')
+sales_dataset = rasgoql.dataset('ADVENTUREWORKS.PUBLIC.FACTINTERNETSALES')
 
-ds_join = internet_sales.join(
+sales_product_dataset = sales_dataset.join(
   join_table='DIM_PRODUCT',
   join_columns={'PRODUCTKEY': 'PRODUCTKEY'},
   join_type='LEFT',
   join_prefix='PRODUCT')
 
-ds_join.sql()
-ds_join.preview()
+sales_product_dataset.sql()
+sales_product_dataset.preview()
 ```
+
+![Rasgo Join Example](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/rasgo_join.gif)
 
 ## Chain transforms together
 Create a rolling average aggregation and then drops unnecessary colomns.
 
 ```python
-ds_agg = ds.rolling_agg(
+sales_agg_drop = sales_dataset.rolling_agg(
     aggregations={"SALESAMOUNT": ["MAX", "MIN", "SUM"]},
     order_by="ORDERDATE",
     offsets=[-7, 7],
     group_by=["PRODUCTKEY"],
 ).drop_columns(exclude_cols=["ORDERDATEKEY"])
 
-ds_agg.sql()
-ds_agg.preview()
+sales_agg_drop.sql()
+sales_agg_drop.preview()
 ```
 
-## Transpose unique values with pivots
+![Multiple rasgoql transforms](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/rasgoql_chain.gif)
+
+## Transpose unique values with pivots 
 Quickly generate pivot tables of your data.
 
 ```python
-ds_pivot = ds_agg.pivot(
+sales_by_product = sales_dataset.pivot(
     dimensions=['ORDERDATE'],
     pivot_column='SALESAMOUNT',
     value_column='PRODUCTKEY',
     agg_method='SUM',
-    list_of_vals=['310', '345']
+    list_of_vals=['310', '345'],
 )
 
-ds_pivot.sql()
-ds_pivot.preview()
+sales_by_product.sql()
+sales_by_product.preview()
 ```
+
+![Rasgoql pivot example](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/rasgoql_pivot.gif)
 
 # Where do I go for help?
 If you have any questions please:
