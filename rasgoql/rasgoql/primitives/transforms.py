@@ -134,6 +134,10 @@ class Dataset(TransformableClass):
             self.table_state = TableState.IN_DW
             self.table_type = TableType[obj_type]
             self.is_rasgo = is_rasgo_obj
+        else:
+            logger.info(f'Dataset {self.fqtn} does not exist in the Data Warehouse. '
+                        'Possible causes: you may have provided the incorrect namespace '
+                        'or this may be a SQL Chain that is not yet saved.')
 
     @require_dw
     def get_schema(self) -> dict:
@@ -277,7 +281,7 @@ class SQLChain(TransformableClass):
         NOTE: This property will be dynamic until the Chain is finally saved
         """
         if self.ternimal_transform:
-            return Dataset(f"{self.ternimal_transform.fqtn}", self._dw)
+            return Dataset(self.ternimal_transform.fqtn, self._dw)
         return self.entry_table
 
     @require_dw

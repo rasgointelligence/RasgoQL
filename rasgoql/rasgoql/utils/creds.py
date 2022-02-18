@@ -14,15 +14,21 @@ logger.setLevel(logging.INFO)
 
 
 def load_env(
-        filepath: str = None
+        filepath: Path = None
     ):
     """
     Loads a .env file, allowing contents to be callable by os.getenv()
     """
+    if not filepath:
+        filepath = os.getcwd()
+    if not filepath.endswith('.env'):
+        filepath = os.path.join(filepath, '.env')
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f'File {filepath} does not exist')
     dotenv.load_dotenv(filepath)
 
 def load_yml(
-        filepath: str
+        filepath: Path
     ):
     """
     Loads a yml file and returns the contents
@@ -32,37 +38,44 @@ def load_yml(
     return contents
 
 def read_file(
-        filepath: str = None
+        filepath: Path = None
     ) -> str:
     """
     Reads the contents of a file
     """
-    filepath = Path(filepath)
-    if not filepath.exists():
+    if not os.path.exists(filepath):
         raise FileNotFoundError(f'File {filepath} does not exist')
     with open(filepath, "r") as _file:
         contents = _file.read()
     return contents
 
 def save_env(
-        creds: str,
-        filepath: str = None,
+        creds: dict,
+        filepath: Path = None,
         overwrite: bool = False
     ):
     """
     Writes creds to a .env file
     """
-    filepath = Path(os.path.join(os.getcwd(), '.env'))
-    if filepath.exists() and not overwrite:
-        raise FileExistsError(f'File {filepath} already exist, pass in overwrite=True to overwrite it. '
-                              'Warning: this will overwrite all existing values in this .env file.')
-    with open(filepath, "w") as _file:
-        _file.write(creds)
+    if not filepath:
+        filepath = os.getcwd()
+    if not filepath.endswith('.env'):
+        filepath = os.path.join(filepath, '.env')
+    if os.path.exists(filepath):
+        if not overwrite:
+            raise FileExistsError(
+                f'File {filepath} already exist, pass in overwrite=True to overwrite it. '
+                'Warning: this will overwrite all existing values in this .env file.')
+    else:
+        f = open(filepath, "x")
+        f.close()
+    for k, v in creds.items():
+        dotenv.set_key(filepath, k, v)
     return filepath
 
 def save_yml(
         creds: str,
-        filepath: str = None,
+        filepath: Path = None,
         overwrite: bool = True
     ):
     """
@@ -70,20 +83,17 @@ def save_yml(
     """
     if filepath is None:
         filepath = os.getcwd()
-        filepath += 'credentials.yml'
 
-    if filepath[-1] == "/":
-        filepath = filepath[:-1]
+    if filepath.endswith('/'):
+        filepath = os.path.join(filepath, 'credentials.yml')
 
     if filepath.split(".")[-1] not in ['yaml', 'yml']:
-        filepath += ".yml"
+        filepath = os.path.join(filepath, ".yml")
 
-    if os.path.exists(filepath):
-        if overwrite:
-            logger.warning(f"Overwriting existing file {filepath}")
-        else:
-            raise FileExistsError(f'{filepath} already exists. If you wish to overwrite it, ' \
-                                   'pass overwrite=True and run this function again.')
-
+    if os.path.exists(filepath) and not overwrite:
+        raise FileExistsError(
+            f'{filepath} already exists. If you wish to overwrite it, '
+            'pass overwrite=True and run this function again.')
     with open(filepath, "w") as _yaml:
         yaml.dump(data=creds, Dumper=yaml.SafeDumper, stream=_yaml)
+    return filepath
