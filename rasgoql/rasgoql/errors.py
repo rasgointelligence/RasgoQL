@@ -14,6 +14,12 @@ class RasgoQLException(Exception):
     """
     pass
 
+class DWCredentialsWarning(RasgoQLException):
+    """
+    Missing DataWarehouse credentials
+    """
+    pass
+
 class DWConnectionError(RasgoQLException):
     """
     Error from DataWarehouse connection activity

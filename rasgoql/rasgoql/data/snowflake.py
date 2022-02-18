@@ -11,7 +11,7 @@ import pandas as pd
 
 from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
-    DWConnectionError, DWQueryError,
+    DWCredentialsWarning, DWConnectionError, DWQueryError,
     PackageDependencyWarning, ParameterException,
     SQLException, TableConflictException
 )
@@ -76,6 +76,19 @@ class SnowflakeCredentials(DWCredentials):
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
+        if not all([
+                os.getenv('snowflake_account'),
+                os.getenv('snowflake_user'),
+                os.getenv('snowflake_password'),
+                os.getenv('snowflake_role'),
+                os.getenv('snowflake_warehouse'),
+                os.getenv('snowflake_database'),
+                os.getenv('snowflake_schema')
+        ]):
+            raise DWCredentialsWarning(
+                'Your env file is missing expected credentials. Consider running '
+                'SnowflakeCredentials(*args).to_env() to repair this.'
+            )
         return cls(
             os.getenv('snowflake_account'),
             os.getenv('snowflake_user'),
@@ -108,13 +121,15 @@ class SnowflakeCredentials(DWCredentials):
         """
         Saves credentials to a .env file on your machine
         """
-        creds = (f'snowflake_account={self.account}\n'
-                 f'snowflake_user={self.user}\n'
-                 f'snowflake_password={self.password}\n'
-                 f'snowflake_role={self.role}\n'
-                 f'snowflake_warehouse={self.warehouse}\n'
-                 f'snowflake_database={self.database}\n'
-                 f'snowflake_schema={self.schema}\n')
+        creds = {
+            "snowflake_account": self.account,
+            "snowflake_user": self.user,
+            "snowflake_password": self.password,
+            "snowflake_role": self.role,
+            "snowflake_warehouse": self.warehouse,
+            "snowflake_database": self.database,
+            "snowflake_schema": self.schema,
+        }
         return save_env(creds, filepath, overwrite)
 
 
@@ -216,6 +231,13 @@ class SnowflakeDataWarehouse(DataWarehouse):
         query = f"CREATE OR REPLACE {table_type} {fqtn} COMMENT='rasgoql' AS {sql}"
         self.execute_query(query, acknowledge_risk=True, response='None')
         return fqtn
+
+    @property
+    def default_namespace(self) -> str:
+        """
+        Returns the default database.schema of this connection
+        """
+        return f'{self.default_database}.{self.default_schema}'
 
     def execute_query(
             self,

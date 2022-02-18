@@ -12,7 +12,7 @@ import pandas as pd
 
 from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
-    DWConnectionError, DWQueryError,
+    DWCredentialsWarning, DWConnectionError, DWQueryError,
     ParameterException, PackageDependencyWarning,
     SQLException, TableAccessError, TableConflictException
 )
@@ -67,6 +67,16 @@ class BigQueryCredentials(DWCredentials):
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
+        if not all([
+                os.getenv('bigquery_secret_type'),
+                os.getenv('bigquery_secret_filepath'),
+                os.getenv('bigquery_project'),
+                os.getenv('bigquery_dataset')
+        ]):
+            raise DWCredentialsWarning(
+                'Your env file is missing expected credentials. Consider running '
+                'BigQueryCredentials(*args).to_env() to repair this.'
+            )
         return cls(
             os.getenv('bigquery_secret_type'),
             os.getenv('bigquery_secret_filepath'),
@@ -93,10 +103,12 @@ class BigQueryCredentials(DWCredentials):
         """
         Saves credentials to a .env file on your machine
         """
-        creds = (f'bigquery_secret_type={self.secret_type}\n'
-                 f'bigquery_secret_filepath={self.secret_filepath}\n'
-                 f'bigquery_project={self.project}\n'
-                 f'bigquery_dataset={self.dataset}\n')
+        creds = {
+            "bigquery_secret_type": self.secret_type,
+            "bigquery_secret_filepath": self.secret_filepath,
+            "bigquery_project": self.project,
+            "bigquery_dataset": self.dataset,
+        }
         return save_env(creds, filepath, overwrite)
 
 
@@ -201,6 +213,13 @@ class BigQueryDataWarehouse(DataWarehouse):
         query = f'CREATE OR REPLACE {table_type} {fqtn} AS {sql}'
         self.execute_query(query, acknowledge_risk=True, response='None')
         return fqtn
+
+    @property
+    def default_namespace(self) -> str:
+        """
+        Returns the default project.dataset of this connection
+        """
+        return f'{self.default_project}.{self.default_dataset}'
 
     def execute_query(
             self,
@@ -403,7 +422,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             # TODO: Test write_disposition to handle overwrite vs append
             job_config = bq.LoadJobConfig(
                 write_disposition='WRITE_TRUNCATE' if method == 'REPLACE' else None,
-                default_dataset=f'{self.default_project}.{self.default_dataset}'
+                default_dataset=self.default_namespace
             )
             job = self.connection.load_table_from_dataframe(
                 df,
@@ -459,7 +478,7 @@ class BigQueryDataWarehouse(DataWarehouse):
     @property
     def _default_job_config(self) -> 'bq.QueryJobConfig':
         return bq.QueryJobConfig(
-            default_dataset=f'{self.default_project}.{self.default_dataset}'
+            default_dataset=self.default_namespace
             )
 
     def _execute_string(

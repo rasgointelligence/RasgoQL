@@ -91,12 +91,10 @@ class DataWarehouse(ABC):
         """
         raise NotImplementedError()
 
-    def define_schema(
-            self,
-            fqtn: str
-        ) -> dict:
+    @property
+    def default_namespace(self) -> str:
         """
-        Return the schema of a table or view
+        Returns the default namespace of this connection
         """
         raise NotImplementedError()
 
