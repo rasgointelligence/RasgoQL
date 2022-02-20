@@ -147,6 +147,7 @@ def _cleanse_template_symbol(
     delete anything that is not letters, numbers, or underscores
     if first character is a number, add an underscore to the beginning
     """
+    symbol = str(symbol)
     symbol = symbol.strip()
     symbol = symbol.replace(' ', '_').replace('-', '_')
     symbol = symbol.upper()
