@@ -22,6 +22,7 @@ from rasgoql.primitives.enums import (
 )
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe
+from rasgoql.utils.messaging import verbose_message
 from rasgoql.utils.sql import (
     is_scary_sql, magic_fqtn_handler,
     parse_fqtn, parse_namespace,
@@ -29,7 +30,7 @@ from rasgoql.utils.sql import (
 )
 
 logging.basicConfig()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('BigQuery DataWarehouse')
 logger.setLevel(logging.INFO)
 
 
@@ -157,7 +158,10 @@ class BigQueryDataWarehouse(DataWarehouse):
             self.default_namespace = namespace
             self.default_project = project
             self.default_dataset = dataset
-            logger.info(f"Namespace reset to {self.default_namespace}")
+            verbose_message(
+                f"Namespace reset to {self.default_namespace}",
+                logger
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -190,6 +194,10 @@ class BigQueryDataWarehouse(DataWarehouse):
                 credentials=self.credentials,
                 project=self.default_project
             )
+            verbose_message(
+                "Connected to BigQuery",
+                logger
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -201,7 +209,10 @@ class BigQueryDataWarehouse(DataWarehouse):
             if self.connection:
                 self.connection.close()
             self.connection = None
-            logger.info("Connection to BigQuery closed")
+            verbose_message(
+                "Connection to BigQuery closed",
+                logger
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -271,8 +282,10 @@ class BigQueryDataWarehouse(DataWarehouse):
                   'If you are positive you want to run this, ' \
                   'pass in acknowledge_risk=True and run this function again.'
             raise SQLWarning(msg)
-        logger.debug('>>>Executing SQL:')
-        logger.debug(sql)
+        verbose_message(
+            f"Executing query: {sql}",
+            logger
+        )
         if response == 'DICT':
             raise NotImplementedError("BigQuery doesn't do that")
         if response == 'DF':
@@ -495,7 +508,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         # Does this match a 'string.string' pattern?
         try:
             validate_namespace(namespace)
-            return namespace.upper()
+            return namespace
         except ValueError:
             raise ParameterException("Bigquery namespaces should be format: PROJECT.DATASET")
 
@@ -516,7 +529,10 @@ class BigQueryDataWarehouse(DataWarehouse):
         """
         Handle Snowflake exceptions that need additional info
         """
-        logger.info(f'Exception occurred while running query: {query}')
+        verbose_message(
+            f'Exception occurred while running query: {query}',
+            logger
+        )
         if exception is None:
             return
         if isinstance(exception, gcp_exc.NotFound):

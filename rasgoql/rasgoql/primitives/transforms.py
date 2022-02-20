@@ -9,6 +9,7 @@ import rasgotransforms as rtx
 
 from rasgoql.errors import ParameterException
 from rasgoql.utils.decorators import require_dw, require_transforms
+from rasgoql.utils.messaging import verbose_message
 from rasgoql.utils.sql import (
     parse_fqtn, make_namespace_from_fqtn,
     random_table_name, validate_fqtn
@@ -23,8 +24,8 @@ from rasgoql.primitives.rendering import (
 )
 
 logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+ds_logger = logging.getLogger('Dataset')
+ds_logger.setLevel(logging.INFO)
 
 
 class TransformableClass:
@@ -139,9 +140,12 @@ class Dataset(TransformableClass):
             self.table_type = TableType[obj_type]
             self.is_rasgo = is_rasgo_obj
         else:
-            logger.info(f'Dataset {self.fqtn} does not exist in the Data Warehouse. '
-                        'Possible causes: you may have provided the incorrect namespace '
-                        'or this may be a SQL Chain that is not yet saved.')
+            verbose_message(
+                f'Dataset {self.fqtn} does not exist in the Data Warehouse. ' \
+                'This is most likely a SQL Chain that is not yet saved. ' \
+                'If you are posititve this table exists, check the namespace for typos.',
+                ds_logger
+            )
 
     @require_dw
     def get_schema(self) -> dict:

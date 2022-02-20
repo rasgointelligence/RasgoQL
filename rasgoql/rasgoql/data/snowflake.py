@@ -20,6 +20,7 @@ from rasgoql.primitives.enums import (
 )
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
+from rasgoql.utils.messaging import verbose_message
 from rasgoql.utils.sql import (
     is_scary_sql, magic_fqtn_handler,
     parse_fqtn, parse_namespace,
@@ -27,7 +28,7 @@ from rasgoql.utils.sql import (
 )
 
 logging.basicConfig()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('Snowflake DataWarehouse')
 logger.setLevel(logging.INFO)
 
 
@@ -172,7 +173,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self.default_namespace = namespace
             self.default_database = database
             self.default_schema = schema
-            logger.info(f"Namespace reset to {self.default_namespace}")
+            verbose_message(
+                f"Namespace reset to {self.default_namespace}",
+                logger
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -202,6 +206,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self.default_database = credentials.get('database')
             self.default_schema = credentials.get('schema')
             self.connection = sf_connector.connect(**credentials)
+            verbose_message(
+                "Connected to Snowflake",
+                logger
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -213,7 +221,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             if self.connection:
                 self.connection.close()
             self.connection = None
-            logger.info("Connection to Snowflake closed")
+            verbose_message(
+                "Connection to Snowflake closed",
+                logger
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -283,6 +294,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
                   'If you are positive you want to run this, ' \
                   'pass in acknowledge_risk=True and run this function again.'
             raise SQLWarning(msg)
+        verbose_message(
+            f"Executing query: {sql}",
+            logger
+        )
         if response == 'DICT':
             return self._execute_dict_cursor(sql)
         if response == 'DF':
@@ -488,7 +503,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
         """
         Handle Snowflake exceptions that need additional info
         """
-        logger.info(f'Exception occurred while running query: {query}')
+        verbose_message(
+            f"Exception occurred while running query: {query}",
+            logger
+        )
         if exception is None:
             return
         if isinstance(exception, sf_connector.errors.ProgrammingError):

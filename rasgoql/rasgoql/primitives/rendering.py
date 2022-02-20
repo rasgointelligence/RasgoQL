@@ -3,7 +3,6 @@ Transform rendering methods
 """
 import functools
 import inspect
-import logging
 import re
 from itertools import combinations, permutations, product
 from typing import Callable, Dict, List, Optional
@@ -14,10 +13,6 @@ import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
 from rasgoql.primitives.enums import check_table_type
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 RUN_QUERY_LIMIT = 100
 JINJA_ENV = jinja2.Environment(extensions=['jinja2.ext.do', 'jinja2.ext.loopcontrols'])

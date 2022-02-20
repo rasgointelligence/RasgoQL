@@ -2,15 +2,10 @@
 DataWarehouse credential functions
 """
 import os
-import logging
 from pathlib import Path
 import yaml
 
 import dotenv
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def load_env(

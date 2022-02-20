@@ -23,7 +23,7 @@ def cleanse_sql_name(
     """
     Converts a string to a SQL compliant value
     """
-    return name.replace(" ", "_").replace("-", "_").replace('"', '').replace(".", "_").upper()
+    return name.replace(" ", "_").replace("-", "_").replace('"', '').replace(".", "_")
 
 def is_scary_sql(
         sql: str
@@ -52,7 +52,7 @@ def magic_fqtn_handler(
     """
     Makes all of your wildest dreams come true... well not *that* one
     """
-    input_db, input_schema, table = parse_fqtn(possible_fqtn)
+    input_db, input_schema, table = parse_fqtn(possible_fqtn, default_namespace, False)
     default_database, default_schema = parse_namespace(default_namespace)
     database = input_db or default_database
     schema = input_schema or default_schema
@@ -66,7 +66,7 @@ def make_fqtn(
     """
     Accepts component parts and returns a fully qualified table string
     """
-    return f"{database}.{schema}.{table}".upper()
+    return f"{database}.{schema}.{table}"
 
 def make_namespace_from_fqtn(
         fqtn: str
@@ -78,13 +78,24 @@ def make_namespace_from_fqtn(
     return f"{database}.{schema}"
 
 def parse_fqtn(
-        fqtn: str
+        fqtn: str,
+        default_namespace: str = None,
+        strict: bool = True
 ) -> tuple:
     """
     Accepts a possible fully qualified table string and returns its component parts
     """
-    fqtn = validate_fqtn(fqtn)
-    return tuple(fqtn.split("."))
+    if strict:
+        fqtn = validate_fqtn(fqtn)
+        return (* fqtn.split("."),)
+    database, schema = parse_namespace(default_namespace)
+    if fqtn.count(".") == 2:
+        return (* fqtn.split("."),)
+    if fqtn.count(".") == 1:
+        return (database, * fqtn.split("."),)
+    if fqtn.count(".") == 0:
+        return (database, schema, fqtn)
+    raise ValueError(f'{fqtn} is not a well-formed fqtn')
 
 def parse_namespace(
         namespace: str
@@ -108,7 +119,7 @@ def validate_fqtn(
     Accepts a possible fully qualified table string and decides whether it is well formed
     """
     if re.match(r'\w+\.\w+\.\w+', fqtn):
-        return fqtn.upper()
+        return fqtn
     raise ValueError(f'{fqtn} is not a well-formed fqtn')
 
 def validate_namespace(
@@ -118,7 +129,7 @@ def validate_namespace(
     Accepts a possible namespace string and decides whether it is well formed
     """
     if re.match(r'\w+\.\w+', namespace):
-        return namespace.upper()
+        return namespace
     raise ValueError(f'{namespace} is not a well-formed namespace')
 
 def wrap_table(
