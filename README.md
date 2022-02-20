@@ -1,11 +1,10 @@
-<p align="left">
-  <img width="100%" href="https://rasgoml.com" target="_blank" src="https://files.gitbook.com/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F-MJDKltt3A57jhixTfmu%2Fuploads%2F4noR7wUu8mqIv8k8v1Uk%2Fimage%20(20).png?alt=media&token=47b0b328-4585-44d7-9230-54b4f391b9e6" />
-</p>
+![RasgoQL Hero](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/RasgoQL%20Hero%20Image.png)
 
 [![Downloads](https://pepy.tech/badge/rasgoql/month)](https://pepy.tech/project/rasgoql)
 [![PyPI version](https://badge.fury.io/py/rasgoql.svg)](https://badge.fury.io/py/rasgoql)
 [![Docs](https://img.shields.io/badge/RasgoQL-DOCS-GREEN.svg)](https://docs.rasgoql.com/)
 [![Chat on Slack](https://img.shields.io/badge/chat-on%20Slack-brightgreen.svg)](https://join.slack.com/t/rasgousergroup/shared_invite/zt-nytkq6np-ANEJvbUSbT2Gkvc8JICp3g)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 # RasgoQL
 RasgoQL is a Python package that enables you to easily query and transform tables in your Data Warehouse directly from a notebook.
@@ -28,7 +27,7 @@ Learn more at [https://docs.rasgoql.com](https://docs.rasgoql.com).
 # How does it work?
 Under the covers, RasgoQL sends all processing to your Data Warehouse, enabling the efficient transformation of massive datasets. RasgoQL only needs basic metadata to execute transforms, so your private data remains secure.
 
-![RasgoQL workflow diagram](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/RasgoQL_Flow.png)
+![RasgoQL workflow diagram](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/RasgoQL-flow.png)
 
 RasgoQL does these things well:
 - Pulls existing Data Warehouse tables into pandas DataFrames for analysis
@@ -94,8 +93,11 @@ agg_weekly_sales = weekly_sales.aggregate(
 agg_weekly_sales.to_df()
 
 # Print the SQL
-agg_weekly_sales.sql()
+print(agg_weekly_sales.sql())
 ```
+
+## Getting Stared Tutorials
+The best way to get familiar with the RasgoQL basics is by running through [these notebooks](https://github.com/rasgointelligence/RasgoQL/tree/main/tutorials) in the tutorials folder. 
 
 # Advanced Examples
 
@@ -163,6 +165,8 @@ If you have any questions please:
 # How can I contribute?
 Review the [contributors guide](https://github.com/rasgointelligence/RasgoQL/blob/main/CONTRIBUTING.md)
 
+## License
+RasgoQL uses the GNU AGPL license, as found in the [LICENSE file](./LICENSE).
 
 <i>Built for Data Scientists, by Data Scientists</i>
 
