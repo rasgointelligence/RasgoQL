@@ -44,7 +44,7 @@ class PackageDependencyWarning(RasgoQLException):
     """
     pass
 
-class SQLException(RasgoQLException):
+class SQLWarning(RasgoQLException):
     """
     Possible problem with SQL text
     """

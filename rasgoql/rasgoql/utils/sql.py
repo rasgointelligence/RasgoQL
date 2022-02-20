@@ -2,6 +2,7 @@
 Helpful sql utilities
 """
 import random
+import re
 import string
 
 
@@ -46,13 +47,13 @@ def is_restricted_sql(
 
 def magic_fqtn_handler(
         possible_fqtn: str,
-        default_database: str,
-        default_schema: str
+        default_namespace: str
     ) -> str:
     """
     Makes all of your wildest dreams come true... well not *that* one
     """
     input_db, input_schema, table = parse_fqtn(possible_fqtn)
+    default_database, default_schema = parse_namespace(default_namespace)
     database = input_db or default_database
     schema = input_schema or default_schema
     return make_fqtn(database, schema, table)
@@ -65,7 +66,16 @@ def make_fqtn(
     """
     Accepts component parts and returns a fully qualified table string
     """
-    return f"{database}.{schema}.{table}"
+    return f"{database}.{schema}.{table}".upper()
+
+def make_namespace_from_fqtn(
+        fqtn: str
+) -> str:
+    """
+    Accepts component parts and returns a fully qualified namespace string
+    """
+    database, schema, _ = parse_fqtn(fqtn)
+    return f"{database}.{schema}"
 
 def parse_fqtn(
         fqtn: str
@@ -73,17 +83,17 @@ def parse_fqtn(
     """
     Accepts a possible fully qualified table string and returns its component parts
     """
-    database = None
-    schema = None
-    table = fqtn
-    if fqtn.count('.') == 2:
-        database = fqtn.split(".")[0]
-        schema = fqtn.split(".")[1]
-        table = fqtn.split(".")[-1]
-    elif fqtn.count('.') == 1:
-        schema = fqtn.split(".")[0]
-        table = fqtn.split(".")[-1]
-    return database, schema, table
+    fqtn = validate_fqtn(fqtn)
+    return tuple(fqtn.split("."))
+
+def parse_namespace(
+        namespace: str
+) -> tuple:
+    """
+    Accepts a possible namespace string and returns its component parts
+    """
+    namespace = validate_namespace(namespace)
+    return tuple(namespace.split("."))
 
 def random_table_name() -> str:
     """
@@ -93,14 +103,23 @@ def random_table_name() -> str:
 
 def validate_fqtn(
         fqtn: str
-    ) -> bool:
+    ) -> str:
     """
     Accepts a possible fully qualified table string and decides whether it is well formed
     """
-    is_fqtn = False
-    if fqtn.count('.') == 2:
-        is_fqtn = True
-    return is_fqtn
+    if re.match(r'\w+\.\w+\.\w+', fqtn):
+        return fqtn.upper()
+    raise ValueError(f'{fqtn} is not a well-formed fqtn')
+
+def validate_namespace(
+        namespace: str
+    ) -> bool:
+    """
+    Accepts a possible namespace string and decides whether it is well formed
+    """
+    if re.match(r'\w+\.\w+', namespace):
+        return namespace.upper()
+    raise ValueError(f'{namespace} is not a well-formed namespace')
 
 def wrap_table(
         parent_table: str

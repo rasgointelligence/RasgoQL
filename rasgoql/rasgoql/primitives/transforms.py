@@ -9,8 +9,10 @@ import rasgotransforms as rtx
 
 from rasgoql.errors import ParameterException
 from rasgoql.utils.decorators import require_dw, require_transforms
-from rasgoql.utils.sql import parse_fqtn, random_table_name, validate_fqtn
-
+from rasgoql.utils.sql import (
+    parse_fqtn, make_namespace_from_fqtn,
+    random_table_name, validate_fqtn
+)
 from rasgoql.primitives.enums import (
     check_render_method, check_table_type,
     TableType, TableState
@@ -76,10 +78,12 @@ class TransformableClass:
         if isinstance(self, Dataset):
             entry_table = self
             source_table = self.fqtn
+            namespace = self._dw.default_namespace
         # If we're transforming a Chain
         if isinstance(self, SQLChain):
             entry_table = self.entry_table
             source_table = self.output_table.fqtn
+            namespace = self.namespace
             # If we're transforming a Chain with existing transforms
             if self.transforms:
                 source_table = self.output_table.table_name
@@ -90,12 +94,12 @@ class TransformableClass:
         new_transform = Transform(
             name,
             arguments,
-            self.namespace,
+            namespace,
             output_alias,
             self._dw
         )
         transforms.append(new_transform)
-        return SQLChain(entry_table, transforms, self._dw)
+        return SQLChain(entry_table, namespace, transforms, self._dw)
 
 
 class Dataset(TransformableClass):
@@ -108,12 +112,12 @@ class Dataset(TransformableClass):
             dw: 'DataWarehouse' = None
         ):
         super().__init__(dw)
-        if not validate_fqtn(fqtn):
+        try:
+            self.fqtn = validate_fqtn(fqtn)
+        except ValueError:
             raise ParameterException("Must pass in a valid 'fqtn' parameter to create a Dataset")
-        self.fqtn = fqtn
-        database, schema, table_name = parse_fqtn(fqtn)
-        self.namespace = f'{database}.{schema}'
-        self.table_name = table_name
+        self.namespace = make_namespace_from_fqtn(fqtn)
+        self.table_name = parse_fqtn(fqtn)[2]
         self._dw._validate_namespace(self.namespace)
 
         self.table_type = TableType.UNKNOWN
@@ -241,13 +245,14 @@ class SQLChain(TransformableClass):
     def __init__(
             self,
             entry_table: Dataset,
+            namespace: str,
             transforms: List[Transform] = None,
             dw: 'DataWarehouse' = None
         ) -> None:
         super().__init__(dw)
         self.entry_table = entry_table
         self.transforms = transforms
-        self.namespace = entry_table.namespace
+        self.namespace = namespace
 
     def __repr__(self) -> str:
         transform_count = len(self.transforms) if self.transforms else 0
@@ -260,9 +265,10 @@ class SQLChain(TransformableClass):
         """
         Re-sets the class's namespace
         """
-        self._dw._validate_namespace(new_namespace)
+        self._dw.change_namespace(new_namespace)
         self.namespace = new_namespace
-        logger.info(f"Namespace reset to {self.namespace}")
+        for t in self.transforms:
+            t.namespace = new_namespace
 
     @property
     def fqtn(self) -> str:
