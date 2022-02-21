@@ -15,7 +15,7 @@ import rasgotransforms as rtx
 from rasgoql.errors import TransformRenderingError
 from rasgoql.primitives.enums import check_table_type
 from rasgoql.utils.dbt import (
-    DBT_PROKECT_TEMPLATE, prepare_dbt_path,
+    DBT_PROJECT_TEMPLATE, prepare_dbt_path,
     save_project_file, save_model_file
 )
 
@@ -127,7 +127,7 @@ def create_dbt_files(
         # append reference to yml_dict
         yml_models[t.output_alias] = {"+materialized": render_method}
     # write dbt_project.yml file
-    yml_definition = DBT_PROKECT_TEMPLATE.copy()
+    yml_definition = DBT_PROJECT_TEMPLATE.copy()
     yml_definition["models"] = yml_models
     return save_project_file(
         yml_definition,

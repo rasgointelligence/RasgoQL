@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import yaml
 
-DBT_PROKECT_TEMPLATE = {
+DBT_PROJECT_TEMPLATE = {
     "name": "",
     "version": "1.0.0",
     "profile": "",
