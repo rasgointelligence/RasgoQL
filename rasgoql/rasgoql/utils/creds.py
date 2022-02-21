@@ -92,35 +92,3 @@ def save_yml(
     with open(filepath, "w") as _yaml:
         yaml.dump(data=creds, Dumper=yaml.SafeDumper, stream=_yaml)
     return filepath
-
-def save_project_file(
-        yml_definition: str,
-        filepath: Path,
-        overwrite: bool = True
-    ) -> bool:
-    """
-    Writes a yaml definition to a dbt project file
-    """
-    if os.path.exists(filepath) and not overwrite:
-        raise FileExistsError(
-            f'{filepath} already exists. If you wish to overwrite it, '
-            'pass overwrite=True and run this function again.')
-    with open(filepath, "w") as _yaml:
-        yaml.dump(data=yml_definition, Dumper=yaml.SafeDumper, stream=_yaml)
-    return filepath
-
-def save_model_file(
-        sql_definition: str,
-        filepath: Path,
-        overwrite: bool = True
-) -> bool:
-    """
-    Writes a sql script to a dbt model file
-    """
-    if os.path.exists(filepath) and not overwrite:
-        raise FileExistsError(
-            f'{filepath} already exists. If you wish to overwrite it, '
-            'pass overwrite=True and run this function again.')
-    with open(filepath, "w") as _sql:
-        _sql.write(sql_definition)
-    return filepath

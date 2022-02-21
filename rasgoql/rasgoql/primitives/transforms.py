@@ -358,12 +358,20 @@ class SQLChain(TransformableClass):
     def to_dbt(
             self,
             filepath: str,
-            render_method: str = 'view'
+            project_name: str = None,
+            materialize_method: str = 'view',
+            overwrite: bool = False
         ) -> str:
         """
         Saves a dbt_project.yml and model.sql files to a directory
         """
-        return create_dbt_files(self.transforms, filepath, render_method)
+        return create_dbt_files(
+            self.transforms,
+            filepath,
+            project_name,
+            materialize_method,
+            overwrite
+        )
 
     def to_df(self) -> pd.DataFrame:
         """

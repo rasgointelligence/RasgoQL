@@ -14,7 +14,10 @@ import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
 from rasgoql.primitives.enums import check_table_type
-from rasgoql.utils.creds import save_project_file, save_model_file
+from rasgoql.utils.dbt import (
+    DBT_PROKECT_TEMPLATE, prepare_dbt_path,
+    save_project_file, save_model_file
+)
 
 RUN_QUERY_LIMIT = 100
 JINJA_ENV = jinja2.Environment(extensions=['jinja2.ext.do', 'jinja2.ext.loopcontrols'])
@@ -91,14 +94,20 @@ def assemble_view_chain(
 def create_dbt_files(
         transforms: List['Transform'],
         filepath: str,
-        render_method: str = 'view'
+        project_name: str = None,
+        render_method: str = 'view',
+        overwrite: bool = False
 ) -> str:
     """
     Saves a dbt_project.yml and model.sql files to a directory
     """
+    # Prepare directory for dbt files
+    project_name = project_name or transforms[-1].output_alias
+    prepare_dbt_path(project_name, filepath)
+
     cte_list = []
     running_sql = None
-    yml_definition = 'models:'
+    yml_models = {}
     for t in transforms:
         t_sql = generate_transform_sql(
             t.name,
@@ -110,13 +119,21 @@ def create_dbt_files(
         running_sql = _construct_running_sql(cte_list, t_sql)
         cte_list.append(f'{t.output_alias} AS (\n{t_sql}\n) ')
         # write model.sql file
-        sql_definition = t_sql
-        save_model_file(sql_definition, os.path.join(filepath, f'{t.output_alias}.sql'))
-        # append reference to yml_str
-        yml_definition += f'\n\t{t.output_alias}:\n\t+materialized: {render_method}'
+        save_model_file(
+            t_sql,
+            os.path.join(filepath, f'{project_name}/models/{t.output_alias}.sql'),
+            overwrite
+        )
+        # append reference to yml_dict
+        yml_models[t.output_alias] = {"+materialized": render_method}
     # write dbt_project.yml file
-    save_project_file(yml_definition, os.path.join(filepath, f'{t.output_alias}_project.yml'))
-    return os.path.join(filepath, f'{t.output_alias}_project.yml')
+    yml_definition = DBT_PROKECT_TEMPLATE.copy()
+    yml_definition["models"] = yml_models
+    return save_project_file(
+        yml_definition,
+        os.path.join(filepath, f'{project_name}/dbt_project.yml'),
+        overwrite
+    )
 
 def generate_transform_sql(
         name: str,

@@ -2,7 +2,12 @@
 Decorators
 """
 import functools
+import logging
 from typing import Callable, Union
+
+logging.basicConfig()
+logger = logging.getLogger('rasgoQL')
+logger.setLevel(logging.INFO)
 
 
 def parametrized(decorator):
