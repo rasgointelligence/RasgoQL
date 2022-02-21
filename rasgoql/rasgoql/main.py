@@ -8,6 +8,7 @@ import rasgotransforms as rtx
 
 from rasgoql.data import DataWarehouse
 from rasgoql.primitives import Dataset, SQLChain, TransformTemplate
+from rasgoql.utils.messaging import set_verbose
 from rasgoql.version import __version__
 
 class RasgoQL:
@@ -90,9 +91,23 @@ class RasgoQL:
         """
         return self._dw.execute_query(sql, response='df')
 
+    def set_verbose(
+            self,
+            value: bool
+        ) -> None:
+        """
+        Turn verbose logging on or off
+
+        value: bool
+            True = log more info about SQL and primitive activities
+            False = log almost nothing
+        """
+        set_verbose(value)
+
     def sqlchain(
             self,
-            fqtn: str
+            fqtn: str,
+            namespace: str = None
         ) -> SQLChain:
         """
         Returns a SQLChain connected to the Cloud Data Warehouse
@@ -102,5 +117,6 @@ class RasgoQL:
                 fqtn,
                 self._dw
             ),
+            namespace=namespace or self._dw.default_namespace,
             dw=self._dw
         )

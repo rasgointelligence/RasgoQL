@@ -3,7 +3,6 @@ Transform rendering methods
 """
 import functools
 import inspect
-import logging
 import re
 from itertools import combinations, permutations, product
 from typing import Callable, Dict, List, Optional
@@ -14,10 +13,6 @@ import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
 from rasgoql.primitives.enums import check_table_type
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 RUN_QUERY_LIMIT = 100
 JINJA_ENV = jinja2.Environment(extensions=['jinja2.ext.do', 'jinja2.ext.loopcontrols'])
@@ -147,6 +142,7 @@ def _cleanse_template_symbol(
     delete anything that is not letters, numbers, or underscores
     if first character is a number, add an underscore to the beginning
     """
+    symbol = str(symbol)
     symbol = symbol.strip()
     symbol = symbol.replace(' ', '_').replace('-', '_')
     symbol = symbol.upper()

@@ -4,7 +4,6 @@ BigQuery Data Warehouse classes
 
 import logging
 import os
-import re
 from typing import List, Union
 
 import json
@@ -14,7 +13,7 @@ from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
     DWCredentialsWarning, DWConnectionError, DWQueryError,
     ParameterException, PackageDependencyWarning,
-    SQLException, TableAccessError, TableConflictException
+    SQLWarning, TableAccessError, TableConflictException
 )
 from rasgoql.imports import bq, gcp_exc, gcp_flow, gcp_svc
 from rasgoql.primitives.enums import (
@@ -23,10 +22,15 @@ from rasgoql.primitives.enums import (
 )
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe
-from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
+from rasgoql.utils.messaging import verbose_message
+from rasgoql.utils.sql import (
+    is_scary_sql, magic_fqtn_handler,
+    parse_fqtn, parse_namespace,
+    validate_namespace
+)
 
 logging.basicConfig()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('BigQuery DataWarehouse')
 logger.setLevel(logging.INFO)
 
 
@@ -135,6 +139,31 @@ class BigQueryDataWarehouse(DataWarehouse):
     # ---------------------------
     # Core Data Warehouse methods
     # ---------------------------
+    def change_namespace(
+            self,
+            namespace: str
+        ) -> None:
+        """
+        Changes the default namespace of your connection
+
+        Params:
+        `namespace`: str:
+            namespace (project.dataset)
+        """
+        namespace = self._validate_namespace(namespace)
+        project, dataset = parse_namespace(namespace)
+        try:
+            self.execute_query(f'USE PROJECT {project}')
+            self.execute_query(f'USE DATASET {dataset}')
+            self.default_namespace = namespace
+            self.default_project = project
+            self.default_dataset = dataset
+            verbose_message(
+                f"Namespace reset to {self.default_namespace}",
+                logger
+            )
+        except Exception as e:
+            self._error_handler(e)
 
     def connect(
             self,
@@ -165,8 +194,12 @@ class BigQueryDataWarehouse(DataWarehouse):
                 credentials=self.credentials,
                 project=self.default_project
             )
+            verbose_message(
+                "Connected to BigQuery",
+                logger
+            )
         except Exception as e:
-            raise e
+            self._error_handler(e)
 
     def close_connection(self):
         """
@@ -176,9 +209,12 @@ class BigQueryDataWarehouse(DataWarehouse):
             if self.connection:
                 self.connection.close()
             self.connection = None
-            logger.info("Connection to BigQuery closed")
+            verbose_message(
+                "Connection to BigQuery closed",
+                logger
+            )
         except Exception as e:
-            raise e
+            self._error_handler(e)
 
     def create(
             self,
@@ -204,7 +240,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_table_type(table_type)
-        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         if self._table_exists(fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
@@ -245,9 +281,11 @@ class BigQueryDataWarehouse(DataWarehouse):
                   'potentially dangerous or data-altering operation.' \
                   'If you are positive you want to run this, ' \
                   'pass in acknowledge_risk=True and run this function again.'
-            raise SQLException(msg)
-        logger.debug('>>>Executing SQL:')
-        logger.debug(sql)
+            raise SQLWarning(msg)
+        verbose_message(
+            f"Executing query: {sql}",
+            logger
+        )
         if response == 'DICT':
             raise NotImplementedError("BigQuery doesn't do that")
         if response == 'DF':
@@ -264,7 +302,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         proj, ds, tbl = parse_fqtn(fqtn)
         sql = f"SELECT DDL FROM {proj}.{ds}.INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='{tbl}'"
         query_response = self.execute_query(sql)
@@ -286,7 +324,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             is rasgo object: bool
             object type: [table|view|unknown]
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         obj_exists = False
         is_rasgo_obj = False
         obj_type = 'unknown'
@@ -313,12 +351,12 @@ class BigQueryDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         try:
             table = self.connection.get_table(fqtn)
             return table.schema
-        except gcp_exc.NotFound:
-            raise TableAccessError(f'Table {fqtn} does not exist')
+        except Exception as e:
+            self._error_handler(e)
 
     def list_tables(
             self,
@@ -366,7 +404,7 @@ class BigQueryDataWarehouse(DataWarehouse):
                 columns=columns
             )
         except Exception as e:
-            raise e
+            self._error_handler(e)
 
     def preview(
             self,
@@ -410,7 +448,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         """
         if method:
             method = check_write_method(method)
-        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         table_exists = self._table_exists(fqtn)
         if table_exists and not method:
             msg = f"A table named {fqtn} already exists. " \
@@ -432,7 +470,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             # Wait for the job to complete
             #job.result()
         except Exception as e:
-            raise e
+            self._error_handler(e)
 
 
     # ---------------------------
@@ -449,7 +487,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_project, self.default_dataset)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         try:
             self.connection.get_table(fqtn)
             return True
@@ -468,9 +506,11 @@ class BigQueryDataWarehouse(DataWarehouse):
             namespace (project.dataset)
         """
         # Does this match a 'string.string' pattern?
-        if re.match(r'\w+\.\w+', namespace):
-            return
-        raise ParameterException("Bigquery namespaces should be format: PROJECT.DATASET")
+        try:
+            validate_namespace(namespace)
+            return namespace
+        except ValueError:
+            raise ParameterException("Bigquery namespaces should be format: PROJECT.DATASET")
 
     # --------------------------
     # BigQuery specific helpers
@@ -480,6 +520,26 @@ class BigQueryDataWarehouse(DataWarehouse):
         return bq.QueryJobConfig(
             default_dataset=self.default_namespace
             )
+
+    def _error_handler(
+            self,
+            exception: Exception,
+            query: str = None
+        ) -> None:
+        """
+        Handle Snowflake exceptions that need additional info
+        """
+        verbose_message(
+            f'Exception occurred while running query: {query}',
+            logger
+        )
+        if exception is None:
+            return
+        if isinstance(exception, gcp_exc.NotFound):
+            raise TableAccessError('Table does not exist')
+        if isinstance(exception, gcp_exc.ServiceUnavailable):
+            raise DWConnectionError('Service is not available')
+        raise exception
 
     def _execute_string(
             self,
@@ -498,8 +558,35 @@ class BigQueryDataWarehouse(DataWarehouse):
                 return
             return list(query_job.result())
         except Exception as e:
-            logger.info(f'Error occurred while running SQL: {query}')
-            raise e
+            self._error_handler(e)
+
+    def _get_appflow_credentials(
+            self,
+            filepath: str
+        ):
+        try:
+            appflow = gcp_flow.InstalledAppFlow.from_client_secrets_file(
+                filepath,
+                scopes=["https://www.googleapis.com/auth/bigquery"]
+            )
+            appflow.run_local_server()
+            #appflow.run_console()
+            return appflow.credentials
+        except Exception as e:
+            self._error_handler(e)
+
+    def _get_service_credentials(
+            self,
+            filepath: str
+        ):
+        try:
+            credentials = gcp_svc.Credentials.from_service_account_file(
+                filepath,
+                scopes=["https://www.googleapis.com/auth/cloud-platform"]
+            )
+            return credentials
+        except Exception as e:
+            self._error_handler(e)
 
     def _query_into_pandas(
             self,
@@ -516,27 +603,4 @@ class BigQueryDataWarehouse(DataWarehouse):
                 .result() \
                 .to_dataframe()
         except Exception as e:
-            logger.info(f'Error occurred while running SQL: {query}')
-            raise e
-
-    def _get_appflow_credentials(
-            self,
-            filepath: str
-        ):
-        appflow = gcp_flow.InstalledAppFlow.from_client_secrets_file(
-            filepath,
-            scopes=["https://www.googleapis.com/auth/bigquery"]
-        )
-        appflow.run_local_server()
-        #appflow.run_console()
-        return appflow.credentials
-
-    def _get_service_credentials(
-            self,
-            filepath: str
-        ):
-        credentials = gcp_svc.Credentials.from_service_account_file(
-            filepath,
-            scopes=["https://www.googleapis.com/auth/cloud-platform"]
-        )
-        return credentials
+            self._error_handler(e)

@@ -60,6 +60,15 @@ class DataWarehouse(ABC):
         self.credentials = None
         self.connection = None
 
+    def change_namespace(
+            self,
+            namespace: str
+    ):
+        """
+        Change the default namespace of this connection
+        """
+        raise NotImplementedError()
+
     def connect(
             self,
             credentials: Union[dict, DWCredentials]
@@ -68,10 +77,6 @@ class DataWarehouse(ABC):
         Connect to this DataWarehouse
         """
         raise NotImplementedError()
-
-    # ---------------------------
-    # Core Data Warehouse methods
-    # ---------------------------
 
     def close_connection(self):
         """

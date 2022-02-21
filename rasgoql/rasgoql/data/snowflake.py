@@ -3,7 +3,6 @@ Snowflake DataWarehouse classes
 """
 import logging
 import os
-import re
 from typing import List, Optional, Union
 
 import json
@@ -13,7 +12,7 @@ from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
     DWCredentialsWarning, DWConnectionError, DWQueryError,
     PackageDependencyWarning, ParameterException,
-    SQLException, TableConflictException
+    SQLWarning, TableConflictException
 )
 from rasgoql.imports import sf_connector, write_pandas
 from rasgoql.primitives.enums import (
@@ -21,10 +20,15 @@ from rasgoql.primitives.enums import (
 )
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
-from rasgoql.utils.sql import is_scary_sql, magic_fqtn_handler, parse_fqtn
+from rasgoql.utils.messaging import verbose_message
+from rasgoql.utils.sql import (
+    is_scary_sql, magic_fqtn_handler,
+    parse_fqtn, parse_namespace,
+    validate_namespace
+)
 
 logging.basicConfig()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('Snowflake DataWarehouse')
 logger.setLevel(logging.INFO)
 
 
@@ -150,6 +154,31 @@ class SnowflakeDataWarehouse(DataWarehouse):
     # ---------------------------
     # Core Data Warehouse methods
     # ---------------------------
+    def change_namespace(
+            self,
+            namespace: str
+        ) -> None:
+        """
+        Changes the default namespace of your connection
+
+        Params:
+        `namespace`: str:
+            namespace (database.schema)
+        """
+        namespace = self._validate_namespace(namespace)
+        database, schema = parse_namespace(namespace)
+        try:
+            self.execute_query(f'USE DATABASE {database}')
+            self.execute_query(f'USE SCHEMA {schema}')
+            self.default_namespace = namespace
+            self.default_database = database
+            self.default_schema = schema
+            verbose_message(
+                f"Namespace reset to {self.default_namespace}",
+                logger
+            )
+        except Exception as e:
+            self._error_handler(e)
 
     def connect(
             self,
@@ -177,12 +206,12 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self.default_database = credentials.get('database')
             self.default_schema = credentials.get('schema')
             self.connection = sf_connector.connect(**credentials)
-        except sf_connector.errors.DatabaseError as e:
-            raise DWConnectionError(e)
-        except sf_connector.errors.ForbiddenError as e:
-            raise DWConnectionError(e)
+            verbose_message(
+                "Connected to Snowflake",
+                logger
+            )
         except Exception as e:
-            raise e
+            self._error_handler(e)
 
     def close_connection(self):
         """
@@ -192,11 +221,12 @@ class SnowflakeDataWarehouse(DataWarehouse):
             if self.connection:
                 self.connection.close()
             self.connection = None
-            logger.info("Connection to Snowflake closed")
-        except sf_connector.errors.DatabaseError as e:
-            raise DWConnectionError(e)
+            verbose_message(
+                "Connection to Snowflake closed",
+                logger
+            )
         except Exception as e:
-            raise e
+            self._error_handler(e)
 
     def create(
             self,
@@ -222,7 +252,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_table_type(table_type)
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         if self._table_exists(fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
@@ -263,9 +293,11 @@ class SnowflakeDataWarehouse(DataWarehouse):
                   'potentially dangerous or data-altering operation.' \
                   'If you are positive you want to run this, ' \
                   'pass in acknowledge_risk=True and run this function again.'
-            raise SQLException(msg)
-        logger.debug('>>>Executing SQL:')
-        logger.debug(sql)
+            raise SQLWarning(msg)
+        verbose_message(
+            f"Executing query: {sql}",
+            logger
+        )
         if response == 'DICT':
             return self._execute_dict_cursor(sql)
         if response == 'DF':
@@ -282,7 +314,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         sql = f"SELECT GET_DDL('TABLE', '{fqtn}') AS DDL"
         query_response = self.execute_query(sql, response='dict')
         return query_response[0]['DDL']
@@ -303,7 +335,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             is rasgo object: bool
             object type: [table|view|unknown]
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         database, schema, table = parse_fqtn(fqtn)
         sql = f"SHOW OBJECTS LIKE '{table}' IN {database}.{schema}"
         result = self.execute_query(sql, response='dict')
@@ -326,7 +358,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         sql = f"DESC TABLE {fqtn}"
         query_response = self.execute_query(sql, response='dict')
         return query_response
@@ -400,7 +432,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         """
         if method:
             method = check_write_method(method)
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         table_exists = self._table_exists(fqtn)
         if table_exists and not method:
             msg = f"A table named {fqtn} already exists. " \
@@ -423,7 +455,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             )
             return success, chunks, rows, output
         except Exception as e:
-            raise e
+            self._error_handler(e)
 
     # ---------------------------
     # Core Data Warehouse helpers
@@ -439,14 +471,14 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_database, self.default_schema)
+        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         do_i_exist, _, _ = self.get_object_details(fqtn)
         return do_i_exist
 
     def _validate_namespace(
             self,
             namespace: str
-        ):
+        ) -> None:
         """
         Checks a namespace string for compliance with Snowflake format
 
@@ -454,38 +486,51 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (database.schema)
         """
-        # Does this match a 'string.string' pattern?
-        if re.match(r'\w+\.\w+', namespace):
-            return
-        raise ParameterException("Snowflake namespaces should be format: DATABASE.SCHEMA")
+        try:
+            validate_namespace(namespace)
+            return namespace.upper()
+        except ValueError:
+            raise ParameterException("Snowflake namespaces should be format: DATABASE.SCHEMA")
 
     # --------------------------
     # Snowflake specific helpers
     # --------------------------
-    def _execute_string(
+    def _error_handler(
             self,
-            query: str,
-            ignore_results: bool = False
-        ) -> List[tuple]:
+            exception: Exception,
+            query: str = None
+        ) -> None:
         """
-        Execute a query string against the Data Warehouse connection and fetch all results
+        Handle Snowflake exceptions that need additional info
         """
-        query_returns = []
-        cursor = None
-        try:
-            for cursor in self.connection.execute_string(query, return_cursors=(not ignore_results)):
-                for query_return in cursor:
-                    query_returns.append(query_return)
-            return query_returns
-        except sf_connector.errors.ProgrammingError as e:
-            logger.info(f'Error occurred while running SQL: {query}')
-            raise DWQueryError(e)
-        except Exception as e:
-            logger.info(f'Error occurred while running SQL: {query}')
-            raise e
-        finally:
-            if cursor:
-                cursor.close()
+        verbose_message(
+            f"Exception occurred while running query: {query}",
+            logger
+        )
+        if exception is None:
+            return
+        if isinstance(exception, sf_connector.errors.ProgrammingError):
+            # TODO:
+            # TableAccessError
+            # Insufficient privileges to write to namespace
+            if exception.errno == ...:
+                raise DWQueryError(
+                    'You do not have access to operate on this object. '
+                    'Two possible ways to resolve: '
+                    'Connect with different credentials that have the proper access.'
+                    'Or run `.change_namespace` on your SQLChain to write it to a '
+                    'namespace your credentials can access')
+            raise DWQueryError(exception)
+        if isinstance(exception, sf_connector.errors.DatabaseError):
+            if exception.errno == 250001:
+                raise DWConnectionError(
+                    'Invalid username / password, please check that your '
+                    ' credentials are correct and try to reconnect'
+                )
+            raise DWConnectionError(exception)
+        if isinstance(exception, sf_connector.errors.ServiceUnavailableError):
+            raise DWConnectionError('Snowflake service is unavailable')
+        raise exception
 
     def _execute_dict_cursor(
             self,
@@ -507,12 +552,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
             cursor = self.connection.cursor(sf_connector.DictCursor)
             query_return = cursor.execute(query).fetchall()
             return query_return
-        except sf_connector.errors.ProgrammingError as e:
-            logger.info(f'Error occurred while running SQL: {query}')
-            raise DWQueryError(e)
         except Exception as e:
-            logger.info(f'Error occurred while running SQL: {query}')
-            raise e
+            self._error_handler(e)
         finally:
             if cursor:
                 cursor.close()
@@ -530,12 +571,29 @@ class SnowflakeDataWarehouse(DataWarehouse):
             cursor = self.connection.cursor()
             query_return = cursor.execute(query, params).fetch_pandas_all()
             return query_return
-        except sf_connector.errors.ProgrammingError as e:
-            logger.info(f'Error occurred while running SQL: {query}')
-            raise DWQueryError(e)
         except Exception as e:
-            logger.info(f'Error occurred while running SQL: {query}')
-            raise e
+            self._error_handler(e)
+        finally:
+            if cursor:
+                cursor.close()
+
+    def _execute_string(
+            self,
+            query: str,
+            ignore_results: bool = False
+        ) -> List[tuple]:
+        """
+        Execute a query string against the Data Warehouse connection and fetch all results
+        """
+        query_returns = []
+        cursor = None
+        try:
+            for cursor in self.connection.execute_string(query, return_cursors=(not ignore_results)):
+                for query_return in cursor:
+                    query_returns.append(query_return)
+            return query_returns
+        except Exception as e:
+            self._error_handler(e)
         finally:
             if cursor:
                 cursor.close()
