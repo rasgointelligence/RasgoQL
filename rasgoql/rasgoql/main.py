@@ -57,6 +57,31 @@ class RasgoQL:
         """
         return Dataset(fqtn, self._dw)
 
+    def dataset_from_df(
+            self,
+            df: pd.DataFrame,
+            table_name: str,
+            method: str = None
+        ) -> Dataset:
+        """
+        Writes a pandas Dataframe to a table in your Data Warehouse
+        and returns it as a Dataset
+
+        Params:
+        `df`: pandas DataFrame:
+            DataFrame to upload
+        `table_name`: str:
+            Name for the new table
+        `method`: str
+            Values: [append, replace]
+            when this table already exists in your DataWarehouse,
+            pass append: to add dataframe rows to it
+            pass replace: to overwrite it with dataframe rows
+                WARNING: This will completely overwrite data in the existing table
+        """
+        fqtn = self._dw.save_df(df, table_name, method)
+        return Dataset(fqtn, self._dw)
+
     def define_transform(
             self,
             name: str

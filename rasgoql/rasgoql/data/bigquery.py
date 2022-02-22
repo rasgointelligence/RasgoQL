@@ -287,7 +287,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             logger
         )
         if response == 'DICT':
-            raise NotImplementedError("BigQuery doesn't do that")
+            return self._query_into_dict(sql)
         if response == 'DF':
             return self._query_into_pandas(sql)
         return self._execute_string(sql, ignore_results=(response == 'NONE'))
@@ -333,7 +333,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             obj_exists = True
             obj_type = table.table_type
             if table.labels:
-                for label, value in table.labels.items():
+                for _label, value in table.labels.items():
                     if value == 'rasgoql':
                         is_rasgo_obj = True
             return obj_exists, is_rasgo_obj, obj_type
@@ -387,7 +387,6 @@ class BigQueryDataWarehouse(DataWarehouse):
                 'LAST_ALTERED'
             ]
             for tbl in tables:
-                # TODO: This may be inefficient - do we need to return all this data?
                 table = self.connection.get_table(tbl)
                 records.append(
                     (
@@ -431,7 +430,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             df: pd.DataFrame,
             fqtn: str,
             method: str = None
-        ):
+        ) -> str:
         """
         Creates a table in BigQuery from a pandas Dataframe
 
@@ -457,18 +456,17 @@ class BigQueryDataWarehouse(DataWarehouse):
             raise TableConflictException(msg)
         try:
             cleanse_sql_dataframe(df)
-            # TODO: Test write_disposition to handle overwrite vs append
             job_config = bq.LoadJobConfig(
-                write_disposition='WRITE_TRUNCATE' if method == 'REPLACE' else None,
-                default_dataset=self.default_namespace
+                write_disposition='WRITE_TRUNCATE' if method == 'REPLACE' else None
             )
-            job = self.connection.load_table_from_dataframe(
+            _job = self.connection.load_table_from_dataframe(
                 df,
                 fqtn,
                 job_config=job_config
             )
             # Wait for the job to complete
-            #job.result()
+            _job.result()
+            return fqtn
         except Exception as e:
             self._error_handler(e)
 
@@ -497,7 +495,7 @@ class BigQueryDataWarehouse(DataWarehouse):
     def _validate_namespace(
             self,
             namespace: str
-        ):
+        ) -> str:
         """
         Checks a namespace string for compliance with BigQuery format
 
@@ -537,6 +535,9 @@ class BigQueryDataWarehouse(DataWarehouse):
             return
         if isinstance(exception, gcp_exc.NotFound):
             raise TableAccessError('Table does not exist')
+        if isinstance(exception, gcp_exc.BadRequest):
+            if {"reason": "invalidQuery"} in exception.errors:
+                raise DWQueryError(exception.errors)
         if isinstance(exception, gcp_exc.ServiceUnavailable):
             raise DWConnectionError('Service is not available')
         raise exception
@@ -585,6 +586,24 @@ class BigQueryDataWarehouse(DataWarehouse):
                 scopes=["https://www.googleapis.com/auth/cloud-platform"]
             )
             return credentials
+        except Exception as e:
+            self._error_handler(e)
+
+    def _query_into_dict(
+            self,
+            query: str
+    ) -> dict:
+        """
+        Return results of query in a pandas DataFrame
+        """
+        try:
+            return self.connection.query(
+                query,
+                job_config=self._default_job_config
+                ) \
+                .result() \
+                .to_dataframe() \
+                .to_dict()
         except Exception as e:
             self._error_handler(e)
 

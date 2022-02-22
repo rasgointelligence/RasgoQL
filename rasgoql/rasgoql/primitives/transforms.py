@@ -127,7 +127,9 @@ class Dataset(TransformableClass):
         self._dw_sync()
 
     def __repr__(self) -> str:
-        return f"Dataset(fqtn={self.fqtn}, type={self.table_type.value})"
+        return f"Dataset(fqtn={self.fqtn}, " \
+               f"type={self.table_type.value}, " \
+               f"state={self.table_state.value})"
 
     @require_dw
     def _dw_sync(self):
@@ -140,12 +142,7 @@ class Dataset(TransformableClass):
             self.table_type = TableType[obj_type]
             self.is_rasgo = is_rasgo_obj
         else:
-            verbose_message(
-                f'Dataset {self.fqtn} does not exist in the Data Warehouse. ' \
-                'This is most likely a SQL Chain that is not yet saved. ' \
-                'If you are posititve this table exists, check the namespace for typos.',
-                ds_logger
-            )
+            self.table_state = TableState.IN_MEMORY
 
     @require_dw
     def get_schema(self) -> dict:
