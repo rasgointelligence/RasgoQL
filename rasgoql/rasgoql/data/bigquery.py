@@ -387,7 +387,6 @@ class BigQueryDataWarehouse(DataWarehouse):
                 'LAST_ALTERED'
             ]
             for tbl in tables:
-                # TODO: This may be inefficient - do we need to return all this data?
                 table = self.connection.get_table(tbl)
                 records.append(
                     (
@@ -457,7 +456,6 @@ class BigQueryDataWarehouse(DataWarehouse):
             raise TableConflictException(msg)
         try:
             cleanse_sql_dataframe(df)
-            # TODO: Test write_disposition to handle overwrite vs append
             job_config = bq.LoadJobConfig(
                 write_disposition='WRITE_TRUNCATE' if method == 'REPLACE' else None
             )
