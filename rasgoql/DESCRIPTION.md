@@ -48,8 +48,12 @@ https://docs.rasgoql.com
 - v0.0.1 (Feb 10, 2022)
    - alpha release
 
-- v1.0.0 (Feb 22, 2022)
-   - beta release
+- v1.0.0a1 (Feb 21, 2022)
+   - support BigQuery connections
+
+- v1.0.0a2 (Feb 22, 2022)
+   - add import dataset from df workflow
+
 
 See [Changelog](https://github.com/rasgointelligence/RasgoQL/blob/main/rasgoql/CHANGELOG.md) for full minor version release notes
 

@@ -413,7 +413,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             df: pd.DataFrame,
             fqtn: str,
             method: str = None
-        ):
+        ) -> str:
         """
         Creates a table in Snowflake from a pandas Dataframe
 
@@ -447,13 +447,13 @@ class SnowflakeDataWarehouse(DataWarehouse):
                 create_stmt = generate_dataframe_ddl(df, fqtn)
                 create_stmt += " COMMENT='rasgoql' "
                 self.execute_query(create_stmt, response='None', acknowledge_risk=True)
-            success, chunks, rows, output = write_pandas(
+            _success, _chunks, _rows, _output = write_pandas(
                 conn=self.connection,
                 df=df,
                 table_name=fqtn,
                 quote_identifiers=False
             )
-            return success, chunks, rows, output
+            return fqtn
         except Exception as e:
             self._error_handler(e)
 
@@ -478,7 +478,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
     def _validate_namespace(
             self,
             namespace: str
-        ) -> None:
+        ) -> str:
         """
         Checks a namespace string for compliance with Snowflake format
 
