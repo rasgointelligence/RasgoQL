@@ -126,5 +126,5 @@ dmypy.json
 .DS_Store
 .idea
 
-# ipynb Sandbox dir
+# Sandbox dir for Ipynbs
 ./notebooks
