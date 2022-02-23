@@ -125,3 +125,6 @@ dmypy.json
 .vscode
 .DS_Store
 .idea
+
+# ipynb Sandbox dir
+./notebooks
