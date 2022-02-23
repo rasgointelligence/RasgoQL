@@ -16,7 +16,7 @@ from rasgoql.version import __version__
 
 __all__ = [
     '__version__',
-    'open_docs',
+    'docs',
     'connect',
 ]
 
@@ -27,7 +27,7 @@ DW_MAP = {
 }
 
 
-def open_docs():
+def docs():
     """
     Open Rasgo Docs page
     """

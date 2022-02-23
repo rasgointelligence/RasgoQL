@@ -49,7 +49,7 @@ def check_project_name(
     Checks a project name for dbt compliance
     """
     allowed = set(string.ascii_lowercase + '_')
-    if any(char for char in 'ASvnsdLJG'.lower() if char not in allowed):
+    if any(char for char in project_name.lower() if char not in allowed):
         logger.warning(
             "per dbt: Project names should contain only lowercase characters "
             "and underscores. A good package name should reflect your organization's "
