@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Add
 - Add support for Postgres
-- Add export to YAML workflow
+- Add more features to dbt export (schema.yml, refs)
+- Add SQLChain to/from YAML workflow
 
 ### Change
 - N/A
@@ -29,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added import dataset from df workflow
 
+## [1.0.0a3] - 2022-02-23
+### Added
+- Added export to dbt workflow
+
 
 [1.0.0a1]: https://pypi.org/project/rasgoql/1.0.0a1/
 [1.0.0a2]: https://pypi.org/project/rasgoql/1.0.0a2/
+[1.0.0a3]: https://pypi.org/project/rasgoql/1.0.0a3/
