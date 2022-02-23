@@ -2,7 +2,12 @@
 Decorators
 """
 import functools
+import logging
 from typing import Callable, Union
+
+logging.basicConfig()
+logger = logging.getLogger('rasgoQL')
+logger.setLevel(logging.INFO)
 
 
 def parametrized(decorator):
@@ -15,6 +20,22 @@ def parametrized(decorator):
             return decorator(func, *args, **kwargs)
         return decorator_wrapper
     return decorator_maker
+
+def beta(func: Callable) -> Callable:
+    """
+    Decorator to warn about beta features
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        logger.info(
+            f'{func.__name__} is a beta feature. '
+            'You are among the first rasgoql users to preview this feature! '
+            'There may still be bugs to discover. If you experience any unexpected '
+            'behaviors, please raise an issue in our github repo (https://github.com/rasgointelligence/RasgoQL/issues) '
+            'or contact us directly on slack.'
+        )
+        return func(*args, **kwargs)
+    return wrapper
 
 def only_rasgo_tables(func: Callable) -> Callable:
     """

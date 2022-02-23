@@ -3,8 +3,9 @@ Transform rendering methods
 """
 import functools
 import inspect
-import re
 from itertools import combinations, permutations, product
+import os
+import re
 from typing import Callable, Dict, List, Optional
 
 import jinja2
@@ -13,6 +14,10 @@ import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
 from rasgoql.primitives.enums import check_table_type
+from rasgoql.utils.dbt import (
+    check_project_name, prepare_dbt_path,
+    save_project_file, save_model_file
+)
 
 RUN_QUERY_LIMIT = 100
 JINJA_ENV = jinja2.Environment(extensions=['jinja2.ext.do', 'jinja2.ext.loopcontrols'])
@@ -85,6 +90,39 @@ def assemble_view_chain(
         cte_list.append(t_cte_str)
         view_list.append(t_view_str)
     return '\n'.join(view_list)
+
+def create_dbt_files(
+        transforms: List['Transform'],
+        project_directory: str,
+        models_directory: str = None,
+        project_name: str = 'rasgoql',
+        render_method: str = 'view',
+        namespace: str = None
+) -> str:
+    """
+    Saves a dbt_project.yml and model.sql files to a directory
+    """
+    # Prepare directory for dbt files
+    project_name = check_project_name(project_name)
+    project_directory = prepare_dbt_path(project_name, project_directory)
+    if not models_directory:
+        models_directory = os.path.join(project_directory, 'models')
+
+    # save model.sql file
+    model_name = transforms[-1].output_alias
+    save_model_file(
+        sql_definition=assemble_cte_chain(transforms),
+        filepath=os.path.join(models_directory, f'{model_name}.sql'),
+        namespace=namespace,
+        materialize=render_method
+    )
+    # save dbt_project.yml file
+    return save_project_file(
+        project_name=project_name,
+        filepath=os.path.join(project_directory, 'dbt_project.yml'),
+        namespace=namespace,
+        materialize=render_method
+    )
 
 def generate_transform_sql(
         name: str,
