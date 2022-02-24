@@ -127,4 +127,4 @@ dmypy.json
 .idea
 
 # Sandbox dir for Ipynbs
-./notebooks
+/notebooks
