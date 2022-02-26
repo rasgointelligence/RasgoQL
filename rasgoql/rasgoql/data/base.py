@@ -132,6 +132,16 @@ class DataWarehouse(ABC):
         """
         raise NotImplementedError()
 
+    def get_schema(
+            self,
+            fqtn: str,
+            create_sql: str = None
+        ) -> dict:
+        """
+        Return the schema of a table or view
+        """
+        raise NotImplementedError()
+
     def list_tables(
             self,
             database: str = None,
@@ -166,7 +176,7 @@ class DataWarehouse(ABC):
     # ---------------------------
     # Core Data Warehouse helpers
     # ---------------------------
-    def _table_exist(
+    def _table_exists(
             self,
             fqtn: str
         ) -> bool:

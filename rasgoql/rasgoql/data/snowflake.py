@@ -12,7 +12,7 @@ from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
     DWCredentialsWarning, DWConnectionError, DWQueryError,
     PackageDependencyWarning, ParameterException,
-    SQLWarning, TableConflictException
+    SQLWarning, TableAccessError, TableConflictException
 )
 from rasgoql.imports import sf_connector, write_pandas
 from rasgoql.primitives.enums import (
@@ -349,7 +349,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
 
     def get_schema(
             self,
-            fqtn: str
+            fqtn: str,
+            create_sql: str = None
         ) -> dict:
         """
         Return the schema of a table or view
@@ -357,11 +358,27 @@ class SnowflakeDataWarehouse(DataWarehouse):
         Params:
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
+        `create_sql`: str:
+            A SQL select statement that will create the view. If this param is passed
+            and the fqtn does not already exist, it will be created and profiled based
+            on this statement. The view will be dropped after profiling
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        sql = f"DESC TABLE {fqtn}"
-        query_response = self.execute_query(sql, response='dict')
-        return query_response
+        desc_sql = f"DESC TABLE {fqtn}"
+        response = []
+        try:
+            if self._table_exists(fqtn):
+                query_response = self.execute_query(desc_sql, response='dict')
+            elif create_sql:
+                self.create(create_sql, fqtn, table_type='view')
+                query_response = self.execute_query(desc_sql, response='dict')
+                self.execute_query(f'DROP VIEW {fqtn}', response='none', acknowledge_risk=True)
+            for row in query_response:
+                response.append((row['name'], row['type']))
+            return response
+        except Exception as e:
+            self._error_handler(e)
+        raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed')
 
     def list_tables(
             self,
@@ -510,9 +527,6 @@ class SnowflakeDataWarehouse(DataWarehouse):
         if exception is None:
             return
         if isinstance(exception, sf_connector.errors.ProgrammingError):
-            # TODO:
-            # TableAccessError
-            # Insufficient privileges to write to namespace
             if exception.errno == ...:
                 raise DWQueryError(
                     'You do not have access to operate on this object. '

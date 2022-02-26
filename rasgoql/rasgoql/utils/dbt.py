@@ -4,6 +4,7 @@ Holds dbt helpers
 import logging
 import os
 import string
+from typing import List, Tuple
 
 from pathlib import Path
 
@@ -14,6 +15,12 @@ from rasgoql.utils.sql import parse_namespace
 logging.basicConfig()
 logger = logging.getLogger('dbt')
 logger.setLevel(logging.INFO)
+
+DBT_MODEL_CONFIG_TEMPLATE = '''
+  config(
+    {config_args}
+  )
+'''
 
 DBT_PROJECT_TEMPLATE = {
     "name": "",
@@ -30,16 +37,8 @@ DBT_PROJECT_TEMPLATE = {
     "log-path": "logs",
     "packages-install-path": "dbt_packages",
     "clean-targets": ["target", "dbt_packages"],
-    "models": {}
+    "models": None
 }
-
-MODEL_CONFIG_TEMPLATE = '''
-  config(
-    {materialize_config}
-    {database_config}
-    {schema_config}
-  )
-'''
 
 
 def check_project_name(
@@ -100,27 +99,48 @@ def save_project_file(
 
 def save_model_file(
         sql_definition: str,
-        filepath: Path,
-        namespace: str = None,
-        materialize: str = 'view'
+        output_directory: Path,
+        file_name: str,
+        schema: List[Tuple[str, str]],
+        config_args: dict = None,
+        include_schema: bool = False
 ) -> bool:
     """
     Writes a sql script to a dbt model file
     """
-    materialize_config = f"materialize = '{materialize}'"
-    database_config = ""
-    schema_config = ""
-    if namespace:
-        db, schema = parse_namespace(namespace)
-        database_config = f",database = '{db}'"
-        schema_config = f",schema = '{schema}'"
-    model_config = MODEL_CONFIG_TEMPLATE.format(
-        materialize_config=materialize_config,
-        database_config=database_config,
-        schema_config=schema_config
-    )
-    model_config = '{{' + model_config + '}}'
-    sql_definition = f'{model_config}\n\n{sql_definition}'
-    with open(filepath, "w") as _sql:
-        _sql.write(sql_definition)
+    filepath = os.path.join(output_directory, file_name)
+    if config_args:
+        model_config = DBT_MODEL_CONFIG_TEMPLATE.format(
+            config_args=config_args
+        )
+        model_config = '{{' + model_config + '}}'
+        sql_definition = f'{model_config}\n\n{sql_definition}'
+    with open(filepath, "w") as _file:
+        _file.write(sql_definition)
+    if include_schema:
+        save_schema_file(output_directory, schema, config_args)
+    return filepath
+
+def save_schema_file(
+        output_directory: Path,
+        schema: List[Tuple[str, str]],
+        config_args: dict = None,
+    ):
+    """
+    Writes a table def to a dbt schema file
+    """
+    filepath = os.path.join(output_directory, 'schema.yml')
+    schema_definition = None
+    columns_list = []
+    for row in schema:
+        columns_list.append({"name:": row[0]})
+    model_dict = {"name": "test", "columns": columns_list}
+    if config_args:
+        model_dict.update({"config": config_args})
+    if not os.path.exists(filepath):
+        schema_definition = {"version": 2, "models": [model_dict]}
+    else:
+        schema_definition = [model_dict]
+    with open(filepath, "a") as _file:
+        yaml.dump(data=schema_definition, Dumper=yaml.SafeDumper, stream=_file, sort_keys=False)
     return filepath

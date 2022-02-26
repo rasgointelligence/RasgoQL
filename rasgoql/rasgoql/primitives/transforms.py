@@ -273,11 +273,21 @@ class SQLChain(TransformableClass):
     @property
     def fqtn(self) -> str:
         """
-        Returns the fully qualified table name the transform would create if saved
+        Returns the fully qualified table name this SQLChain would create
+        if saved in current state
 
         NOTE: This property will be dynamic until the Chain is finally saved
         """
         return self.output_table.fqtn
+
+    @require_dw
+    def get_schema(self) -> dict:
+        """
+        Return the table schema this SQLChain would create if saved in current state
+
+        NOTE: This property will be dynamic until the Chain is finally saved
+        """
+        return self._dw.get_schema(self.fqtn, self.sql())
 
     @property
     def output_table(self) -> Dataset:
@@ -353,21 +363,33 @@ class SQLChain(TransformableClass):
     @beta
     def to_dbt(
             self,
-            project_directory: str,
-            models_directory: str = None,
-            project_name: str = 'rasgoql',
-            materialize_method: str = 'view'
+            output_directory: str = None,
+            file_name: str = None,
+            config_args: dict = None,
+            include_schema: bool = False
         ) -> str:
         """
         Saves a new model.sql file to your dbt models directory
+
+        Params:
+        `output_directory`: str:
+            directory to save model file
+            defaults to RASGOQL_DBT_OUTPUT_DIR user can set, otherwise current dir
+        `file_name`: str:
+            defaults to {output_alias}.sql of SQLChain
+        `include_schema`: bool:
+            Include a schema.yml file
+        `config_args`: dict:
+            key value pair of
+            dbt [config values](https://docs.getdbt.com/reference/model-configs)
         """
         return create_dbt_files(
             self.transforms,
-            project_directory,
-            models_directory,
-            project_name,
-            materialize_method,
-            self.namespace
+            output_directory,
+            self.get_schema(),
+            file_name,
+            config_args,
+            include_schema
         )
 
     def to_df(self) -> pd.DataFrame:
