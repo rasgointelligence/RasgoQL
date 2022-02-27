@@ -118,11 +118,13 @@ def save_model_file(
     with open(filepath, "w") as _file:
         _file.write(sql_definition)
     if include_schema:
-        save_schema_file(output_directory, schema, config_args)
+        model_name = file_name.replace('.sql', '')
+        save_schema_file(output_directory, model_name, schema, config_args)
     return filepath
 
 def save_schema_file(
         output_directory: Path,
+        model_name: str,
         schema: List[Tuple[str, str]],
         config_args: dict = None,
     ):
@@ -134,7 +136,7 @@ def save_schema_file(
     columns_list = []
     for row in schema:
         columns_list.append({"name:": row[0]})
-    model_dict = {"name": "test", "columns": columns_list}
+    model_dict = {"name": model_name, "columns": columns_list}
     if config_args:
         model_dict.update({"config": config_args})
     if not os.path.exists(filepath):

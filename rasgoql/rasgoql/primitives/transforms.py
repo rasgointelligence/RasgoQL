@@ -25,6 +25,8 @@ from rasgoql.primitives.rendering import (
 logging.basicConfig()
 ds_logger = logging.getLogger('Dataset')
 ds_logger.setLevel(logging.INFO)
+chn_logger = logging.getLogger('Dataset')
+chn_logger.setLevel(logging.INFO)
 
 
 class TransformableClass:
@@ -383,10 +385,22 @@ class SQLChain(TransformableClass):
             key value pair of
             dbt [config values](https://docs.getdbt.com/reference/model-configs)
         """
+        try:
+            schema = self.get_schema()
+        except:
+            if include_schema:
+                chn_logger.warning(
+                    'Unexpected error generating the schema of this SQLChain. '
+                    'Your model.sql file will be generated without a schema.yml file. '
+                    'This is most likely a syntax issue in your SQLChain or existing view. '
+                    'Consider running your_chn.sql() to check the syntax and/or '
+                    'your_chn.save() to update the view definition in your Data Warehouse.'
+                )
+            schema = []
         return create_dbt_files(
             self.transforms,
             output_directory,
-            self.get_schema(),
+            schema,
             file_name,
             config_args,
             include_schema
