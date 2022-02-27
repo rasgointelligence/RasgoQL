@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - N/A
 
 ### Fix
-- BigQuery user auth flow
+- N/A
 
 ### Remove
 - N/A
@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for schema.yml dbt file
 ### Changed
 - Changed export to dbt workflow & `SQLChain.to_dbt()` params ([see docs](https://docs.rasgoql.com/workflows/exporting-to-dbt))
+- Changed auth workflow and `BigQueryCredentials` params ([see docs](https://docs.rasgoql.com/datawarehouses/bigquery))
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/

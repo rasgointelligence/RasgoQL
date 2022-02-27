@@ -80,27 +80,26 @@ class SnowflakeCredentials(DWCredentials):
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
-        if not all([
-                os.getenv('snowflake_account'),
-                os.getenv('snowflake_user'),
-                os.getenv('snowflake_password'),
-                os.getenv('snowflake_role'),
-                os.getenv('snowflake_warehouse'),
-                os.getenv('snowflake_database'),
-                os.getenv('snowflake_schema')
-        ]):
+        account = os.getenv('snowflake_account'),
+        user = os.getenv('snowflake_user'),
+        password = os.getenv('snowflake_password'),
+        role = os.getenv('snowflake_role'),
+        warehouse = os.getenv('snowflake_warehouse'),
+        database = os.getenv('snowflake_database'),
+        schema = os.getenv('snowflake_schema')
+        if not all([account, user, password, role, warehouse, database, schema]):
             raise DWCredentialsWarning(
                 'Your env file is missing expected credentials. Consider running '
                 'SnowflakeCredentials(*args).to_env() to repair this.'
             )
         return cls(
-            os.getenv('snowflake_account'),
-            os.getenv('snowflake_user'),
-            os.getenv('snowflake_password'),
-            os.getenv('snowflake_role'),
-            os.getenv('snowflake_warehouse'),
-            os.getenv('snowflake_database'),
-            os.getenv('snowflake_schema')
+            account,
+            user,
+            password,
+            role,
+            warehouse,
+            database,
+            schema
         )
 
     def to_dict(self) -> dict:
@@ -549,6 +548,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
                 'that http connections to Snowflake are whitelisted in your env. '
                 'Finally check https://status.snowflake.com/ for outage status.'
             ) from exception
+        raise exception
 
     def _execute_dict_cursor(
             self,

@@ -17,7 +17,7 @@ from rasgoql.errors import (
 )
 from rasgoql.imports import bq, gcp_exc, gcp_flow, gcp_svc
 from rasgoql.primitives.enums import (
-    check_bq_creds_type, check_response_type,
+    check_response_type,
     check_table_type, check_write_method
 )
 from rasgoql.utils.creds import load_env, save_env
@@ -42,21 +42,18 @@ class BigQueryCredentials(DWCredentials):
 
     def __init__(
             self,
-            secret_type: str,
-            secret_filepath: str,
+            json_filepath: str,
             project: str = None,
             dataset: str = None
         ):
-        self.secret_type = check_bq_creds_type(secret_type)
-        self.secret_filepath = secret_filepath
+        self.json_filepath = json_filepath
         self.project = project
         self.dataset = dataset
 
     def __repr__(self) -> str:
         return json.dumps(
             {
-                "secret_type": self.secret_type,
-                "secret_filepath": self.secret_filepath,
+                "json_filepath": self.json_filepath,
                 "project": self.project,
                 "dataset": self.dataset
             }
@@ -71,21 +68,18 @@ class BigQueryCredentials(DWCredentials):
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
-        if not all([
-                os.getenv('bigquery_secret_type'),
-                os.getenv('bigquery_secret_filepath'),
-                os.getenv('bigquery_project'),
-                os.getenv('bigquery_dataset')
-        ]):
+        json_filepath = os.getenv('bigquery_json_filepath', os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))
+        project = os.getenv('bigquery_project')
+        dataset = os.getenv('bigquery_dataset')
+        if not all([json_filepath, project, dataset]):
             raise DWCredentialsWarning(
                 'Your env file is missing expected credentials. Consider running '
                 'BigQueryCredentials(*args).to_env() to repair this.'
             )
         return cls(
-            os.getenv('bigquery_secret_type'),
-            os.getenv('bigquery_secret_filepath'),
-            os.getenv('bigquery_project'),
-            os.getenv('bigquery_dataset')
+            json_filepath,
+            project,
+            dataset
         )
 
     def to_dict(self) -> dict:
@@ -93,8 +87,7 @@ class BigQueryCredentials(DWCredentials):
         Returns a dict of the credentials
         """
         return {
-            "secret_type": self.secret_type,
-            "secret_filepath": self.secret_filepath,
+            "json_filepath": self.json_filepath,
             "project": self.project,
             "dataset": self.dataset
         }
@@ -108,8 +101,7 @@ class BigQueryCredentials(DWCredentials):
         Saves credentials to a .env file on your machine
         """
         creds = {
-            "bigquery_secret_type": self.secret_type,
-            "bigquery_secret_filepath": self.secret_filepath,
+            "bigquery_json_filepath": self.json_filepath,
             "bigquery_project": self.project,
             "bigquery_dataset": self.dataset,
         }
@@ -182,13 +174,9 @@ class BigQueryDataWarehouse(DataWarehouse):
         try:
             self.default_project = credentials.get('project')
             self.default_dataset = credentials.get('dataset')
-            if credentials.get('secret_type') == 'SERVICE':
-                self.credentials = self._get_service_credentials(
-                    credentials.get('secret_filepath')
-                )
-            else:
-                self.credentials = self._get_appflow_credentials(
-                    credentials.get('secret_filepath')
+            if not self.credentials:
+                self.credentials = self._get_credentials(
+                    credentials.get('json_filepath')
                 )
             self.connection = bq.Client(
                 credentials=self.credentials,
@@ -561,6 +549,7 @@ class BigQueryDataWarehouse(DataWarehouse):
                 'Finally check https://status.cloud.google.com/incident/bigquery '
                 'for outage status.'
             ) from exception
+        raise exception
 
     def _execute_string(
             self,
@@ -584,7 +573,7 @@ class BigQueryDataWarehouse(DataWarehouse):
     def _get_appflow_credentials(
             self,
             filepath: str
-        ):
+        ) -> 'bq.Credentials':
         try:
             appflow = gcp_flow.InstalledAppFlow.from_client_secrets_file(
                 filepath,
@@ -596,10 +585,19 @@ class BigQueryDataWarehouse(DataWarehouse):
         except Exception as e:
             self._error_handler(e)
 
+    def _get_credentials(
+            self,
+            filepath: str
+        ) -> 'bq.Credentials':
+        try:
+            return self._get_appflow_credentials(filepath)
+        except ValueError:
+            return self._get_service_credentials(filepath)
+
     def _get_service_credentials(
             self,
             filepath: str
-        ):
+        ) -> 'bq.Credentials':
         try:
             credentials = gcp_svc.Credentials.from_service_account_file(
                 filepath,
