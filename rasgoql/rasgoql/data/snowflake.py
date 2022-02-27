@@ -373,12 +373,13 @@ class SnowflakeDataWarehouse(DataWarehouse):
                 self.create(create_sql, fqtn, table_type='view')
                 query_response = self.execute_query(desc_sql, response='dict')
                 self.execute_query(f'DROP VIEW {fqtn}', response='none', acknowledge_risk=True)
+            else:
+                raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
             for row in query_response:
                 response.append((row['name'], row['type']))
             return response
         except Exception as e:
             self._error_handler(e)
-        raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed')
 
     def list_tables(
             self,

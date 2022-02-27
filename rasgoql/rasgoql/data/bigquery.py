@@ -365,12 +365,13 @@ class BigQueryDataWarehouse(DataWarehouse):
                 self.create(create_sql, fqtn, table_type='view')
                 table = self.connection.get_table(fqtn)
                 self.execute_query(f'DROP VIEW {fqtn}', response='none', acknowledge_risk=True)
+            else:
+                raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
             for schema_field in table.schema:
                 response.append((schema_field.name, schema_field.field_type))
             return response
         except Exception as e:
             self._error_handler(e)
-        raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed')
 
     def list_tables(
             self,
