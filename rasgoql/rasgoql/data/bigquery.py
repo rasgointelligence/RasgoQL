@@ -71,21 +71,20 @@ class BigQueryCredentials(DWCredentials):
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
-        if not all([
-                os.getenv('bigquery_secret_type'),
-                os.getenv('bigquery_secret_filepath'),
-                os.getenv('bigquery_project'),
-                os.getenv('bigquery_dataset')
-        ]):
+        secret_type = os.getenv('bigquery_secret_type', 'service')
+        secret_filepath = os.getenv('bigquery_secret_filepath', os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))
+        project = os.getenv('bigquery_project')
+        dataset = os.getenv('bigquery_dataset')
+        if not all([secret_filepath, project, dataset]):
             raise DWCredentialsWarning(
                 'Your env file is missing expected credentials. Consider running '
                 'BigQueryCredentials(*args).to_env() to repair this.'
             )
         return cls(
-            os.getenv('bigquery_secret_type'),
-            os.getenv('bigquery_secret_filepath'),
-            os.getenv('bigquery_project'),
-            os.getenv('bigquery_dataset')
+            secret_type,
+            secret_filepath,
+            project,
+            dataset
         )
 
     def to_dict(self) -> dict:
@@ -182,11 +181,11 @@ class BigQueryDataWarehouse(DataWarehouse):
         try:
             self.default_project = credentials.get('project')
             self.default_dataset = credentials.get('dataset')
-            if credentials.get('secret_type') == 'SERVICE':
+            if not self.credentials and credentials.get('secret_type') == 'SERVICE':
                 self.credentials = self._get_service_credentials(
                     credentials.get('secret_filepath')
                 )
-            else:
+            if not self.credentials:
                 self.credentials = self._get_appflow_credentials(
                     credentials.get('secret_filepath')
                 )
