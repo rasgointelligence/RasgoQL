@@ -4,7 +4,7 @@ BigQuery Data Warehouse classes
 
 import logging
 import os
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import json
 import pandas as pd
@@ -342,19 +342,34 @@ class BigQueryDataWarehouse(DataWarehouse):
 
     def get_schema(
             self,
-            fqtn: str
-        ) -> dict:
+            fqtn: str,
+            create_sql: str = None
+        ) -> Tuple[str, str]:
         """
         Return the schema of a table or view
 
         Params:
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
+        `create_sql`: str:
+            A SQL select statement that will create the view. If this param is passed
+            and the fqtn does not already exist, it will be created and profiled based
+            on this statement. The view will be dropped after profiling
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        response = []
         try:
-            table = self.connection.get_table(fqtn)
-            return table.schema
+            if self._table_exists(fqtn):
+                table = self.connection.get_table(fqtn)
+            elif create_sql:
+                self.create(create_sql, fqtn, table_type='view')
+                table = self.connection.get_table(fqtn)
+                self.execute_query(f'DROP VIEW {fqtn}', response='none', acknowledge_risk=True)
+            else:
+                raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
+            for schema_field in table.schema:
+                response.append((schema_field.name, schema_field.field_type))
+            return response
         except Exception as e:
             self._error_handler(e)
 
@@ -534,13 +549,18 @@ class BigQueryDataWarehouse(DataWarehouse):
         if exception is None:
             return
         if isinstance(exception, gcp_exc.NotFound):
-            raise TableAccessError('Table does not exist')
+            raise TableAccessError('Table does not exist') from exception
         if isinstance(exception, gcp_exc.BadRequest):
             if {"reason": "invalidQuery"} in exception.errors:
-                raise DWQueryError(exception.errors)
+                raise DWQueryError(exception.errors) from exception
         if isinstance(exception, gcp_exc.ServiceUnavailable):
-            raise DWConnectionError('Service is not available')
-        raise exception
+            raise DWConnectionError(
+                'BigQuery is unavailable. Please check that your are using '
+                'valid credentials, that you have internet access, and '
+                'that http connections to GCP are whitelisted in your env. '
+                'Finally check https://status.cloud.google.com/incident/bigquery '
+                'for outage status.'
+            ) from exception
 
     def _execute_string(
             self,

@@ -28,7 +28,7 @@ def cleanse_sql_dataframe(
     Renames all columns in a pandas dataframe to SQL compliant names in place
     """
     df.rename(columns={r: cleanse_sql_name(r) for r in build_dataframe_schema(df)},
-                inplace=True)
+              inplace=True)
 
 def generate_dataframe_ddl(
         df: pd.DataFrame,

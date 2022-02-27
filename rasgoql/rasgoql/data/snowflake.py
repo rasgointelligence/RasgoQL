@@ -12,7 +12,7 @@ from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
     DWCredentialsWarning, DWConnectionError, DWQueryError,
     PackageDependencyWarning, ParameterException,
-    SQLWarning, TableConflictException
+    SQLWarning, TableAccessError, TableConflictException
 )
 from rasgoql.imports import sf_connector, write_pandas
 from rasgoql.primitives.enums import (
@@ -349,7 +349,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
 
     def get_schema(
             self,
-            fqtn: str
+            fqtn: str,
+            create_sql: str = None
         ) -> dict:
         """
         Return the schema of a table or view
@@ -357,11 +358,28 @@ class SnowflakeDataWarehouse(DataWarehouse):
         Params:
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
+        `create_sql`: str:
+            A SQL select statement that will create the view. If this param is passed
+            and the fqtn does not already exist, it will be created and profiled based
+            on this statement. The view will be dropped after profiling
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        sql = f"DESC TABLE {fqtn}"
-        query_response = self.execute_query(sql, response='dict')
-        return query_response
+        desc_sql = f"DESC TABLE {fqtn}"
+        response = []
+        try:
+            if self._table_exists(fqtn):
+                query_response = self.execute_query(desc_sql, response='dict')
+            elif create_sql:
+                self.create(create_sql, fqtn, table_type='view')
+                query_response = self.execute_query(desc_sql, response='dict')
+                self.execute_query(f'DROP VIEW {fqtn}', response='none', acknowledge_risk=True)
+            else:
+                raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
+            for row in query_response:
+                response.append((row['name'], row['type']))
+            return response
+        except Exception as e:
+            self._error_handler(e)
 
     def list_tables(
             self,
@@ -510,27 +528,27 @@ class SnowflakeDataWarehouse(DataWarehouse):
         if exception is None:
             return
         if isinstance(exception, sf_connector.errors.ProgrammingError):
-            # TODO:
-            # TableAccessError
-            # Insufficient privileges to write to namespace
-            if exception.errno == ...:
-                raise DWQueryError(
+            if exception.errno == 3001:
+                raise TableAccessError(
                     'You do not have access to operate on this object. '
                     'Two possible ways to resolve: '
-                    'Connect with different credentials that have the proper access.'
+                    'Connect with different credentials that have the proper access. '
                     'Or run `.change_namespace` on your SQLChain to write it to a '
-                    'namespace your credentials can access')
-            raise DWQueryError(exception)
+                    'namespace your credentials can access'
+                ) from exception
         if isinstance(exception, sf_connector.errors.DatabaseError):
             if exception.errno == 250001:
                 raise DWConnectionError(
                     'Invalid username / password, please check that your '
-                    ' credentials are correct and try to reconnect'
-                )
-            raise DWConnectionError(exception)
+                    'credentials are correct and try to reconnect.'
+                ) from exception
         if isinstance(exception, sf_connector.errors.ServiceUnavailableError):
-            raise DWConnectionError('Snowflake service is unavailable')
-        raise exception
+            raise DWConnectionError(
+                'Snowflake is unavailable. Please check that your are using '
+                'a valid account identifier, that you have internet access, and '
+                'that http connections to Snowflake are whitelisted in your env. '
+                'Finally check https://status.snowflake.com/ for outage status.'
+            ) from exception
 
     def _execute_dict_cursor(
             self,

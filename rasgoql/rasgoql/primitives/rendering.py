@@ -4,9 +4,8 @@ Transform rendering methods
 import functools
 import inspect
 from itertools import combinations, permutations, product
-import os
 import re
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Tuple, Optional
 
 import jinja2
 import pandas as pd
@@ -14,10 +13,7 @@ import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
 from rasgoql.primitives.enums import check_table_type
-from rasgoql.utils.dbt import (
-    check_project_name, prepare_dbt_path,
-    save_project_file, save_model_file
-)
+from rasgoql.utils.dbt import save_model_file
 
 RUN_QUERY_LIMIT = 100
 JINJA_ENV = jinja2.Environment(extensions=['jinja2.ext.do', 'jinja2.ext.loopcontrols'])
@@ -93,35 +89,23 @@ def assemble_view_chain(
 
 def create_dbt_files(
         transforms: List['Transform'],
-        project_directory: str,
-        models_directory: str = None,
-        project_name: str = 'rasgoql',
-        render_method: str = 'view',
-        namespace: str = None
+        output_directory: str,
+        schema: List[Tuple[str, str]],
+        file_name: str = None,
+        config_args: dict = None,
+        include_schema: bool = False
 ) -> str:
     """
     Saves a dbt_project.yml and model.sql files to a directory
     """
-    # Prepare directory for dbt files
-    project_name = check_project_name(project_name)
-    project_directory = prepare_dbt_path(project_name, project_directory)
-    if not models_directory:
-        models_directory = os.path.join(project_directory, 'models')
-
-    # save model.sql file
-    model_name = transforms[-1].output_alias
-    save_model_file(
+    file_name = file_name or f'{transforms[-1].output_alias}.sql'
+    return save_model_file(
         sql_definition=assemble_cte_chain(transforms),
-        filepath=os.path.join(models_directory, f'{model_name}.sql'),
-        namespace=namespace,
-        materialize=render_method
-    )
-    # save dbt_project.yml file
-    return save_project_file(
-        project_name=project_name,
-        filepath=os.path.join(project_directory, 'dbt_project.yml'),
-        namespace=namespace,
-        materialize=render_method
+        output_directory=output_directory,
+        file_name=file_name,
+        config_args=config_args,
+        include_schema=include_schema,
+        schema=schema
     )
 
 def generate_transform_sql(
@@ -147,7 +131,7 @@ def generate_transform_sql(
                                                'the "sql" argument with template to apply')
         return render_template(name, source_code, arguments, source_table, running_sql, dw)
     except Exception as e:
-        raise TransformRenderingError(e)
+        raise TransformRenderingError(e) from e
 
 def render_template(
         name: str,
@@ -278,7 +262,7 @@ def _run_query(
             dw.execute_query(create_sql, response='none', acknowledge_risk=True)
         return dw.execute_query(query, response='df', acknowledge_risk=True)
     except Exception as e:
-        raise TransformRenderingError(e)
+        raise
     finally:
         if running_sql:
             drop_sql = f"DROP VIEW IF EXISTS {source_table}"
