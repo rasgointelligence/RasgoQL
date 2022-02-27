@@ -29,9 +29,10 @@ def beta(func: Callable) -> Callable:
     def wrapper(*args, **kwargs):
         logger.info(
             f'{func.__name__} is a beta feature. '
-            'You are among the first rasgoql users to preview this feature! '
-            'There may still be bugs to discover. If you experience any unexpected '
-            'behaviors, please raise an issue in our github repo (https://github.com/rasgointelligence/RasgoQL/issues) '
+            'Its functionality and parameters may change in future versions and '
+            'there may still be bugs to discover. If you experience any unexpected '
+            'behaviors or have ideas to improve this function, please raise an issue '
+            'in our github repo (https://github.com/rasgointelligence/RasgoQL/issues) '
             'or contact us directly on slack.'
         )
         return func(*args, **kwargs)
