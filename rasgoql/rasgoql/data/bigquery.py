@@ -17,7 +17,7 @@ from rasgoql.errors import (
 )
 from rasgoql.imports import bq, gcp_exc, gcp_flow, gcp_svc
 from rasgoql.primitives.enums import (
-    check_bq_creds_type, check_response_type,
+    check_response_type,
     check_table_type, check_write_method
 )
 from rasgoql.utils.creds import load_env, save_env
