@@ -548,6 +548,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
                 'that http connections to Snowflake are whitelisted in your env. '
                 'Finally check https://status.snowflake.com/ for outage status.'
             ) from exception
+        raise exception
 
     def _execute_dict_cursor(
             self,
