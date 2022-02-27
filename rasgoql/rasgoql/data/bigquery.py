@@ -548,13 +548,18 @@ class BigQueryDataWarehouse(DataWarehouse):
         if exception is None:
             return
         if isinstance(exception, gcp_exc.NotFound):
-            raise TableAccessError('Table does not exist')
+            raise TableAccessError('Table does not exist') from exception
         if isinstance(exception, gcp_exc.BadRequest):
             if {"reason": "invalidQuery"} in exception.errors:
-                raise DWQueryError(exception.errors)
+                raise DWQueryError(exception.errors) from exception
         if isinstance(exception, gcp_exc.ServiceUnavailable):
-            raise DWConnectionError('Service is not available')
-        raise exception
+            raise DWConnectionError(
+                'BigQuery is unavailable. Please check that your are using '
+                'valid credentials, that you have internet access, and '
+                'that http connections to GCP are whitelisted in your env. '
+                'Finally check https://status.cloud.google.com/incident/bigquery '
+                'for outage status.'
+            ) from exception
 
     def _execute_string(
             self,

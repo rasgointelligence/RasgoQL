@@ -131,7 +131,7 @@ def generate_transform_sql(
                                                'the "sql" argument with template to apply')
         return render_template(name, source_code, arguments, source_table, running_sql, dw)
     except Exception as e:
-        raise TransformRenderingError(e)
+        raise TransformRenderingError(e) from e
 
 def render_template(
         name: str,
@@ -262,7 +262,7 @@ def _run_query(
             dw.execute_query(create_sql, response='none', acknowledge_risk=True)
         return dw.execute_query(query, response='df', acknowledge_risk=True)
     except Exception as e:
-        raise TransformRenderingError(e)
+        raise
     finally:
         if running_sql:
             drop_sql = f"DROP VIEW IF EXISTS {source_table}"

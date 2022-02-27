@@ -527,24 +527,27 @@ class SnowflakeDataWarehouse(DataWarehouse):
         if exception is None:
             return
         if isinstance(exception, sf_connector.errors.ProgrammingError):
-            if exception.errno == ...:
-                raise DWQueryError(
+            if exception.errno == 3001:
+                raise TableAccessError(
                     'You do not have access to operate on this object. '
                     'Two possible ways to resolve: '
-                    'Connect with different credentials that have the proper access.'
+                    'Connect with different credentials that have the proper access. '
                     'Or run `.change_namespace` on your SQLChain to write it to a '
-                    'namespace your credentials can access')
-            raise DWQueryError(exception)
+                    'namespace your credentials can access'
+                ) from exception
         if isinstance(exception, sf_connector.errors.DatabaseError):
             if exception.errno == 250001:
                 raise DWConnectionError(
                     'Invalid username / password, please check that your '
-                    ' credentials are correct and try to reconnect'
-                )
-            raise DWConnectionError(exception)
+                    'credentials are correct and try to reconnect.'
+                ) from exception
         if isinstance(exception, sf_connector.errors.ServiceUnavailableError):
-            raise DWConnectionError('Snowflake service is unavailable')
-        raise exception
+            raise DWConnectionError(
+                'Snowflake is unavailable. Please check that your are using '
+                'a valid account identifier, that you have internet access, and '
+                'that http connections to Snowflake are whitelisted in your env. '
+                'Finally check https://status.snowflake.com/ for outage status.'
+            ) from exception
 
     def _execute_dict_cursor(
             self,
