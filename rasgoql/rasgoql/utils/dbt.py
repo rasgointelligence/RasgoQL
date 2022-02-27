@@ -110,6 +110,7 @@ def save_model_file(
     """
     filepath = os.path.join(output_directory, file_name)
     if config_args:
+        # TODO: Should we validate whether args are valid dbt keywords?
         model_config = DBT_MODEL_CONFIG_TEMPLATE.format(
             config_args=config_args
         )

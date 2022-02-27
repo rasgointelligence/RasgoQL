@@ -25,7 +25,7 @@ from rasgoql.primitives.rendering import (
 logging.basicConfig()
 ds_logger = logging.getLogger('Dataset')
 ds_logger.setLevel(logging.INFO)
-chn_logger = logging.getLogger('Dataset')
+chn_logger = logging.getLogger('SQLChain')
 chn_logger.setLevel(logging.INFO)
 
 
