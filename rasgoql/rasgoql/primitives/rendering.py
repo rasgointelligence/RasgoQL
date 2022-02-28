@@ -5,6 +5,7 @@ import functools
 import inspect
 from itertools import combinations, permutations, product
 import re
+import os
 from typing import Callable, Dict, List, Tuple, Optional
 
 import jinja2
@@ -89,8 +90,8 @@ def assemble_view_chain(
 
 def create_dbt_files(
         transforms: List['Transform'],
-        output_directory: str,
         schema: List[Tuple[str, str]],
+        output_directory: str = None,
         file_name: str = None,
         config_args: dict = None,
         include_schema: bool = False
@@ -98,6 +99,7 @@ def create_dbt_files(
     """
     Saves a dbt_project.yml and model.sql files to a directory
     """
+    output_directory = output_directory or os.getcwd()
     file_name = file_name or f'{transforms[-1].output_alias}.sql'
     return save_model_file(
         sql_definition=assemble_cte_chain(transforms),
