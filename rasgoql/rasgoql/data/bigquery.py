@@ -68,9 +68,9 @@ class BigQueryCredentials(DWCredentials):
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
-        json_filepath = os.getenv('bigquery_json_filepath', os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))
-        project = os.getenv('bigquery_project')
-        dataset = os.getenv('bigquery_dataset')
+        json_filepath = os.getenv('BIGQUERY_JSON_FILEPATH', os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))
+        project = os.getenv('BIGQUERY_PROJECT')
+        dataset = os.getenv('BIGQUERY_DATASET')
         if not all([json_filepath, project, dataset]):
             raise DWCredentialsWarning(
                 'Your env file is missing expected credentials. Consider running '
@@ -101,9 +101,9 @@ class BigQueryCredentials(DWCredentials):
         Saves credentials to a .env file on your machine
         """
         creds = {
-            "bigquery_json_filepath": self.json_filepath,
-            "bigquery_project": self.project,
-            "bigquery_dataset": self.dataset,
+            "BIGQUERY_JSON_FILEPATH": self.json_filepath,
+            "BIGQUERY_PROJECT": self.project,
+            "BIGQUERY_DATASET": self.dataset,
         }
         return save_env(creds, filepath, overwrite)
 
