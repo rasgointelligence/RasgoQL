@@ -37,7 +37,7 @@ RasgoQL does these things well:
 - Offers dozens of free SQL transforms to use
 - Coming Soon: allows users to create & add custom transforms
 
-RasgoQL’s initial release will support connecting to your existing Snowflake Data Warehouse. We plan to add support for BigQuery and Postgres in the very near future. If you'd like to suggest another database type, submit your idea to our [GitHub Discussions page](https://github.com/rasgointelligence/RasgoQL/discussions) so that other community members can weight in and show their support.
+Rasgo supports [Snowflake](https://docs.rasgoql.com/datawarehouses/credentials) and [BigQuery](https://docs.rasgoql.com/datawarehouses/bigquery), with Postgres support coming soon. If you'd like to suggest another database type, submit your idea to our [GitHub Discussions page](https://github.com/rasgointelligence/RasgoQL/discussions) so that other community members can weight in and show their support.
 
 # Can RasgoQL help you?
 
