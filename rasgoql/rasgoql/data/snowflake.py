@@ -67,6 +67,8 @@ class SnowflakeCredentials(DWCredentials):
                 "account": self.account,
                 "user": self.user,
                 "role": self.role,
+                "database": self.database,
+                "schema": self.schema,
                 "warehouse": self.warehouse,
             }
         )
@@ -80,13 +82,13 @@ class SnowflakeCredentials(DWCredentials):
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
-        account = os.getenv('snowflake_account'),
-        user = os.getenv('snowflake_user'),
-        password = os.getenv('snowflake_password'),
-        role = os.getenv('snowflake_role'),
-        warehouse = os.getenv('snowflake_warehouse'),
-        database = os.getenv('snowflake_database'),
-        schema = os.getenv('snowflake_schema')
+        account = os.getenv('SNOWFLAKE_ACCOUNT'),
+        user = os.getenv('SNOWFLAKE_USER'),
+        password = os.getenv('SNOWFLAKE_PASSWORD'),
+        role = os.getenv('SNOWFLAKE_ROLE'),
+        warehouse = os.getenv('SNOWFLAKE_WAREHOUSE'),
+        database = os.getenv('SNOWFLAKE_DATABASE'),
+        schema = os.getenv('SNOWFLAKE_SCHEMA')
         if not all([account, user, password, role, warehouse, database, schema]):
             raise DWCredentialsWarning(
                 'Your env file is missing expected credentials. Consider running '
@@ -125,13 +127,13 @@ class SnowflakeCredentials(DWCredentials):
         Saves credentials to a .env file on your machine
         """
         creds = {
-            "snowflake_account": self.account,
-            "snowflake_user": self.user,
-            "snowflake_password": self.password,
-            "snowflake_role": self.role,
-            "snowflake_warehouse": self.warehouse,
-            "snowflake_database": self.database,
-            "snowflake_schema": self.schema,
+            "SNOWFLAKE_ACCOUNT": self.account,
+            "SNOWFLAKE_USER": self.user,
+            "SNOWFLAKE_PASSWORD": self.password,
+            "SNOWFLAKE_ROLE": self.role,
+            "SNOWFLAKE_WAREHOUSE": self.warehouse,
+            "SNOWFLAKE_DATABASE": self.database,
+            "SNOWFLAKE_SCHEMA": self.schema,
         }
         return save_env(creds, filepath, overwrite)
 

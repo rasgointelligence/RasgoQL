@@ -376,7 +376,7 @@ class SQLChain(TransformableClass):
         Params:
         `output_directory`: str:
             directory to save model file
-            defaults to RASGOQL_DBT_OUTPUT_DIR user can set, otherwise current dir
+            defaults to current working dir
         `file_name`: str:
             defaults to {output_alias}.sql of SQLChain
         `include_schema`: bool:
@@ -399,8 +399,8 @@ class SQLChain(TransformableClass):
             schema = []
         return create_dbt_files(
             self.transforms,
-            output_directory,
             schema,
+            output_directory,
             file_name,
             config_args,
             include_schema
