@@ -34,11 +34,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed export to dbt workflow & `SQLChain.to_dbt()` params ([see docs](https://docs.rasgoql.com/workflows/exporting-to-dbt))
 - Changed auth workflow and `BigQueryCredentials` params ([see docs](https://docs.rasgoql.com/datawarehouses/bigquery))
 
-## [1.0.2] - 2022-03-02
+## [1.0.2] - 2022-03-03
+## Added
+- Added `acknowledge_risk` parameter to `.query()` and `.query_into_df()` functions
+- Added support for loading external and temporary tables as Datasets
+
 ## Changed
 - Loosened restriction on what constitutes a valid fqtn
     - FROM: `\w+\.\w+\.\w+` (mandate: word.word.word)
     - TO: `^[^\s]+\.[^\s]+\.[^\s]+` (mandate: anychars.anychars.anychars)
+
 ### Fixed
 - Fixed bug that loaded account param as a list when calling `SnowflakeCredentials.from_env()`
 
