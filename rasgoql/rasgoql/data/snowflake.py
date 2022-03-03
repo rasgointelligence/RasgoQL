@@ -82,12 +82,12 @@ class SnowflakeCredentials(DWCredentials):
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
-        account = os.getenv('SNOWFLAKE_ACCOUNT'),
-        user = os.getenv('SNOWFLAKE_USER'),
-        password = os.getenv('SNOWFLAKE_PASSWORD'),
-        role = os.getenv('SNOWFLAKE_ROLE'),
-        warehouse = os.getenv('SNOWFLAKE_WAREHOUSE'),
-        database = os.getenv('SNOWFLAKE_DATABASE'),
+        account = os.getenv('SNOWFLAKE_ACCOUNT')
+        user = os.getenv('SNOWFLAKE_USER')
+        password = os.getenv('SNOWFLAKE_PASSWORD')
+        role = os.getenv('SNOWFLAKE_ROLE')
+        warehouse = os.getenv('SNOWFLAKE_WAREHOUSE')
+        database = os.getenv('SNOWFLAKE_DATABASE')
         schema = os.getenv('SNOWFLAKE_SCHEMA')
         if not all([account, user, password, role, warehouse, database, schema]):
             raise DWCredentialsWarning(
