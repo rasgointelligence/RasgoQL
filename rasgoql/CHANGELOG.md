@@ -15,9 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - N/A
 
 ### Fix
-- Loosen restriction on what constitutes a valid fqtn
-    - FROM: `\w+\.\w+\.\w+` (mandate: word.word.word)
-    - TO: `^[^\s]+\.[^\s]+\.[^\s]+` (mandate: anychars.anychars.anychars)
+- N/A
 
 ### Remove
 - N/A
@@ -36,5 +34,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed export to dbt workflow & `SQLChain.to_dbt()` params ([see docs](https://docs.rasgoql.com/workflows/exporting-to-dbt))
 - Changed auth workflow and `BigQueryCredentials` params ([see docs](https://docs.rasgoql.com/datawarehouses/bigquery))
 
+## [1.0.2] - 2022-03-02
+## Changed
+- Loosened restriction on what constitutes a valid fqtn
+    - FROM: `\w+\.\w+\.\w+` (mandate: word.word.word)
+    - TO: `^[^\s]+\.[^\s]+\.[^\s]+` (mandate: anychars.anychars.anychars)
+### Fixed
+- Fixed bug that loaded account param as a list when calling `SnowflakeCredentials.from_env()`
+
+
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
+[1.0.2]: https://pypi.org/project/rasgoql/1.0.2/
