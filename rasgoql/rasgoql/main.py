@@ -100,21 +100,23 @@ class RasgoQL:
 
     def query(
             self,
-            sql: str
+            sql: str,
+            acknowledge_risk: bool = False
         ):
         """
         Execute a query against your Data Warehouse
         """
-        return self._dw.execute_query(sql)
+        return self._dw.execute_query(sql, acknowledge_risk=acknowledge_risk)
 
     def query_into_df(
             self,
-            sql: str
+            sql: str,
+            acknowledge_risk: bool = False
         ) -> pd.DataFrame:
         """
         Execute a query against your Data Warehouse and return results in a pandas DataFrame
         """
-        return self._dw.execute_query(sql, response='df')
+        return self._dw.execute_query(sql, response='df', acknowledge_risk=acknowledge_risk)
 
     def set_verbose(
             self,

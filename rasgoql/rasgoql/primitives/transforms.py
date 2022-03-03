@@ -8,13 +8,16 @@ import pandas as pd
 import rasgotransforms as rtx
 
 from rasgoql.errors import ParameterException
-from rasgoql.utils.decorators import beta, require_dw, require_transforms
+from rasgoql.utils.decorators import (
+    beta, require_dw,
+    require_materialized, require_transforms
+)
 from rasgoql.utils.sql import (
     parse_fqtn, make_namespace_from_fqtn,
     random_table_name, validate_fqtn
 )
 from rasgoql.primitives.enums import (
-    check_render_method, check_table_type,
+    check_render_method, check_table_type, check_write_table_type,
     TableType, TableState
 )
 from rasgoql.primitives.rendering import (
@@ -115,22 +118,21 @@ class Dataset(TransformableClass):
         ):
         super().__init__(dw)
         try:
-            self.fqtn = validate_fqtn(fqtn)
+            self.fqtn: str = validate_fqtn(fqtn)
+            self.table_name: str = parse_fqtn(fqtn)[2]
+            self.namespace: str = make_namespace_from_fqtn(fqtn)
+            self._dw._validate_namespace(self.namespace)
         except ValueError:
             raise ParameterException("Must pass in a valid 'fqtn' parameter to create a Dataset")
-        self.namespace = make_namespace_from_fqtn(fqtn)
-        self.table_name = parse_fqtn(fqtn)[2]
-        self._dw._validate_namespace(self.namespace)
-
-        self.table_type = TableType.UNKNOWN
-        self.table_state = TableState.UNKNOWN
-        self.is_rasgo = False
+        self.table_type: str = TableType.UNKNOWN.value
+        self.table_state: str = TableState.UNKNOWN.value
+        self.is_rasgo: bool = False
         self._dw_sync()
 
     def __repr__(self) -> str:
         return f"Dataset(fqtn={self.fqtn}, " \
-               f"type={self.table_type.value}, " \
-               f"state={self.table_state.value})"
+               f"type={self.table_type}, " \
+               f"state={self.table_state})"
 
     @require_dw
     def _dw_sync(self):
@@ -139,11 +141,11 @@ class Dataset(TransformableClass):
         """
         obj_exists, is_rasgo_obj, obj_type = self._dw.get_object_details(self.fqtn)
         if obj_exists:
-            self.table_state = TableState.IN_DW
-            self.table_type = TableType[obj_type]
+            self.table_state = TableState.IN_DW.value
+            self.table_type = check_table_type(obj_type)
             self.is_rasgo = is_rasgo_obj
         else:
-            self.table_state = TableState.IN_MEMORY
+            self.table_state = TableState.IN_MEMORY.value
 
     @require_dw
     def get_schema(self) -> dict:
@@ -153,6 +155,7 @@ class Dataset(TransformableClass):
         return self._dw.get_schema(self.fqtn)
 
     @require_dw
+    @require_materialized
     def preview(self) -> pd.DataFrame:
         """
         Return a pandas DataFrame of top 10 rows
@@ -167,6 +170,7 @@ class Dataset(TransformableClass):
         return self._dw.get_ddl(self.fqtn)
 
     @require_dw
+    @require_materialized
     def to_df(self) -> pd.DataFrame:
         """
         Return a pandas DataFrame of the entire table
@@ -341,9 +345,7 @@ class SQLChain(TransformableClass):
         """
         Materializes this Transform Chain into SQL objects
         """
-        table_type = check_table_type(table_type)
-        if table_type == 'UNKNOWN':
-            raise ValueError("table_type must be 'VIEW' or 'TABLE'")
+        table_type = check_write_table_type(table_type)
         table_name = table_name or self.output_table.fqtn
         new_table = self._dw.create(
             self.sql(),
