@@ -5,6 +5,8 @@ import functools
 import logging
 from typing import Callable, Union
 
+from rasgoql.primitives.enums import TableState
+
 logging.basicConfig()
 logger = logging.getLogger('rasgoQL')
 logger.setLevel(logging.INFO)
@@ -59,6 +61,18 @@ def require_dw(func: Callable) -> Callable:
         self: Union['Dataset', 'Transform', 'SQLChain'] = args[0]
         if not self._dw:
             raise NotImplementedError(f'{func.__name__} method is only available for classes instantiated with a DW connection')
+        return func(*args, **kwargs)
+    return wrapper
+
+def require_materialized(func: Callable) -> Callable:
+    """
+    Decorator to restrict Class methods
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        self: 'Dataset' = args[0]
+        if self.table_state != TableState.IN_DW.value:
+            raise NotImplementedError(f'{func.__name__} method is only available for tables that exist in the DataWarehouse')
         return func(*args, **kwargs)
     return wrapper
 

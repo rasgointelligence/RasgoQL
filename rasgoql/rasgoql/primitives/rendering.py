@@ -13,7 +13,7 @@ import pandas as pd
 import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
-from rasgoql.primitives.enums import check_table_type
+from rasgoql.primitives.enums import check_write_table_type
 from rasgoql.utils.dbt import save_model_file
 
 RUN_QUERY_LIMIT = 100
@@ -278,8 +278,7 @@ def _set_create_statement(
     Returns a create statement or a blank string
     """
     if table_type:
-        table_type = check_table_type(table_type)
-    if table_type in ['TABLE', 'VIEW']:
+        table_type = check_write_table_type(table_type)
         return f'CREATE OR REPLACE {table_type} {fqtn} AS \n'
     return ''
 
