@@ -15,7 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - N/A
 
 ### Fix
-- N/A
+- Loosen restriction on what constitutes a valid fqtn
+    - FROM: `\w+\.\w+\.\w+` (mandate: word.word.word)
+    - TO: `^[^\s]+\.[^\s]+\.[^\s]+` (mandate: anychars.anychars.anychars)
 
 ### Remove
 - N/A
