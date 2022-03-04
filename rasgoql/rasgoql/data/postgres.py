@@ -24,7 +24,7 @@ from rasgoql.utils.messaging import verbose_message
 from rasgoql.utils.sql import (
     is_scary_sql, magic_fqtn_handler,
     parse_fqtn, parse_namespace,
-    validate_namespace, validate_fqtn
+    validate_namespace, validate_fqtn, parse_table_and_schema_from_fqtn
 )
 
 logging.basicConfig()
@@ -36,18 +36,15 @@ class PostgresCredentials(DWCredentials):
     """
     Postgres Credentials
     """
-    dw_type = 'postgres'
+    dw_type = 'postgresql'
 
     def __init__(
             self,
-            dialect: str,
-            db_api: str,
             username: str,
             password: str,
             host: str,
             port: str,
             default_db: str,
-            # TODO: is there a way to set the default schema in the engine?
             default_schema: str
         ):
         if alchemy_engine is None:
@@ -55,9 +52,6 @@ class PostgresCredentials(DWCredentials):
                 'Missing a required python package to run Postgres. '
                 'Please download the Postgres package by running: '
                 'pip install rasgoql[snowflake]')
-        # TODO: incldue dialect and db_api?
-        self.dialect = dialect
-        self.db_api = db_api
         self.username = username
         self.password = password
         self.host = host
@@ -68,8 +62,6 @@ class PostgresCredentials(DWCredentials):
     def __repr__(self) -> str:
         return json.dumps(
             {
-                "dialect": self.dialect,# TODO: include dialect?
-                "db_api": self.db_api, # TODO: include API driver?
                 "user": self.username,
                 "host": self.host,
                 "port": self.port,
@@ -87,23 +79,18 @@ class PostgresCredentials(DWCredentials):
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
-        # TODO: include dialect and db_api?
-        dialect = os.getenv('POSTGRES_DIALECT')
-        db_api = os.getenv('POSTGRES_DB_API')
         username = os.getenv('POSTGRES_USERNAME')
         password = os.getenv('POSTGRES_PASSWORD')
         host = os.getenv('POSTGRES_HOST')
         port = os.getenv('POSTGRES_PORT')
         default_db = os.getenv('POSTGRES_DEFAULT_DB')
         default_schema = os.getenv('POSTGRES_DEFAULT_SCHEMA')
-        if not all([dialect, db_api, username, password, host, port, default_db, default_schema]):
+        if not all([username, password, host, port, default_db, default_schema]):
             raise DWCredentialsWarning(
                 'Your env file is missing expected credentials. Consider running '
                 'PostgresCredentials(*args).to_env() to repair this.'
             )
         return cls(
-            dialect,
-            db_api,
             username,
             password,
             host,
@@ -117,8 +104,6 @@ class PostgresCredentials(DWCredentials):
         Returns a dict of the credentials
         """
         return {
-            "dialect": self.dialect,
-            "db_api": self.db_api,
             "username": self.username,
             "password": self.password,
             "host": self.host,
@@ -136,8 +121,6 @@ class PostgresCredentials(DWCredentials):
         Saves credentials to a .env file on your machine
         """
         creds = {
-            "POSTGRES_DIALECT": self.dialect,
-            "POSTGRES_DB_API": self.db_api,
             "POSTGRES_USERNAME": self.username,
             "POSTGRES_PASSWORD": self.password,
             "POSTGRES_HOST": self.host,
@@ -158,7 +141,8 @@ class PostgresDataWarehouse(DataWarehouse):
     def __init__(self):
         super().__init__()
         self.credentials: dict = None
-        self.connection: alchemy_engine = None
+        self.connection: alchemy_session = None
+        self.engine: alchemy_engine = None
         self.default_database = None
         self.default_schema = None
 
@@ -176,7 +160,7 @@ class PostgresDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (database.schema)
         """
-        # TODO: changing databases is unsupported in Postgres - we would need to rebuild a new connection. Error here?
+        # TODO: Maybe tear down a connection and allow a new connection to be built?
         raise NotImplementedError("Connecting to a new Database in a single session is not supported by Postgres. Please build a new connection using the PostgresCredentials class")
 
     def connect(
@@ -197,9 +181,9 @@ class PostgresDataWarehouse(DataWarehouse):
             self.credentials = credentials
             self.default_database = credentials.get('default_db')
             self.default_schema = credentials.get('default_schema')
-            self.engine_url = f"{credentials.get('dialect')}+{credentials.get('db_api')}://{credentials.get('username')}:{credentials.get('password')}@{credentials.get('host')}:{credentials.get('port')}/{credentials.get('default_db')}"
-            self.engine = alchemy_engine(self.engine_url)
-            self.session = alchemy_session(self.engine)
+            engine_url = f"{credentials.dw_type}://{credentials.get('username')}:{credentials.get('password')}@{credentials.get('host')}:{credentials.get('port')}/{credentials.get('default_db')}"
+            self.engine = alchemy_engine(engine_url)
+            self.connection = alchemy_session(self.engine)
             verbose_message(
                 "Connected to Postgres",
                 logger
@@ -212,9 +196,9 @@ class PostgresDataWarehouse(DataWarehouse):
         Close connection to Postgres
         """
         try:
-            if self.session:
-                self.session.close()
-            self.session = None
+            if self.connection:
+                self.connection.close()
+            self.connection = None
             verbose_message(
                 "Connection to Postgres closed",
                 logger
@@ -247,7 +231,7 @@ class PostgresDataWarehouse(DataWarehouse):
         """
         table_type = check_table_type(table_type)
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        pg_namespace = self._pg_appropriate_namespace(fqtn=fqtn)
+        pg_namespace = parse_table_and_schema_from_fqtn(fqtn=fqtn)
         if self._table_exists(fqtn=fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
@@ -476,7 +460,6 @@ class PostgresDataWarehouse(DataWarehouse):
             if not table_exists or method == 'REPLACE':
                 create_stmt = generate_dataframe_ddl(df, fqtn)
                 self.execute_query(create_stmt, response='None', acknowledge_risk=True)
-            # TODO: this is nasty, but doing this in SQLAlchemy is pretty nasty tbh
             df.to_sql(
                 table,
                 self.engine,
@@ -582,7 +565,7 @@ class PostgresDataWarehouse(DataWarehouse):
         Query string must be a single statement (only one ;) or Snowflake returns an error
         """
         try:
-            query_return = self.session.execute(query).__dict__
+            query_return = self.connection.execute(query).__dict__
             return query_return
         except Exception as e:
             self._error_handler(e)
@@ -596,9 +579,10 @@ class PostgresDataWarehouse(DataWarehouse):
         Run a query string and return results in a pandas DataFrame
         """
         try:
-            query_result = self.session.execute(query)
+            query_result = self.connection.execute(query)
             query_return_df = pd.DataFrame(query_result)
             query_return_df.columns = query_result.keys()
+            return query_return_df
         except Exception as e:
             self._error_handler(e)
 
@@ -612,19 +596,9 @@ class PostgresDataWarehouse(DataWarehouse):
         Execute a query string against the DataWarehouse connection and fetch all results
         """
         try:
-            results = self.session.execute(query)
+            results = self.connection.execute(query)
             if ignore_results:
                 return
             return list(results)
         except Exception as e:
             self._error_handler(e)
-
-    def _pg_appropriate_namespace(
-        self,
-        fqtn: str
-    ) -> str:
-        """Take an FQTN and return a schema.table
-        """
-        validate_fqtn(fqtn)
-        _, schema, table = parse_fqtn(fqtn)
-        return f"{schema}.{table}"

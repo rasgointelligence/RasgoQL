@@ -106,6 +106,15 @@ def parse_namespace(
     namespace = validate_namespace(namespace)
     return tuple(namespace.split("."))
 
+def parse_table_and_schema_from_fqtn(
+    fqtn: str
+) -> tuple:
+    """
+    Accepts a possible FQTN and returns the schema and table from it
+    """
+    fqtn = validate_fqtn(fqtn)
+    return tuple(fqtn.split(".")[1:])
+
 def random_table_name() -> str:
     """
     Returns a random unique table name prefixed with "RQL"
