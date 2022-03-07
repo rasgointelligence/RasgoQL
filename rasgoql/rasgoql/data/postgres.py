@@ -109,7 +109,8 @@ class PostgresCredentials(DWCredentials):
             "host": self.host,
             "port": self.port,
             "default_db": self.default_db,
-            "default_schema": self.default_schema
+            "default_schema": self.default_schema,
+            "dw_type": self.dw_type
         }
 
     def to_env(
@@ -135,7 +136,7 @@ class PostgresDataWarehouse(DataWarehouse):
     """
     Postgres DataWarehouse
     """
-    dw_type = 'postgres'
+    dw_type = 'postgresql'
     credentials_class = PostgresCredentials
 
     def __init__(self):
@@ -181,7 +182,7 @@ class PostgresDataWarehouse(DataWarehouse):
             self.credentials = credentials
             self.default_database = credentials.get('default_db')
             self.default_schema = credentials.get('default_schema')
-            engine_url = f"{credentials.dw_type}://{credentials.get('username')}:{credentials.get('password')}@{credentials.get('host')}:{credentials.get('port')}/{credentials.get('default_db')}"
+            engine_url = f"{credentials.get('dw_type')}://{credentials.get('username')}:{credentials.get('password')}@{credentials.get('host')}:{credentials.get('port')}/{credentials.get('default_db')}"
             self.engine = alchemy_engine(engine_url)
             self.connection = alchemy_session(self.engine)
             verbose_message(
@@ -231,13 +232,13 @@ class PostgresDataWarehouse(DataWarehouse):
         """
         table_type = check_table_type(table_type)
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        pg_namespace = parse_table_and_schema_from_fqtn(fqtn=fqtn)
+        schema, table = parse_table_and_schema_from_fqtn(fqtn=fqtn)
         if self._table_exists(fqtn=fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
                    'pass in overwrite=True and run this function again'
             raise TableConflictException(msg)
-        query = f"CREATE OR REPLACE {table_type} {pg_namespace} AS {sql}"
+        query = f"CREATE OR REPLACE {table_type} {schema}.{table} AS {sql}"
         self.execute_query(query, acknowledge_risk=True, response='None')
         return fqtn
 
@@ -298,7 +299,7 @@ class PostgresDataWarehouse(DataWarehouse):
         _, schema_name, table_name = parse_fqtn(fqtn)
         sql = (
             f"select table_schema, table_name, column_name, data_type," 
-            f"character_maximum_length, column_default, is_nullable from"
+            f"character_maximum_length, column_default, is_nullable from "
             f"INFORMATION_SCHEMA.COLUMNS where table_name = '{table_name}' "
             f"and table_schema = '{schema_name}';"
         )
@@ -580,8 +581,12 @@ class PostgresDataWarehouse(DataWarehouse):
         """
         try:
             query_result = self.connection.execute(query)
-            query_return_df = pd.DataFrame(query_result)
-            query_return_df.columns = query_result.keys()
+            query_return_df = pd.DataFrame(query_result.all())
+            print(f"query_return_df:\n{query_return_df}")
+            response_cols = list(query_result.keys())
+            print(f"Response_cols:\n{response_cols}")
+            query_return_df.columns = response_cols
+            print(f"query return df with cols:\n{query_return_df}")
             return query_return_df
         except Exception as e:
             self._error_handler(e)

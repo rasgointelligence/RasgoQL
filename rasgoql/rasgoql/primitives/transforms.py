@@ -140,7 +140,7 @@ class Dataset(TransformableClass):
         obj_exists, is_rasgo_obj, obj_type = self._dw.get_object_details(self.fqtn)
         if obj_exists:
             self.table_state = TableState.IN_DW
-            self.table_type = TableType[obj_type]
+            self.table_type = TableType[obj_type.upper()]
             self.is_rasgo = is_rasgo_obj
         else:
             self.table_state = TableState.IN_MEMORY

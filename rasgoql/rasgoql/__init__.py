@@ -8,7 +8,8 @@ import webbrowser
 from rasgoql.data import (
     DWCredentials,
     BigQueryCredentials, BigQueryDataWarehouse,
-    SnowflakeCredentials, SnowflakeDataWarehouse
+    SnowflakeCredentials, SnowflakeDataWarehouse,
+    PostgresCredentials, PostgresDataWarehouse
 )
 from rasgoql.errors import ParameterException
 from rasgoql.main import RasgoQL
@@ -23,7 +24,7 @@ __all__ = [
 DW_MAP = {
     'snowflake': SnowflakeDataWarehouse,
     'bigquery': BigQueryDataWarehouse,
-    #'postgres': PostgresDataWarehouse,
+    'postgresql': PostgresDataWarehouse,
 }
 
 
