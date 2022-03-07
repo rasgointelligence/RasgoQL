@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add SQLChain to/from YAML workflow
 
 ### Change
-- N/A
+- make `name` a mandatory parameter in SQLChain and Dataset `.transform()` methods
 
 ### Fix
 - N/A

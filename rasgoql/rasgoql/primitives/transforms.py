@@ -69,7 +69,7 @@ class TransformableClass:
     @require_dw
     def transform(
             self,
-            name: str = None,
+            name: str,
             arguments: dict = None,
             output_alias: str = None,
             **kwargs
