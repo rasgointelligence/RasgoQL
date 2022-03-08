@@ -127,7 +127,7 @@ def validate_fqtn(
     """
     Accepts a possible fully qualified table string and decides whether it is well formed
     """
-    if re.match(r'\w+\.\w+\.\w+', fqtn):
+    if re.match(r'^[^\s]+\.[^\s]+\.[^\s]+', fqtn):
         return fqtn
     raise ValueError(f'{fqtn} is not a well-formed fqtn')
 
@@ -137,7 +137,7 @@ def validate_namespace(
     """
     Accepts a possible namespace string and decides whether it is well formed
     """
-    if re.match(r'\w+\.\w+', namespace):
+    if re.match(r'^[^\s]+\.[^\s]+', namespace):
         return namespace
     raise ValueError(f'{namespace} is not a well-formed namespace')
 

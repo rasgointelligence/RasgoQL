@@ -18,7 +18,7 @@ from rasgoql.errors import (
 from rasgoql.imports import bq, gcp_exc, gcp_flow, gcp_svc
 from rasgoql.primitives.enums import (
     check_response_type,
-    check_table_type, check_write_method
+    check_write_method, check_write_table_type
 )
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe
@@ -227,7 +227,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             and you know you want to overwrite it
             WARNING: This will completely overwrite data in the existing table
         """
-        table_type = check_table_type(table_type)
+        table_type = check_write_table_type(table_type)
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         if self._table_exists(fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
