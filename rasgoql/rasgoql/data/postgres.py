@@ -14,7 +14,7 @@ from rasgoql.errors import (
     PackageDependencyWarning, ParameterException,
     SQLWarning, TableAccessError, TableConflictException
 )
-from rasgoql.imports import alchemy_engine, alchemy_session
+from rasgoql.imports import alchemy_engine, alchemy_session, alchemy_exceptions
 from rasgoql.primitives.enums import (
     check_response_type, check_table_type, check_write_method
 )
@@ -331,11 +331,6 @@ class PostgresDataWarehouse(DataWarehouse):
         obj_exists = len(result) > 0
         is_rasgo_obj = False
         obj_type = 'unknown'
-        if obj_exists:
-            # TODO: how to handle labels?
-            # is_rasgo_obj = (result[0].get('comment') == 'rasgoql')
-            # obj_type = result[0].get('kind')
-            pass
         return obj_exists, is_rasgo_obj, obj_type
 
     def get_schema(
@@ -371,7 +366,6 @@ class PostgresDataWarehouse(DataWarehouse):
             else:
                 raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
             for row in query_response:
-                # TODO: response structure?
                 response.append((row['name'], row['type']))
             return response
         except Exception as e:
@@ -541,29 +535,11 @@ class PostgresDataWarehouse(DataWarehouse):
         )
         if exception is None:
             return
-        # TODO: what the hell are the SQLalchemy specific errors?
-        # if isinstance(exception, sf_connector.errors.ProgrammingError):
-        #     if exception.errno == 3001:
-        #         raise TableAccessError(
-        #             'You do not have access to operate on this object. '
-        #             'Two possible ways to resolve: '
-        #             'Connect with different credentials that have the proper access. '
-        #             'Or run `.change_namespace` on your SQLChain to write it to a '
-        #             'namespace your credentials can access'
-        #         ) from exception
-        # if isinstance(exception, sf_connector.errors.DatabaseError):
-        #     if exception.errno == 250001:
-        #         raise DWConnectionError(
-        #             'Invalid username / password, please check that your '
-        #             'credentials are correct and try to reconnect.'
-        #         ) from exception
-        # if isinstance(exception, sf_connector.errors.ServiceUnavailableError):
-        #     raise DWConnectionError(
-        #         'Snowflake is unavailable. Please check that your are using '
-        #         'a valid account identifier, that you have internet access, and '
-        #         'that http connections to Snowflake are whitelisted in your env. '
-        #         'Finally check https://status.snowflake.com/ for outage status.'
-        #     ) from exception
+        if isinstance(exception, alchemy_exceptions.DisconnectionError):
+            raise DWConnectionError(
+                'Disconnected from DataWarehouse. Please validate connection '
+                'or reconnect.'
+            ) from exception
         raise exception
 
     def _execute_string(
@@ -613,11 +589,8 @@ class PostgresDataWarehouse(DataWarehouse):
         try:
             query_result = self.connection.execute(query)
             query_return_df = pd.DataFrame(query_result.all())
-            print(f"query_return_df:\n{query_return_df}")
             response_cols = list(query_result.keys())
-            print(f"Response_cols:\n{response_cols}")
             query_return_df.columns = response_cols
-            print(f"query return df with cols:\n{query_return_df}")
             return query_return_df
         except Exception as e:
             self._error_handler(e)

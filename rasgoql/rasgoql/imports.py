@@ -61,6 +61,7 @@ except ImportError:
 
 try:
     from sqlalchemy import create_engine as alchemy_engine
+    from sqlalchemy import exc as alchemy_exceptions
     from sqlalchemy.orm import Session as alchemy_session
 except ImportError:
     alchemy_engine = None
