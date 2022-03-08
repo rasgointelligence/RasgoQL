@@ -3,7 +3,7 @@ Snowflake DataWarehouse classes
 """
 import logging
 import os
-from typing import List, Optional, Union
+from typing import List, Union
 
 import json
 import pandas as pd
@@ -14,7 +14,7 @@ from rasgoql.errors import (
     PackageDependencyWarning, ParameterException,
     SQLWarning, TableAccessError, TableConflictException
 )
-from rasgoql.imports import alchemy_engine, alchemy_text, alchemy_session
+from rasgoql.imports import alchemy_engine, alchemy_session
 from rasgoql.primitives.enums import (
     check_response_type, check_table_type, check_write_method
 )
@@ -23,8 +23,8 @@ from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
 from rasgoql.utils.messaging import verbose_message
 from rasgoql.utils.sql import (
     is_scary_sql, magic_fqtn_handler,
-    parse_fqtn, parse_namespace,
-    validate_namespace, validate_fqtn, parse_table_and_schema_from_fqtn
+    parse_fqtn, parse_table_and_schema_from_fqtn,
+    validate_namespace
 )
 
 logging.basicConfig()
@@ -44,8 +44,8 @@ class PostgresCredentials(DWCredentials):
             password: str,
             host: str,
             port: str,
-            default_db: str,
-            default_schema: str
+            database: str,
+            schema: str
         ):
         if alchemy_engine is None:
             raise PackageDependencyWarning(
@@ -56,8 +56,8 @@ class PostgresCredentials(DWCredentials):
         self.password = password
         self.host = host
         self.port = port
-        self.default_db = default_db
-        self.default_schema = default_schema
+        self.database = database
+        self.schema = schema
 
     def __repr__(self) -> str:
         return json.dumps(
@@ -65,8 +65,8 @@ class PostgresCredentials(DWCredentials):
                 "user": self.username,
                 "host": self.host,
                 "port": self.port,
-                "default_db": self.default_db,
-                "default_schema": self.default_schema,
+                "database": self.database,
+                "schema": self.schema,
             }
         )
 
@@ -83,9 +83,9 @@ class PostgresCredentials(DWCredentials):
         password = os.getenv('POSTGRES_PASSWORD')
         host = os.getenv('POSTGRES_HOST')
         port = os.getenv('POSTGRES_PORT')
-        default_db = os.getenv('POSTGRES_DEFAULT_DB')
-        default_schema = os.getenv('POSTGRES_DEFAULT_SCHEMA')
-        if not all([username, password, host, port, default_db, default_schema]):
+        database = os.getenv('POSTGRES_DATABASE')
+        schema = os.getenv('POSTGRES_SCHEMA')
+        if not all([username, password, host, port, database, schema]):
             raise DWCredentialsWarning(
                 'Your env file is missing expected credentials. Consider running '
                 'PostgresCredentials(*args).to_env() to repair this.'
@@ -95,8 +95,8 @@ class PostgresCredentials(DWCredentials):
             password,
             host,
             port,
-            default_db,
-            default_schema
+            database,
+            schema
         )
 
     def to_dict(self) -> dict:
@@ -108,8 +108,8 @@ class PostgresCredentials(DWCredentials):
             "password": self.password,
             "host": self.host,
             "port": self.port,
-            "default_db": self.default_db,
-            "default_schema": self.default_schema,
+            "database": self.database,
+            "schema": self.schema,
             "dw_type": self.dw_type
         }
 
@@ -126,8 +126,8 @@ class PostgresCredentials(DWCredentials):
             "POSTGRES_PASSWORD": self.password,
             "POSTGRES_HOST": self.host,
             "POSTGRES_PORT": self.port,
-            "POSTGRES_DEFAULT_DB": self.default_db,
-            "POSTGRES_DEFAULT_SCHEMA": self.default_schema
+            "POSTGRES_DATABASE": self.database,
+            "POSTGRES_SCHEMA": self.schema
         }
         return save_env(creds, filepath, overwrite)
 
@@ -143,9 +143,8 @@ class PostgresDataWarehouse(DataWarehouse):
         super().__init__()
         self.credentials: dict = None
         self.connection: alchemy_session = None
-        self.engine: alchemy_engine = None
-        self.default_database = None
-        self.default_schema = None
+        self.database = None
+        self.schema = None
 
     # ---------------------------
     # Core Data Warehouse methods
@@ -161,8 +160,10 @@ class PostgresDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (database.schema)
         """
-        # TODO: Maybe tear down a connection and allow a new connection to be built?
-        raise NotImplementedError("Connecting to a new Database in a single session is not supported by Postgres. Please build a new connection using the PostgresCredentials class")
+        raise NotImplementedError(
+            "Connecting to a new Database in a single session is not supported by Postgres. "
+            "Please build a new connection using the PostgresCredentials class"
+        )
 
     def connect(
             self,
@@ -180,11 +181,9 @@ class PostgresDataWarehouse(DataWarehouse):
 
         try:
             self.credentials = credentials
-            self.default_database = credentials.get('default_db')
-            self.default_schema = credentials.get('default_schema')
-            engine_url = f"{credentials.get('dw_type')}://{credentials.get('username')}:{credentials.get('password')}@{credentials.get('host')}:{credentials.get('port')}/{credentials.get('default_db')}"
-            self.engine = alchemy_engine(engine_url)
-            self.connection = alchemy_session(self.engine)
+            self.database = credentials.get('database')
+            self.schema = credentials.get('schema')
+            self.connection = alchemy_session(self._engine)
             verbose_message(
                 "Connected to Postgres",
                 logger
@@ -247,7 +246,7 @@ class PostgresDataWarehouse(DataWarehouse):
         """
         Returns the default database.schema of this connection
         """
-        return f'{self.default_database}.{self.default_schema}'
+        return f'{self.database}.{self.schema}'
 
     def execute_query(
             self,
@@ -284,7 +283,6 @@ class PostgresDataWarehouse(DataWarehouse):
             return self._query_into_df(sql)
         return self._execute_string(sql, ignore_results=(response == 'NONE'))
 
-    # TODO: Note: DDL isn't returnable by objects while querying postgres. 
     def get_ddl(
             self,
             fqtn: str
@@ -298,7 +296,7 @@ class PostgresDataWarehouse(DataWarehouse):
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         _, schema_name, table_name = parse_fqtn(fqtn)
         sql = (
-            f"select table_schema, table_name, column_name, data_type," 
+            f"select table_schema, table_name, column_name, data_type, "
             f"character_maximum_length, column_default, is_nullable from "
             f"INFORMATION_SCHEMA.COLUMNS where table_name = '{table_name}' "
             f"and table_schema = '{schema_name}';"
@@ -357,8 +355,11 @@ class PostgresDataWarehouse(DataWarehouse):
             on this statement. The view will be dropped after profiling
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        db, schema, table = parse_fqtn(fqtn)
-        query_sql = f"SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE table_catalog = {db} AND table_schema = {schema} and table_name = {table}"
+        database, schema, table = parse_fqtn(fqtn)
+        query_sql = f"SELECT * FROM INFORMATION_SCHEMA.TABLES " \
+                    f"WHERE table_catalog = '{database}' " \
+                    f"AND table_schema = '{schema}' " \
+                    f"AND table_name = '{table}'"
         response = []
         try:
             if self._table_exists(fqtn):
@@ -447,7 +448,7 @@ class PostgresDataWarehouse(DataWarehouse):
         if method:
             method = check_write_method(method)
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        db, schema, table = parse_fqtn(fqtn)
+        database, schema, table = parse_fqtn(fqtn)
         table_exists = self._table_exists(fqtn)
         if table_exists and not method:
             msg = f"A table named {fqtn} already exists. " \
@@ -463,7 +464,7 @@ class PostgresDataWarehouse(DataWarehouse):
                 self.execute_query(create_stmt, response='None', acknowledge_risk=True)
             df.to_sql(
                 table,
-                self.engine,
+                self._engine,
                 schema=schema,
                 if_exists=method.lower(),
                 index=False,
@@ -509,8 +510,23 @@ class PostgresDataWarehouse(DataWarehouse):
             raise ParameterException("Postgres namespaces should be format: DATABASE.SCHEMA")
 
     # --------------------------
-    # POstgres specific helpers
+    # Postgres specific helpers
     # --------------------------
+    @property
+    def _engine(
+            self
+        ) -> 'alchemy_engine':
+        """
+        Returns a SQLAlchemy engine
+        """
+        engine_url = f"{self.credentials.get('dw_type')}://" \
+            f"{self.credentials.get('username')}:" \
+            f"{self.credentials.get('password')}" \
+            f"@{self.credentials.get('host')}:" \
+            f"{self.credentials.get('port')}/" \
+            f"{self.credentials.get('database')}"
+        return alchemy_engine(engine_url)
+
     def _error_handler(
             self,
             exception: Exception,
@@ -550,6 +566,22 @@ class PostgresDataWarehouse(DataWarehouse):
         #     ) from exception
         raise exception
 
+    def _execute_string(
+            self,
+            query: str,
+            ignore_results: bool = False
+        ) -> List[tuple]:
+        """
+        Execute a query string against the DataWarehouse connection and fetch all results
+        """
+        try:
+            results = self.connection.execute(query)
+            if ignore_results:
+                return
+            return list(results)
+        except Exception as e:
+            self._error_handler(e)
+
     def _query_into_dict(
             self,
             query: str
@@ -573,8 +605,7 @@ class PostgresDataWarehouse(DataWarehouse):
 
     def _query_into_df(
             self,
-            query: str,
-            params: Optional[dict] = None
+            query: str
         ) -> pd.DataFrame:
         """
         Run a query string and return results in a pandas DataFrame
@@ -588,22 +619,5 @@ class PostgresDataWarehouse(DataWarehouse):
             query_return_df.columns = response_cols
             print(f"query return df with cols:\n{query_return_df}")
             return query_return_df
-        except Exception as e:
-            self._error_handler(e)
-
-    def _execute_string(
-            self,
-            query: str,
-            ignore_results: bool = False
-        # TODO: return type correct?
-        ) -> List[tuple]:
-        """
-        Execute a query string against the DataWarehouse connection and fetch all results
-        """
-        try:
-            results = self.connection.execute(query)
-            if ignore_results:
-                return
-            return list(results)
         except Exception as e:
             self._error_handler(e)

@@ -62,9 +62,6 @@ except ImportError:
 try:
     from sqlalchemy import create_engine as alchemy_engine
     from sqlalchemy.orm import Session as alchemy_session
-    from sqlalchemy import text as alchemy_text
 except ImportError:
-    # TODO: make your import vars none here
     alchemy_engine = None
-    alchemy_text = None
-    pass
+    alchemy_session = None
