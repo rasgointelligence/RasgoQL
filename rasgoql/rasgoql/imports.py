@@ -58,3 +58,11 @@ try:
     from google_auth_oauthlib import flow as gcp_flow
 except ImportError:
     gcp_flow = None
+
+try:
+    from sqlalchemy import create_engine as alchemy_engine
+    from sqlalchemy import exc as alchemy_exceptions
+    from sqlalchemy.orm import Session as alchemy_session
+except ImportError:
+    alchemy_engine = None
+    alchemy_session = None

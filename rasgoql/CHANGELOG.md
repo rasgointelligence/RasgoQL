@@ -8,11 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Add
-- Add support for Postgres
 - Add SQLChain to/from YAML workflow
 
 ### Change
-- make `name` a mandatory parameter in SQLChain and Dataset `.transform()` methods
+- N/A
 
 ### Fix
 - N/A
@@ -47,7 +46,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed bug that loaded account param as a list when calling `SnowflakeCredentials.from_env()`
 
+## [1.1.0] - 2022-03-08
+### Added
+- Added support for Postgres
+
+### Changed
+- made `name` a mandatory parameter in SQLChain and Dataset `.transform()` methods
+
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
 [1.0.2]: https://pypi.org/project/rasgoql/1.0.2/
+[1.1.0]: https://pypi.org/project/rasgoql/1.1.0/

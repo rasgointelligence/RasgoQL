@@ -51,6 +51,9 @@ https://docs.rasgoql.com
    - Added import dataset from pandas workflow
    - Added export to dbt workflow
 
+- v1.1.0 (Mar 8, 2022)
+    - Added support for Postgres
+
 
 See [Changelog](https://github.com/rasgointelligence/RasgoQL/blob/main/rasgoql/CHANGELOG.md) for full minor version release notes
 
