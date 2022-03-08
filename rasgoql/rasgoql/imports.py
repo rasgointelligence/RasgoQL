@@ -65,4 +65,5 @@ try:
     from sqlalchemy.orm import Session as alchemy_session
 except ImportError:
     alchemy_engine = None
+    alchemy_exceptions = None
     alchemy_session = None
