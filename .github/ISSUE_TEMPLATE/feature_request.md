@@ -7,11 +7,11 @@ assignees: ''
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+**What feature are you requesting?**
+A clear and concise description of what the problem is. Ex. It would make my life easier if rasgoql would... 
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+**Are you using a workaround to do it in or outside of the product today?**
+Tell us what are you doing to work around it today. 
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+**How important is this feature to your continued use of the package? Can you qualify the value / importance of this feature in any way?**
+Give us an idea of how much this would help you with your day to day.  
