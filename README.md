@@ -1,12 +1,31 @@
-![RasgoQL Hero](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/RasgoQL%20Hero%20Image.png)
-
 [![Downloads](https://pepy.tech/badge/rasgoql/month)](https://pepy.tech/project/rasgoql)
 [![PyPI version](https://badge.fury.io/py/rasgoql.svg)](https://badge.fury.io/py/rasgoql)
 [![Docs](https://img.shields.io/badge/RasgoQL-DOCS-GREEN.svg)](https://docs.rasgoql.com/)
 [![Chat on Slack](https://img.shields.io/badge/chat-on%20Slack-brightgreen.svg)](https://join.slack.com/t/rasgousergroup/shared_invite/zt-nytkq6np-ANEJvbUSbT2Gkvc8JICp3g)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-# RasgoQL
+![RasgoQL Hero](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/RasgoQL%20Hero%20Image.png)
+
+<h2 align="center">RasgoQL</h2>
+<p align="center">
+    <strong>Data Transformations in Python</strong>
+    <br />
+    <a href="https://docs.rasgoql.com/"><strong>≪  Read the Docs</strong></a>
+    &nbsp · &nbsp
+    <a href="https://join.slack.com/t/rasgousergroup/shared_invite/zt-nytkq6np-ANEJvbUSbT2Gkvc8JICp3g">
+    <strong>Join Our Slack »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/rasgointelligence/RasgoQL/issues/new?assignees=&labels=&template=bug_report.md&title=%5BBUG%5D">
+    Report Bug</a>
+    ·
+    <a href="https://github.com/rasgointelligence/RasgoQL/issues/new?assignees=&labels=&template=feedback.md&title=%5BFEEDBACK%5D">
+    Suggest Improvement</a>
+    ·
+    <a href="https://github.com/rasgointelligence/RasgoQL/issues/new?assignees=&labels=&template=feature_request.md&title=%5BRFE%5D">
+    Request Feature</a>
+</p>
+
 RasgoQL is a Python package that enables you to easily query and transform tables in your Data Warehouse directly from a notebook.
 
 You can quickly create new features, sample data, apply complex aggregates... all without having to write SQL!
