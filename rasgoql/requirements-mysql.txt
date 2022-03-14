@@ -1,2 +1,2 @@
 SQLAlchemy
-psycopg2
+pymysql

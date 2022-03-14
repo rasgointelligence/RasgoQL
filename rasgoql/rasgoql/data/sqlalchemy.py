@@ -1,5 +1,5 @@
 """
-Postgres DataWarehouse classes
+Generic SQLAlchemy DataWarehouse classes
 """
 import logging
 import os
@@ -28,35 +28,27 @@ from rasgoql.utils.sql import (
 )
 
 logging.basicConfig()
-logger = logging.getLogger('Postgres DataWarehouse')
+logger = logging.getLogger('SQLAlchemy DataWarehouse')
 logger.setLevel(logging.INFO)
 
 
-class PostgresCredentials(DWCredentials):
+class SQLALchemyCredentials(DWCredentials):
     """
-    Postgres Credentials
+    Generic Credentials
     """
-    dw_type = 'postgresql'
+    dw_type = None
 
-    # TODO: override anything with port to ensure we pick up port in creds
     def __init__(
             self,
             username: str,
             password: str,
             host: str,
-            port: str,
             database: str,
             schema: str
         ):
-        if alchemy_engine is None:
-            raise PackageDependencyWarning(
-                'Missing a required python package to run Postgres. '
-                'Please download the Postgres package by running: '
-                'pip install rasgoql[postgres]')
         self.username = username
         self.password = password
         self.host = host
-        self.port = port
         self.database = database
         self.schema = schema
 
@@ -65,7 +57,6 @@ class PostgresCredentials(DWCredentials):
             {
                 "user": self.username,
                 "host": self.host,
-                "port": self.port,
                 "database": self.database,
                 "schema": self.schema,
             }
@@ -75,27 +66,25 @@ class PostgresCredentials(DWCredentials):
     def from_env(
             cls,
             filepath: str = None
-        ) -> 'PostgresCredentials':
+        ) -> 'SQLAlchemyCredentials':
         """
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
-        username = os.getenv('POSTGRES_USERNAME')
-        password = os.getenv('POSTGRES_PASSWORD')
-        host = os.getenv('POSTGRES_HOST')
-        port = os.getenv('POSTGRES_PORT')
-        database = os.getenv('POSTGRES_DATABASE')
-        schema = os.getenv('POSTGRES_SCHEMA')
-        if not all([username, password, host, port, database, schema]):
+        username = os.getenv(f'{cls.dw_type}_USERNAME')
+        password = os.getenv(f'{cls.dw_type}_PASSWORD')
+        host = os.getenv(f'{cls.dw_type}_HOST')
+        database = os.getenv(f'{cls.dw_type}_DATABASE')
+        schema = os.getenv(f'{cls.dw_type}_SCHEMA')
+        if not all([username, password, host, database, schema]):
             raise DWCredentialsWarning(
                 'Your env file is missing expected credentials. Consider running '
-                'PostgresCredentials(*args).to_env() to repair this.'
+                f'{cls.__name__}(*args).to_env() to repair this.'
             )
         return cls(
             username,
             password,
             host,
-            port,
             database,
             schema
         )
@@ -108,7 +97,6 @@ class PostgresCredentials(DWCredentials):
             "username": self.username,
             "password": self.password,
             "host": self.host,
-            "port": self.port,
             "database": self.database,
             "schema": self.schema,
             "dw_type": self.dw_type
@@ -123,22 +111,21 @@ class PostgresCredentials(DWCredentials):
         Saves credentials to a .env file on your machine
         """
         creds = {
-            "POSTGRES_USERNAME": self.username,
-            "POSTGRES_PASSWORD": self.password,
-            "POSTGRES_HOST": self.host,
-            "POSTGRES_PORT": self.port,
-            "POSTGRES_DATABASE": self.database,
-            "POSTGRES_SCHEMA": self.schema
+            f"{self.dw_type}_USERNAME": self.username,
+            f"{self.dw_type}_PASSWORD": self.password,
+            f"{self.dw_type}_HOST": self.host,
+            f"{self.dw_type}_DATABASE": self.database,
+            f"{self.dw_type}_SCHEMA": self.schema
         }
         return save_env(creds, filepath, overwrite)
 
 
-class PostgresDataWarehouse(DataWarehouse):
+class SQLAlchemyDataWarehouse(DataWarehouse):
     """
-    Postgres DataWarehouse
+    Base SQLAlchemy DataWarehouse
     """
-    dw_type = 'postgresql'
-    credentials_class = PostgresCredentials
+    dw_type = None
+    credentials_class = None
 
     def __init__(self):
         super().__init__()
@@ -161,10 +148,20 @@ class PostgresDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (database.schema)
         """
-        raise NotImplementedError(
-            "Connecting to a new Database in a single session is not supported by Postgres. "
-            "Please build a new connection using the PostgresCredentials class"
-        )
+        namespace = self._validate_namespace(namespace)
+        database, schema = parse_namespace(namespace)
+        try:
+            self.execute_query(f'USE DATABASE {database}')
+            self.execute_query(f'USE SCHEMA {schema}')
+            self.default_namespace = namespace
+            self.default_database = database
+            self.default_schema = schema
+            verbose_message(
+                f"Namespace reset to {self.default_namespace}",
+                logger
+            )
+        except Exception as e:
+            self._error_handler(e)
 
     def connect(
             self,

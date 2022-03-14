@@ -1,5 +1,5 @@
 """
-Postgres DataWarehouse classes
+MySQL DataWarehouse classes
 """
 import logging
 import os
@@ -38,7 +38,6 @@ class PostgresCredentials(DWCredentials):
     """
     dw_type = 'postgresql'
 
-    # TODO: override anything with port to ensure we pick up port in creds
     def __init__(
             self,
             username: str,
@@ -52,7 +51,7 @@ class PostgresCredentials(DWCredentials):
             raise PackageDependencyWarning(
                 'Missing a required python package to run Postgres. '
                 'Please download the Postgres package by running: '
-                'pip install rasgoql[postgres]')
+                'pip install rasgoql[snowflake]')
         self.username = username
         self.password = password
         self.host = host
