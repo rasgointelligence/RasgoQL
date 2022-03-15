@@ -6,24 +6,14 @@
 
 ![RasgoQL Hero](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/RasgoQL%20Hero%20Image.png)
 
-<h2 align="center">RasgoQL</h2>
+<h1 align="center">RasgoQL</h1>
 <p align="center">
-    <strong>Data Transformations in Python</strong>
+    <strong>Write python locally, execute SQL in your data warehouse</strong>
     <br />
     <a href="https://docs.rasgoql.com/"><strong>≪  Read the Docs</strong></a>
     &nbsp · &nbsp
     <a href="https://join.slack.com/t/rasgousergroup/shared_invite/zt-nytkq6np-ANEJvbUSbT2Gkvc8JICp3g">
     <strong>Join Our Slack »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/rasgointelligence/RasgoQL/issues/new?assignees=&labels=&template=bug_report.md&title=%5BBUG%5D">
-    Report Bug</a>
-    ·
-    <a href="https://github.com/rasgointelligence/RasgoQL/issues/new?assignees=&labels=&template=feedback.md&title=%5BFEEDBACK%5D">
-    Suggest Improvement</a>
-    ·
-    <a href="https://github.com/rasgointelligence/RasgoQL/issues/new?assignees=&labels=&template=feature_request.md&title=%5BRFE%5D">
-    Request Feature</a>
 </p>
 
 RasgoQL is a Python package that enables you to easily query and transform tables in your Data Warehouse directly from a notebook.
@@ -70,6 +60,17 @@ Rasgo supports [Snowflake](https://docs.rasgoql.com/datawarehouses/credentials),
 Just run a simple pip install.
 
 `pip install rasgoql~=1.0`
+
+<p align="center">
+<a href="https://github.com/rasgointelligence/RasgoQL/issues/new?assignees=&labels=&template=bug_report.md&title=%5BBUG%5D">
+Report Bug</a>
+·
+<a href="https://github.com/rasgointelligence/RasgoQL/issues/new?assignees=&labels=&template=feedback.md&title=%5BFEEDBACK%5D">
+Suggest Improvement</a>
+·
+<a href="https://github.com/rasgointelligence/RasgoQL/issues/new?assignees=&labels=&template=feature_request.md&title=%5BRFE%5D">
+Request Feature</a>
+</p>
 
 
 # Quick Start
@@ -186,7 +187,5 @@ Review the [contributors guide](https://github.com/rasgointelligence/RasgoQL/blo
 
 ## License
 RasgoQL uses the GNU AGPL license, as found in the [LICENSE file](./LICENSE).
-
-<i>Built for Data Scientists, by Data Scientists</i>
 
 This project is sponspored by RasgoML. Find out at [https://www.rasgoml.com/](https://www.rasgoml.com/)
