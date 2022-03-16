@@ -24,7 +24,7 @@ from rasgoql.utils.messaging import verbose_message
 from rasgoql.utils.sql import (
     is_scary_sql, magic_fqtn_handler,
     parse_fqtn, parse_table_and_schema_from_fqtn,
-    validate_namespace
+    validate_namespace, parse_namespace
 )
 
 logging.basicConfig()
@@ -137,6 +137,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
     # ---------------------------
     # Core Data Warehouse methods
     # ---------------------------
+    # TODO: some DBs use Database, some use Schema. What's the best way to abstract?
     def change_namespace(
             self,
             namespace: str
