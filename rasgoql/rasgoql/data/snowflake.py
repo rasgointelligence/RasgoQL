@@ -270,6 +270,20 @@ class SnowflakeDataWarehouse(DataWarehouse):
         """
         return f'{self.default_database}.{self.default_schema}'
 
+    @default_namespace.setter
+    def default_namespace(
+        self,
+        new_namespace: str
+    ):
+        """
+        Setter method for the `default_namespace` property
+        """
+        namespace = self._validate_namespace(new_namespace)
+        db, schema = parse_namespace(namespace)
+        self.default_database = db
+        self.default_schema = schema
+        
+
     def execute_query(
             self,
             sql: str,
