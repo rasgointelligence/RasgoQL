@@ -2,6 +2,7 @@
 BigQuery Data Warehouse classes
 """
 
+from email.policy import default
 import logging
 import os
 from typing import List, Tuple, Union
@@ -244,6 +245,19 @@ class BigQueryDataWarehouse(DataWarehouse):
         Returns the default project.dataset of this connection
         """
         return f'{self.default_project}.{self.default_dataset}'
+
+    @default_namespace.setter
+    def default_namespace(
+        self,
+        new_namespace: str
+    ):
+        """
+        Setter method for the `default_namespace` property
+        """
+        namespace = self._validate_namespace(new_namespace)
+        project, dataset = parse_namespace(namespace)
+        self.default_project = project
+        self.default_dataset = dataset
 
     def execute_query(
             self,

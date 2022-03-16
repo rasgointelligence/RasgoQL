@@ -103,6 +103,16 @@ class DataWarehouse(ABC):
         """
         raise NotImplementedError()
 
+    @default_namespace.setter
+    def default_namespace(
+        self,
+        new_namespace: str
+    ):
+        """
+        Setter method for the `default_namespace` property
+        """
+        raise NotImplementedError()
+
     def execute_query(
             self,
             sql: str,
