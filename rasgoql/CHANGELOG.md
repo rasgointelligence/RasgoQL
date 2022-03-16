@@ -53,8 +53,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - made `name` a mandatory parameter in SQLChain and Dataset `.transform()` methods
 
+## [1.1.1] - 2022-03-16
+### Fixed
+- Fixed a bug where `change_namespace()` methods of Transforms and DataWarehouses failed
+
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
 [1.0.2]: https://pypi.org/project/rasgoql/1.0.2/
 [1.1.0]: https://pypi.org/project/rasgoql/1.1.0/
+[1.1.1]: https://pypi.org/project/rasgoql/1.1.1/
