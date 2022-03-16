@@ -2,7 +2,6 @@
 BigQuery Data Warehouse classes
 """
 
-from email.policy import default
 import logging
 import os
 from typing import List, Tuple, Union
