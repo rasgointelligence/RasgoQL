@@ -1,29 +1,25 @@
 """
 Generic SQLAlchemy DataWarehouse classes
 """
+from abc import abstractmethod
 import logging
-import os
-from typing import List, Union
+from typing import List
 
-import json
 import pandas as pd
 
-from rasgoql.data.base import DataWarehouse, DWCredentials
+from rasgoql.data.base import DataWarehouse
 from rasgoql.errors import (
-    DWCredentialsWarning, DWConnectionError, DWQueryError,
-    PackageDependencyWarning, ParameterException,
-    SQLWarning, TableAccessError, TableConflictException
+    DWConnectionError, ParameterException, SQLWarning,
+    TableAccessError, TableConflictException
 )
 from rasgoql.imports import alchemy_engine, alchemy_session, alchemy_exceptions
 from rasgoql.primitives.enums import (
     check_response_type, check_table_type, check_write_method
 )
-from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
 from rasgoql.utils.messaging import verbose_message
 from rasgoql.utils.sql import (
-    is_scary_sql, magic_fqtn_handler,
-    parse_fqtn, parse_table_and_schema_from_fqtn,
+    is_scary_sql, magic_fqtn_handler, parse_fqtn,
     validate_namespace, parse_namespace
 )
 
@@ -32,93 +28,8 @@ logger = logging.getLogger('SQLAlchemy DataWarehouse')
 logger.setLevel(logging.INFO)
 
 
-class SQLALchemyCredentials(DWCredentials):
-    """
-    Generic Credentials
-    """
-    dw_type = None
-
-    def __init__(
-            self,
-            username: str,
-            password: str,
-            host: str,
-            database: str,
-            schema: str
-        ):
-        self.username = username
-        self.password = password
-        self.host = host
-        self.database = database
-        self.schema = schema
-
-    def __repr__(self) -> str:
-        return json.dumps(
-            {
-                "user": self.username,
-                "host": self.host,
-                "database": self.database,
-                "schema": self.schema,
-            }
-        )
-
-    @classmethod
-    def from_env(
-            cls,
-            filepath: str = None
-        ) -> 'SQLAlchemyCredentials':
-        """
-        Creates an instance of this Class from a .env file on your machine
-        """
-        load_env(filepath)
-        username = os.getenv(f'{cls.dw_type}_USERNAME')
-        password = os.getenv(f'{cls.dw_type}_PASSWORD')
-        host = os.getenv(f'{cls.dw_type}_HOST')
-        database = os.getenv(f'{cls.dw_type}_DATABASE')
-        schema = os.getenv(f'{cls.dw_type}_SCHEMA')
-        if not all([username, password, host, database, schema]):
-            raise DWCredentialsWarning(
-                'Your env file is missing expected credentials. Consider running '
-                f'{cls.__name__}(*args).to_env() to repair this.'
-            )
-        return cls(
-            username,
-            password,
-            host,
-            database,
-            schema
-        )
-
-    def to_dict(self) -> dict:
-        """
-        Returns a dict of the credentials
-        """
-        return {
-            "username": self.username,
-            "password": self.password,
-            "host": self.host,
-            "database": self.database,
-            "schema": self.schema,
-            "dw_type": self.dw_type
-        }
-
-    def to_env(
-            self,
-            filepath: str = None,
-            overwrite: bool = False
-        ):
-        """
-        Saves credentials to a .env file on your machine
-        """
-        creds = {
-            f"{self.dw_type}_USERNAME": self.username,
-            f"{self.dw_type}_PASSWORD": self.password,
-            f"{self.dw_type}_HOST": self.host,
-            f"{self.dw_type}_DATABASE": self.database,
-            f"{self.dw_type}_SCHEMA": self.schema
-        }
-        return save_env(creds, filepath, overwrite)
-
+# Each DB derived from the generic SQLAlchemy class will have slightly
+# different connection strings. Build a unique Credentials class for each DB
 
 class SQLAlchemyDataWarehouse(DataWarehouse):
     """
@@ -137,7 +48,6 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
     # ---------------------------
     # Core Data Warehouse methods
     # ---------------------------
-    # TODO: some DBs use Database, some use Schema. What's the best way to abstract?
     def change_namespace(
             self,
             namespace: str
@@ -164,27 +74,25 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         except Exception as e:
             self._error_handler(e)
 
+    @abstractmethod
     def connect(
             self,
-            credentials: Union[dict, PostgresCredentials]
+            credentials: dict
         ):
         """
-        Connect to Postgres
+        Connect to DB
 
         Params:
         `credentials`: dict:
-            dict (or DWCredentials class) holding the connection credentials
+            dict  holding the connection credentials
         """
-        if isinstance(credentials, PostgresCredentials):
-            credentials = credentials.to_dict()
-
         try:
             self.credentials = credentials
             self.database = credentials.get('database')
             self.schema = credentials.get('schema')
             self.connection = alchemy_session(self._engine)
             verbose_message(
-                "Connected to Postgres",
+                "Connected to DB",
                 logger
             )
         except Exception as e:
@@ -192,14 +100,14 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
 
     def close_connection(self):
         """
-        Close connection to Postgres
+        Close connection
         """
         try:
             if self.connection:
                 self.connection.close()
             self.connection = None
             verbose_message(
-                "Connection to Postgres closed",
+                "Connection closed",
                 logger
             )
         except Exception as e:
@@ -214,6 +122,9 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         ):
         """
         Create a view or table from given SQL
+
+        If a derived class's DB cannot execute against a FQTN (e.g., Postgres),
+        override this method or SQL execution will fail
 
         Params:
         `sql`: str:
@@ -230,13 +141,12 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         """
         table_type = check_table_type(table_type)
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        schema, table = parse_table_and_schema_from_fqtn(fqtn=fqtn)
         if self._table_exists(fqtn=fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
                    'pass in overwrite=True and run this function again'
             raise TableConflictException(msg)
-        query = f"CREATE OR REPLACE {table_type} {schema}.{table} AS {sql}"
+        query = f"CREATE OR REPLACE {table_type} {fqtn} AS {sql}"
         self.execute_query(query, acknowledge_risk=True, response='None')
         return fqtn
 
@@ -247,6 +157,16 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         """
         return f'{self.database}.{self.schema}'
 
+    @default_namespace.setter
+    def default_namespace(
+        self,
+        new_namespace: str
+    ):
+        namespace = self._validate_namespace(new_namespace)
+        db, schema = parse_namespace(namespace)
+        self.default_database = db
+        self.default_schema = schema
+
     def execute_query(
             self,
             sql: str,
@@ -254,7 +174,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             acknowledge_risk: bool = False
         ):
         """
-        Run a query against Postgres and return all results
+        Run a query against DB and return all results
 
         `sql`: str:
             query text to execute
@@ -282,6 +202,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             return self._query_into_df(sql)
         return self._execute_string(sql, ignore_results=(response == 'NONE'))
 
+    @abstractmethod
     def get_ddl(
             self,
             fqtn: str
@@ -289,11 +210,14 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         """
         Returns a DataFrame describing the column in the table
 
+        This method should be overridden by derived classes since optimal DDL
+        selection will vary by DB type
+
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        _, schema_name, table_name = parse_fqtn(fqtn)
+        db_name, schema_name, table_name = parse_fqtn(fqtn)
         sql = (
             f"select table_schema, table_name, column_name, data_type, "
             f"character_maximum_length, column_default, is_nullable from "
@@ -303,12 +227,16 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         query_response = self.execute_query(sql, response='DF')
         return query_response
 
+    @abstractmethod
     def get_object_details(
             self,
             fqtn: str
         ) -> tuple:
         """
-        Return details of a table or view in Postgres
+        Return details of a table or view
+
+        This method should be overridden by derived classes since optimal DDL
+        selection will vary by DB type
 
         Params:
         `fqtn`: str:
@@ -321,15 +249,14 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         database, schema, table = parse_fqtn(fqtn)
-        sql = (
-            f"SELECT EXISTS(SELECT FROM pg_catalog.pg_class c JOIN "
-            f"pg_catalog.pg_namespace n ON n.oid = c.relnamespace WHERE "
-            f"n.nspname = '{schema}' AND    c.relname = '{table}')"
-        )
+        sql = f"SHOW OBJECTS LIKE '{table}' IN {database}.{schema}"
         result = self.execute_query(sql, response='dict')
         obj_exists = len(result) > 0
         is_rasgo_obj = False
         obj_type = 'unknown'
+        if obj_exists:
+            is_rasgo_obj = (result[0].get('comment') == 'rasgoql')
+            obj_type = result[0].get('kind')
         return obj_exists, is_rasgo_obj, obj_type
 
     def get_schema(
@@ -423,7 +350,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             method: str = None
         ) -> str:
         """
-        Creates a table in Postgres from a pandas Dataframe
+        Creates a table from a pandas Dataframe
 
         Params:
         `df`: pandas DataFrame:
@@ -490,7 +417,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             namespace: str
         ) -> str:
         """
-        Checks a namespace string for compliance with Postgres format
+        Checks a namespace string for compliance with required format
 
         Params:
         `namespace`: str:
@@ -500,11 +427,12 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             validate_namespace(namespace)
             return namespace.upper()
         except ValueError:
-            raise ParameterException("Postgres namespaces should be format: DATABASE.SCHEMA")
+            raise ParameterException("Namespaces should be format: DATABASE.SCHEMA")
 
     # --------------------------
-    # Postgres specific helpers
+    # SQLAlchemy and derived class helpers
     # --------------------------
+    @abstractmethod
     @property
     def _engine(
             self
@@ -520,13 +448,14 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             f"{self.credentials.get('database')}"
         return alchemy_engine(engine_url)
 
+
     def _error_handler(
             self,
             exception: Exception,
             query: str = None
         ) -> None:
         """
-        Handle Postgres exceptions that need additional info
+        Handle SQLAlchemy exceptions that need additional info
         """
         verbose_message(
             f"Exception occurred while running query: {query}",
