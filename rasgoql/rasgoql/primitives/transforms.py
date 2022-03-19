@@ -303,7 +303,12 @@ class SQLChain(TransformableClass):
         NOTE: This property will be dynamic until the Chain is finally saved
         """
         if self.ternimal_transform:
-            return Dataset(self.ternimal_transform.fqtn, self._dw)
+            fqtn = self.ternimal_transform.fqtn
+            chn_logger.warning(
+                f'{fqtn} does not yet exist in your database. '
+                'To create it run .save() on this SQLChain.'
+            )
+            return Dataset(fqtn, self._dw)
         return self.entry_table
 
     @require_dw
