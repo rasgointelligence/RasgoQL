@@ -135,6 +135,9 @@ def parse_namespace(namespace: str, strict: bool = True) -> tuple:
     if strict:
         namespace = validate_namespace(namespace)
         return tuple(namespace.split("."))
+    if namespace.count(".") == 1:
+        namespace = validate_namespace(namespace)
+        return tuple(namespace.split("."))
     if namespace.count(".") == 0:
         return (namespace, None)
 
