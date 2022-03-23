@@ -4,6 +4,7 @@ Generic SQLAlchemy DataWarehouse classes
 from abc import abstractmethod
 import logging
 from typing import List
+from urllib.parse import quote_plus as urlquote
 
 import pandas as pd
 
@@ -406,7 +407,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         engine_url = (
             f"{self.credentials.get('dw_type')}://"
             f"{self.credentials.get('username')}:"
-            f"{self.credentials.get('password')}"
+            f"{urlquote(self.credentials.get('password'))}"
             f"@{self.credentials.get('host')}:"
             f"{self.credentials.get('port')}/"
             f"{self.credentials.get('database')}"
