@@ -111,12 +111,13 @@ class RasgoQL:
     def query_into_df(
             self,
             sql: str,
+            batches: bool = False,
             acknowledge_risk: bool = False
         ) -> pd.DataFrame:
         """
         Execute a query against your Data Warehouse and return results in a pandas DataFrame
         """
-        return self._dw.execute_query(sql, response='df', acknowledge_risk=acknowledge_risk)
+        return self._dw.execute_query(sql, response='df', batches=batches, acknowledge_risk=acknowledge_risk)
 
     def set_verbose(
             self,
