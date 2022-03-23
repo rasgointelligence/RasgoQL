@@ -9,32 +9,42 @@ import pandas as pd
 
 from rasgoql.data.base import DataWarehouse
 from rasgoql.errors import (
-    DWConnectionError, ParameterException, SQLWarning,
-    TableAccessError, TableConflictException
+    DWConnectionError,
+    ParameterException,
+    SQLWarning,
+    TableAccessError,
+    TableConflictException,
 )
 from rasgoql.imports import alchemy_engine, alchemy_session, alchemy_exceptions
 from rasgoql.primitives.enums import (
-    check_response_type, check_table_type, check_write_method
+    check_response_type,
+    check_table_type,
+    check_write_method,
 )
 from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
 from rasgoql.utils.messaging import verbose_message
 from rasgoql.utils.sql import (
-    is_scary_sql, magic_fqtn_handler, parse_fqtn,
-    validate_namespace, parse_namespace
+    is_scary_sql,
+    magic_fqtn_handler,
+    parse_fqtn,
+    validate_namespace,
+    parse_namespace,
 )
 
 logging.basicConfig()
-logger = logging.getLogger('SQLAlchemy DataWarehouse')
+logger = logging.getLogger("SQLAlchemy DataWarehouse")
 logger.setLevel(logging.INFO)
 
 
 # Each DB derived from the generic SQLAlchemy class will have slightly
 # different connection strings. Build a unique Credentials class for each DB
 
+
 class SQLAlchemyDataWarehouse(DataWarehouse):
     """
     Base SQLAlchemy DataWarehouse
     """
+
     dw_type = None
     credentials_class = None
 
@@ -48,10 +58,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
     # ---------------------------
     # Core Data Warehouse methods
     # ---------------------------
-    def change_namespace(
-            self,
-            namespace: str
-        ) -> None:
+    def change_namespace(self, namespace: str) -> None:
         """
         Changes the default namespace of your connection
 
@@ -62,23 +69,17 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         namespace = self._validate_namespace(namespace)
         database, schema = parse_namespace(namespace)
         try:
-            self.execute_query(f'USE DATABASE {database}')
-            self.execute_query(f'USE SCHEMA {schema}')
+            self.execute_query(f"USE DATABASE {database}")
+            self.execute_query(f"USE SCHEMA {schema}")
             self.default_namespace = namespace
             self.default_database = database
             self.default_schema = schema
-            verbose_message(
-                f"Namespace reset to {self.default_namespace}",
-                logger
-            )
+            verbose_message(f"Namespace reset to {self.default_namespace}", logger)
         except Exception as e:
             self._error_handler(e)
 
     @abstractmethod
-    def connect(
-            self,
-            credentials: dict
-        ):
+    def connect(self, credentials: dict):
         """
         Connect to DB
 
@@ -88,13 +89,10 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         """
         try:
             self.credentials = credentials
-            self.database = credentials.get('database')
-            self.schema = credentials.get('schema')
+            self.database = credentials.get("database")
+            self.schema = credentials.get("schema")
             self.connection = alchemy_session(self._engine)
-            verbose_message(
-                "Connected to DB",
-                logger
-            )
+            verbose_message("Connected to DB", logger)
         except Exception as e:
             self._error_handler(e)
 
@@ -106,20 +104,13 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             if self.connection:
                 self.connection.close()
             self.connection = None
-            verbose_message(
-                "Connection closed",
-                logger
-            )
+            verbose_message("Connection closed", logger)
         except Exception as e:
             self._error_handler(e)
 
     def create(
-            self,
-            sql: str,
-            fqtn: str,
-            table_type: str = 'VIEW',
-            overwrite: bool = False
-        ):
+        self, sql: str, fqtn: str, table_type: str = "VIEW", overwrite: bool = False
+    ):
         """
         Create a view or table from given SQL
 
@@ -142,12 +133,14 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         table_type = check_table_type(table_type)
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         if self._table_exists(fqtn=fqtn) and not overwrite:
-            msg = f'A table or view named {fqtn} already exists. ' \
-                   'If you are sure you want to overwrite it, ' \
-                   'pass in overwrite=True and run this function again'
+            msg = (
+                f"A table or view named {fqtn} already exists. "
+                "If you are sure you want to overwrite it, "
+                "pass in overwrite=True and run this function again"
+            )
             raise TableConflictException(msg)
         query = f"CREATE OR REPLACE {table_type} {fqtn} AS {sql}"
-        self.execute_query(query, acknowledge_risk=True, response='None')
+        self.execute_query(query, acknowledge_risk=True, response="None")
         return fqtn
 
     @property
@@ -155,24 +148,18 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         """
         Returns the default database.schema of this connection
         """
-        return f'{self.database}.{self.schema}'
+        return f"{self.database}.{self.schema}"
 
     @default_namespace.setter
-    def default_namespace(
-        self,
-        new_namespace: str
-    ):
+    def default_namespace(self, new_namespace: str):
         namespace = self._validate_namespace(new_namespace)
         db, schema = parse_namespace(namespace)
         self.default_database = db
         self.default_schema = schema
 
     def execute_query(
-            self,
-            sql: str,
-            response: str = 'tuple',
-            acknowledge_risk: bool = False
-        ):
+        self, sql: str, response: str = "tuple", acknowledge_risk: bool = False
+    ):
         """
         Run a query against DB and return all results
 
@@ -187,26 +174,22 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         """
         response = check_response_type(response)
         if is_scary_sql(sql) and not acknowledge_risk:
-            msg = 'It looks like your SQL statement contains a ' \
-                  'potentially dangerous or data-altering operation.' \
-                  'If you are positive you want to run this, ' \
-                  'pass in acknowledge_risk=True and run this function again.'
+            msg = (
+                "It looks like your SQL statement contains a "
+                "potentially dangerous or data-altering operation."
+                "If you are positive you want to run this, "
+                "pass in acknowledge_risk=True and run this function again."
+            )
             raise SQLWarning(msg)
-        verbose_message(
-            f"Executing query: {sql}",
-            logger
-        )
-        if response == 'DICT':
+        verbose_message(f"Executing query: {sql}", logger)
+        if response == "DICT":
             return self._query_into_dict(sql)
-        if response == 'DF':
+        if response == "DF":
             return self._query_into_df(sql)
-        return self._execute_string(sql, ignore_results=(response == 'NONE'))
+        return self._execute_string(sql, ignore_results=(response == "NONE"))
 
     @abstractmethod
-    def get_ddl(
-            self,
-            fqtn: str
-        ) -> pd.DataFrame:
+    def get_ddl(self, fqtn: str) -> pd.DataFrame:
         """
         Returns a DataFrame describing the column in the table
 
@@ -224,14 +207,11 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             f"INFORMATION_SCHEMA.COLUMNS where table_name = '{table_name}' "
             f"and table_schema = '{schema_name}';"
         )
-        query_response = self.execute_query(sql, response='DF')
+        query_response = self.execute_query(sql, response="DF")
         return query_response
 
     @abstractmethod
-    def get_object_details(
-            self,
-            fqtn: str
-        ) -> tuple:
+    def get_object_details(self, fqtn: str) -> tuple:
         """
         Return details of a table or view
 
@@ -250,20 +230,16 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         database, schema, table = parse_fqtn(fqtn)
         sql = f"SHOW OBJECTS LIKE '{table}' IN {database}.{schema}"
-        result = self.execute_query(sql, response='dict')
+        result = self.execute_query(sql, response="dict")
         obj_exists = len(result) > 0
         is_rasgo_obj = False
-        obj_type = 'unknown'
+        obj_type = "unknown"
         if obj_exists:
-            is_rasgo_obj = (result[0].get('comment') == 'rasgoql')
-            obj_type = result[0].get('kind')
+            is_rasgo_obj = result[0].get("comment") == "rasgoql"
+            obj_type = result[0].get("kind")
         return obj_exists, is_rasgo_obj, obj_type
 
-    def get_schema(
-            self,
-            fqtn: str,
-            create_sql: str = None
-        ) -> dict:
+    def get_schema(self, fqtn: str, create_sql: str = None) -> dict:
         """
         Return the schema of a table or view
 
@@ -277,31 +253,35 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
         database, schema, table = parse_fqtn(fqtn)
-        query_sql = f"SELECT * FROM INFORMATION_SCHEMA.TABLES " \
-                    f"WHERE table_catalog = '{database}' " \
-                    f"AND table_schema = '{schema}' " \
-                    f"AND table_name = '{table}'"
+        query_sql = (
+            f"SELECT * FROM INFORMATION_SCHEMA.TABLES "
+            f"WHERE table_catalog = '{database}' "
+            f"AND table_schema = '{schema}' "
+            f"AND table_name = '{table}'"
+        )
         response = []
         try:
             if self._table_exists(fqtn):
-                query_response = self.execute_query(query_sql, response='dict')
+                query_response = self.execute_query(query_sql, response="dict")
             elif create_sql:
-                self.create(create_sql, fqtn, table_type='view')
-                query_response = self.execute_query(query_sql, response='dict')
-                self.execute_query(f'DROP VIEW {schema}.{table}', response='none', acknowledge_risk=True)
+                self.create(create_sql, fqtn, table_type="view")
+                query_response = self.execute_query(query_sql, response="dict")
+                self.execute_query(
+                    f"DROP VIEW {schema}.{table}",
+                    response="none",
+                    acknowledge_risk=True,
+                )
             else:
-                raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
+                raise TableAccessError(
+                    f"Table {fqtn} does not exist or cannot be accessed."
+                )
             for row in query_response:
-                response.append((row['name'], row['type']))
+                response.append((row["name"], row["type"]))
             return response
         except Exception as e:
             self._error_handler(e)
 
-    def list_tables(
-            self,
-            database: str = None,
-            schema: str = None
-        ) -> pd.DataFrame:
+    def list_tables(self, database: str = None, schema: str = None) -> pd.DataFrame:
         """
         List all tables and views available in default namespace
 
@@ -321,13 +301,9 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             from_clause = f" FROM {database.upper()}.INFORMATION_SCHEMA.TABLES "
         where_clause = f" WHERE TABLE_SCHEMA = '{schema.upper()}'" if schema else ""
         sql = select_clause + from_clause + where_clause
-        return self.execute_query(sql, response='df', acknowledge_risk=True)
+        return self.execute_query(sql, response="df", acknowledge_risk=True)
 
-    def preview(
-            self,
-            sql: str,
-            limit: int = 10
-        ) -> pd.DataFrame:
+    def preview(self, sql: str, limit: int = 10) -> pd.DataFrame:
         """
         Returns 10 records into a pandas DataFrame
 
@@ -338,17 +314,10 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             Records to return
         """
         return self.execute_query(
-            f'{sql} LIMIT {limit}',
-            response='df',
-            acknowledge_risk=True
+            f"{sql} LIMIT {limit}", response="df", acknowledge_risk=True
         )
 
-    def save_df(
-            self,
-            df: pd.DataFrame,
-            fqtn: str,
-            method: str = None
-        ) -> str:
+    def save_df(self, df: pd.DataFrame, fqtn: str, method: str = None) -> str:
         """
         Creates a table from a pandas Dataframe
 
@@ -371,24 +340,26 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         database, schema, table = parse_fqtn(fqtn)
         table_exists = self._table_exists(fqtn)
         if table_exists and not method:
-            msg = f"A table named {fqtn} already exists. " \
-                   "If you are sure you want to write over it, pass in " \
-                   "method='append' or method='replace' and run this function again"
+            msg = (
+                f"A table named {fqtn} already exists. "
+                "If you are sure you want to write over it, pass in "
+                "method='append' or method='replace' and run this function again"
+            )
             raise TableConflictException(msg)
         try:
             cleanse_sql_dataframe(df)
             # If the table does not exist or we've received instruction to replace
             # Issue a create or replace statement before we insert data
-            if not table_exists or method == 'REPLACE':
+            if not table_exists or method == "REPLACE":
                 create_stmt = generate_dataframe_ddl(df, fqtn)
-                self.execute_query(create_stmt, response='None', acknowledge_risk=True)
+                self.execute_query(create_stmt, response="None", acknowledge_risk=True)
             df.to_sql(
                 table,
                 self._engine,
                 schema=schema,
                 if_exists=method.lower(),
                 index=False,
-                chunksize=1000
+                chunksize=1000,
             )
             return fqtn
         except Exception as e:
@@ -397,10 +368,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
     # ---------------------------
     # Core Data Warehouse helpers
     # ---------------------------
-    def _table_exists(
-            self,
-            fqtn: str
-        ) -> bool:
+    def _table_exists(self, fqtn: str) -> bool:
         """
         Check for existence of fqtn in the Data Warehouse and return a boolean
 
@@ -412,10 +380,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         do_i_exist, _, _ = self.get_object_details(fqtn)
         return do_i_exist
 
-    def _validate_namespace(
-            self,
-            namespace: str
-        ) -> str:
+    def _validate_namespace(self, namespace: str) -> str:
         """
         Checks a namespace string for compliance with required format
 
@@ -432,49 +397,37 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
     # --------------------------
     # SQLAlchemy and derived class helpers
     # --------------------------
-    @abstractmethod
     @property
-    def _engine(
-            self
-        ) -> 'alchemy_engine':
+    @abstractmethod
+    def _engine(self):
         """
         Returns a SQLAlchemy engine
         """
-        engine_url = f"{self.credentials.get('dw_type')}://" \
-            f"{self.credentials.get('username')}:" \
-            f"{self.credentials.get('password')}" \
-            f"@{self.credentials.get('host')}:" \
-            f"{self.credentials.get('port')}/" \
+        engine_url = (
+            f"{self.credentials.get('dw_type')}://"
+            f"{self.credentials.get('username')}:"
+            f"{self.credentials.get('password')}"
+            f"@{self.credentials.get('host')}:"
+            f"{self.credentials.get('port')}/"
             f"{self.credentials.get('database')}"
+        )
         return alchemy_engine(engine_url)
 
-
-    def _error_handler(
-            self,
-            exception: Exception,
-            query: str = None
-        ) -> None:
+    def _error_handler(self, exception: Exception, query: str = None) -> None:
         """
         Handle SQLAlchemy exceptions that need additional info
         """
-        verbose_message(
-            f"Exception occurred while running query: {query}",
-            logger
-        )
+        verbose_message(f"Exception occurred while running query: {query}", logger)
         if exception is None:
             return
         if isinstance(exception, alchemy_exceptions.DisconnectionError):
             raise DWConnectionError(
-                'Disconnected from DataWarehouse. Please validate connection '
-                'or reconnect.'
+                "Disconnected from DataWarehouse. Please validate connection "
+                "or reconnect."
             ) from exception
         raise exception
 
-    def _execute_string(
-            self,
-            query: str,
-            ignore_results: bool = False
-        ) -> List[tuple]:
+    def _execute_string(self, query: str, ignore_results: bool = False) -> List[tuple]:
         """
         Execute a query string against the DataWarehouse connection and fetch all results
         """
@@ -486,10 +439,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         except Exception as e:
             self._error_handler(e)
 
-    def _query_into_dict(
-            self,
-            query: str
-        ) -> List[dict]:
+    def _query_into_dict(self, query: str) -> List[dict]:
         """
         Run a query string and return results in a Snowflake DictCursor
 
@@ -507,10 +457,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         except Exception as e:
             self._error_handler(e)
 
-    def _query_into_df(
-            self,
-            query: str
-        ) -> pd.DataFrame:
+    def _query_into_df(self, query: str) -> pd.DataFrame:
         """
         Run a query string and return results in a pandas DataFrame
         """
