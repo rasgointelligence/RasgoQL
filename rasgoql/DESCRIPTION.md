@@ -54,6 +54,9 @@ https://docs.rasgoql.com
 - v1.1.0 (Mar 8, 2022)
     - Added support for Postgres
 
+- v1.2.0 (Mar 24, 2022)
+    - Added a parameter to allow batch returning of Pandas DataFrames from `to_df()` and `query_into_df()` methods
+
 
 See [Changelog](https://github.com/rasgointelligence/RasgoQL/blob/main/rasgoql/CHANGELOG.md) for full minor version release notes
 

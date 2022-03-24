@@ -252,7 +252,8 @@ class PostgresDataWarehouse(DataWarehouse):
             self,
             sql: str,
             response: str = 'tuple',
-            acknowledge_risk: bool = False
+            acknowledge_risk: bool = False,
+            **kwargs
         ):
         """
         Run a query against Postgres and return all results

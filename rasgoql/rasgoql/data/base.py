@@ -117,7 +117,8 @@ class DataWarehouse(ABC):
             self,
             sql: str,
             response: str = 'tuple',
-            acknowledge_risk: bool = False
+            acknowledge_risk: bool = False,
+            **kwargs
         ):
         """
         Run a query against this DataWarehouse
