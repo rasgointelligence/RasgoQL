@@ -57,9 +57,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed a bug where `change_namespace()` methods of Transforms and DataWarehouses failed
 
+## [1.2.0] - 2022-03-24
+### Added
+- Added a parameter to allow batch returning of Pandas DataFrames from `to_df()` and `query_into_df()` methods
+
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
 [1.0.2]: https://pypi.org/project/rasgoql/1.0.2/
 [1.1.0]: https://pypi.org/project/rasgoql/1.1.0/
 [1.1.1]: https://pypi.org/project/rasgoql/1.1.1/
+[1.2.0]: https://pypi.org/project/rasgoql/1.2.0/
