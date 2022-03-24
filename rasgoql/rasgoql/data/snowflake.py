@@ -288,7 +288,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self,
             sql: str,
             response: str = 'tuple',
-            acknowledge_risk: bool = False
+            acknowledge_risk: bool = False,
+            batches: bool = False
         ):
         """
         Run a query against Snowflake and return all results
@@ -316,7 +317,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         if response == 'DICT':
             return self._execute_dict_cursor(sql)
         if response == 'DF':
-            return self._execute_df_cursor(sql)
+            return self._execute_df_cursor(sql, batches=batches)
         return self._execute_string(sql, ignore_results=(response == 'NONE'))
 
     def get_ddl(
@@ -595,7 +596,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
     def _execute_df_cursor(
             self,
             query: str,
-            params: Optional[dict] = None
+            params: Optional[dict] = None,
+            batches: Optional[bool] = False
         ) -> pd.DataFrame:
         """
         Run a query string and return results in a pandas DataFrame
@@ -603,8 +605,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
         cursor = None
         try:
             cursor = self.connection.cursor()
-            query_return = cursor.execute(query, params).fetch_pandas_all()
-            return query_return
+            cursor.execute(query, params)
+            if batches:
+                return cursor.fetch_pandas_batches()
+            return cursor.fetch_pandas_all()
         except Exception as e:
             self._error_handler(e)
         finally:

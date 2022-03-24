@@ -171,11 +171,13 @@ class Dataset(TransformableClass):
 
     @require_dw
     @require_materialized
-    def to_df(self) -> pd.DataFrame:
+    def to_df(self, batches=False) -> pd.DataFrame:
         """
         Return a pandas DataFrame of the entire table
         """
-        return self._dw.execute_query(f"SELECT * FROM {self.fqtn}", response='df')
+        return self._dw.execute_query(
+            f"SELECT * FROM {self.fqtn}", response='df', batches=batches
+        )
 
 
 class TransformTemplate:
@@ -408,8 +410,10 @@ class SQLChain(TransformableClass):
             include_schema
         )
 
-    def to_df(self) -> pd.DataFrame:
+    def to_df(self, batches: bool = False) -> pd.DataFrame:
         """
         Returns data into a pandas DataFrame
         """
-        return self._dw.execute_query(self.sql(), response='df')
+        return self._dw.execute_query(
+            self.sql(), response='df', batches=batches
+        )

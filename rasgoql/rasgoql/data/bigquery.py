@@ -262,7 +262,8 @@ class BigQueryDataWarehouse(DataWarehouse):
             self,
             sql: str,
             response: str = 'tuple',
-            acknowledge_risk: bool = False
+            acknowledge_risk: bool = False,
+            batches: bool = False
         ):
         """
         Run a query against BigQuery and return all results
