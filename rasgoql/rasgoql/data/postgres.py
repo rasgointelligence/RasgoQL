@@ -253,7 +253,7 @@ class PostgresDataWarehouse(DataWarehouse):
             sql: str,
             response: str = 'tuple',
             acknowledge_risk: bool = False,
-            batches: bool = False
+            **kwargs
         ):
         """
         Run a query against Postgres and return all results
