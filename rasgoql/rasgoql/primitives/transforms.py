@@ -176,7 +176,9 @@ class Dataset(TransformableClass):
         Return a pandas DataFrame of the entire table
         """
         return self._dw.execute_query(
-            f"SELECT * FROM {self.fqtn}", response='df', batches=batches
+            f"SELECT * FROM {self.fqtn}",
+            response='df',
+            batches=batches
         )
 
 
@@ -415,5 +417,7 @@ class SQLChain(TransformableClass):
         Returns data into a pandas DataFrame
         """
         return self._dw.execute_query(
-            self.sql(), response='df', batches=batches
+            self.sql(),
+            response='df',
+            batches=batches
         )
