@@ -9,7 +9,8 @@ from rasgoql.data import (
     DWCredentials,
     BigQueryCredentials, BigQueryDataWarehouse,
     SnowflakeCredentials, SnowflakeDataWarehouse,
-    PostgresCredentials, PostgresDataWarehouse
+    PostgresCredentials, PostgresDataWarehouse,
+    MySQLCredentials, MySQLDataWarehouse
 )
 from rasgoql.errors import ParameterException
 from rasgoql.main import RasgoQL
@@ -25,6 +26,7 @@ DW_MAP = {
     'snowflake': SnowflakeDataWarehouse,
     'bigquery': BigQueryDataWarehouse,
     'postgresql': PostgresDataWarehouse,
+    "mysql": MySQLDataWarehouse,
 }
 
 

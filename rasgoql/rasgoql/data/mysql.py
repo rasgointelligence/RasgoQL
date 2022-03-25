@@ -1,5 +1,5 @@
 """
-Postgres DataWarehouse classes
+MySQL DataWarehouse classes
 """
 import logging
 import os
@@ -16,81 +16,64 @@ from rasgoql.errors import (
     DWCredentialsWarning,
     PackageDependencyWarning,
     TableConflictException,
+    ParameterException,
 )
 from rasgoql.imports import alchemy_engine, alchemy_session
 from rasgoql.primitives.enums import check_table_type
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.messaging import verbose_message
-from rasgoql.utils.sql import (
-    magic_fqtn_handler,
-    parse_fqtn,
-    # TODO: implement this as a class DW Method
-    parse_table_and_schema_from_fqtn,
-)
+from rasgoql.utils.sql import magic_fqtn_handler, parse_fqtn, validate_namespace
 
 logging.basicConfig()
-logger = logging.getLogger("Postgres DataWarehouse")
+logger = logging.getLogger("MySQL DataWarehouse")
 logger.setLevel(logging.INFO)
 
 
-class PostgresCredentials(DWCredentials):
+class MySQLCredentials(DWCredentials):
     """
-    Postgres Credentials
+    MySQL Credentials
     """
 
-    dw_type = "postgresql"
+    dw_type = "mysql"
+    db_api = "pymysql"
 
-    def __init__(
-        self,
-        username: str,
-        password: str,
-        host: str,
-        port: str,
-        database: str,
-        schema: str,
-    ):
+    def __init__(self, username: str, password: str, host: str, database: str):
         if alchemy_engine is None:
             raise PackageDependencyWarning(
-                "Missing a required python package to run Postgres. "
-                "Please download the Postgres package by running: "
-                "pip install rasgoql[postgres]"
+                "Missing a required python package to run MySQL. "
+                "Please download the MySQL package by running: "
+                "pip install rasgoql[mysql]"
             )
         self.username = username
         self.password = password
         self.host = host
-        self.port = port
         self.database = database
-        self.schema = schema
 
     def __repr__(self) -> str:
         return json.dumps(
             {
                 "user": self.username,
                 "host": self.host,
-                "port": self.port,
                 "database": self.database,
-                "schema": self.schema,
             }
         )
 
     @classmethod
-    def from_env(cls, filepath: str = None) -> "PostgresCredentials":
+    def from_env(cls, filepath: str = None) -> "MySQLCredentials":
         """
         Creates an instance of this Class from a .env file on your machine
         """
         load_env(filepath)
-        username = os.getenv("POSTGRES_USERNAME")
-        password = os.getenv("POSTGRES_PASSWORD")
-        host = os.getenv("POSTGRES_HOST")
-        port = os.getenv("POSTGRES_PORT")
-        database = os.getenv("POSTGRES_DATABASE")
-        schema = os.getenv("POSTGRES_SCHEMA")
-        if not all([username, password, host, port, database, schema]):
+        username = os.getenv("MYSQL_USERNAME")
+        password = os.getenv("MYSQL_PASSWORD")
+        host = os.getenv("MYSQL_HOST")
+        database = os.getenv("MYSQL_DATABASE")
+        if not all([username, password, host, database]):
             raise DWCredentialsWarning(
                 "Your env file is missing expected credentials. Consider running "
-                "PostgresCredentials(*args).to_env() to repair this."
+                "MySQLCredentials(*args).to_env() to repair this."
             )
-        return cls(username, password, host, port, database, schema)
+        return cls(username, password, host, database)
 
     def to_dict(self) -> dict:
         """
@@ -100,10 +83,9 @@ class PostgresCredentials(DWCredentials):
             "username": self.username,
             "password": self.password,
             "host": self.host,
-            "port": self.port,
             "database": self.database,
-            "schema": self.schema,
             "dw_type": self.dw_type,
+            "db_api": self.db_api,
         }
 
     def to_env(self, filepath: str = None, overwrite: bool = False):
@@ -111,50 +93,78 @@ class PostgresCredentials(DWCredentials):
         Saves credentials to a .env file on your machine
         """
         creds = {
-            "POSTGRES_USERNAME": self.username,
-            "POSTGRES_PASSWORD": self.password,
-            "POSTGRES_HOST": self.host,
-            "POSTGRES_PORT": self.port,
-            "POSTGRES_DATABASE": self.database,
-            "POSTGRES_SCHEMA": self.schema,
+            "MYSQL_USERNAME": self.username,
+            "MYSQL_PASSWORD": self.password,
+            "MYSQL_HOST": self.host,
+            "MYSQL_DATABASE": self.database,
         }
         return save_env(creds, filepath, overwrite)
 
 
-class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
+class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
     """
-    Postgres DataWarehouse
+    MySQL DataWarehouse
     """
 
-    dw_type = "postgresql"
-    credentials_class = PostgresCredentials
+    dw_type = "mysql"
+    credentials_class = MySQLCredentials
 
     def __init__(self):
         super().__init__()
 
     # ---------------------------
+    # FQTN and namespace methods
+    # ---------------------------
+    
+    # ---------------------------
     # Core Data Warehouse methods
     # ---------------------------
+
+    @property
+    def default_namespace(self) -> str:
+        """
+        Returns the default database of this connection
+        """
+        return f"{self.database}"
+
+    @default_namespace.setter
+    def default_namespace(self, new_namespace: str):
+        self.database = new_namespace
+
+    def _validate_namespace(self, namespace: str) -> str:
+        """
+        Checks a namespace string for compliance with required format
+
+        Params:
+        `namespace`: str:
+            namespace (database)
+        """
+        if "." in namespace:
+            raise ParameterException("MySQL Namespaces should be format: DATABASE")
+        return namespace.upper()
+
     def change_namespace(self, namespace: str) -> None:
         """
         Changes the default namespace of your connection
+
         Params:
         `namespace`: str:
             namespace (database.schema)
         """
         raise NotImplementedError(
-            "Connecting to a new Database in a single session is not supported by Postgres. "
-            "Please build a new connection using the PostgresCredentials class"
+            "Connecting to a new Database in a single session is not supported by MySQL. "
+            "Please build a new connection using the MySQLCredentials class"
         )
 
-    def connect(self, credentials: Union[dict, PostgresCredentials]):
+    def connect(self, credentials: Union[dict, MySQLCredentials]):
         """
         Connect to Postgres
+
         Params:
         `credentials`: dict:
             dict (or DWCredentials class) holding the connection credentials
         """
-        if isinstance(credentials, PostgresCredentials):
+        if isinstance(credentials, MySQLCredentials):
             credentials = credentials.to_dict()
 
         try:
@@ -162,7 +172,7 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
             self.database = credentials.get("database")
             self.schema = credentials.get("schema")
             self.connection = alchemy_session(self._engine)
-            verbose_message("Connected to Postgres", logger)
+            verbose_message("Connected to MySQL", logger)
         except Exception as e:
             self._error_handler(e)
 
@@ -171,6 +181,7 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
     ):
         """
         Create a view or table from given SQL
+
         Params:
         `sql`: str:
             query that returns data (i.e. can be wrapped in a CREATE TABLE statement)
@@ -186,8 +197,6 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
         """
         table_type = check_table_type(table_type)
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        # TODO: make this a DW class method
-        schema, table = parse_table_and_schema_from_fqtn(fqtn=fqtn)
         if self._table_exists(fqtn=fqtn) and not overwrite:
             msg = (
                 f"A table or view named {fqtn} already exists. "
@@ -195,53 +204,74 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
                 "pass in overwrite=True and run this function again"
             )
             raise TableConflictException(msg)
-        query = f"CREATE OR REPLACE {table_type} {schema}.{table} AS {sql}"
+        query = f"CREATE OR REPLACE {table_type} {fqtn} AS {sql}"
         self.execute_query(query, acknowledge_risk=True, response="None")
         return fqtn
 
     def get_ddl(self, fqtn: str) -> pd.DataFrame:
         """
         Returns a DataFrame describing the column in the table
+
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        _, schema_name, table_name = parse_fqtn(fqtn)
-        sql = (
-            f"select table_schema, table_name, column_name, data_type, "
-            f"character_maximum_length, column_default, is_nullable from "
-            f"INFORMATION_SCHEMA.COLUMNS where table_name = '{table_name}' "
-            f"and table_schema = '{schema_name}';"
+        db, _, table_name = parse_fqtn(
+            fqtn, default_namespace=self.default_namespace, strict=False
         )
+        sql = f"SHOW CREATE TABLE {db}.{table_name}"
         query_response = self.execute_query(sql, response="DF")
         return query_response
 
     def get_object_details(self, fqtn: str) -> tuple:
         """
-        Return details of a table or view in Postgres
+        Return details of a table or view in MySQL
+
         Params:
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
+
         Response:
             object exists: bool
             is rasgo object: bool
             object type: [table|view|unknown]
         """
         fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        database, schema, table = parse_fqtn(fqtn)
-        sql = (
-            f"SELECT EXISTS(SELECT FROM pg_catalog.pg_class c JOIN "
-            f"pg_catalog.pg_namespace n ON n.oid = c.relnamespace WHERE "
-            f"n.nspname = '{schema}' AND    c.relname = '{table}')"
+        db, _, table = parse_fqtn(
+            fqtn, default_namespace=self.default_namespace, strict=False
         )
+        sql = f"SHOW TABLES IN {db} LIKE '{table}'"
         result = self.execute_query(sql, response="dict")
         obj_exists = len(result) > 0
         is_rasgo_obj = False
         obj_type = "unknown"
         return obj_exists, is_rasgo_obj, obj_type
 
+    # def preview(self, sql: str = None, limit: int = 10) -> pd.DataFrame:
+    #     """
+    #     Returns 10 records into a pandas DataFrame
+
+    #     Params:
+    #     `sql`: str:
+    #         SQL statment passed from calling method
+    #         This is normally set in the preview method of a transform or dataset,
+    #         but must be overridden for MySQL previews because MySQL does not
+    #         utliize standard FQTNs
+    #     `limit`: int:
+    #         Records to return
+    #     """
+    #     passed_fqtn = sql.split("FROM ")[1]
+    #     db, _, table = parse_fqtn(
+    #         passed_fqtn, default_namespace=self.default_namespace, strict=False
+    #     )
+    #     return self.execute_query(
+    #         f"SELECT * FROM {db}.{table} LIMIT {limit}",
+    #         response="df",
+    #         acknowledge_risk=True,
+    #     )
+
     # --------------------------
-    # Postgres specific helpers
+    # MySQL specific helpers
     # --------------------------
     @property
     def _engine(self) -> "alchemy_engine":
@@ -249,11 +279,12 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
         Returns a SQLAlchemy engine
         """
         engine_url = (
-            f"{self.credentials.get('dw_type')}://"
+            f"{self.credentials.get('dw_type')}"
+            f"+{self.credentials.get('db_api')}://"
             f"{self.credentials.get('username')}:"
             f"{urlquote(self.credentials.get('password'))}"
-            f"@{self.credentials.get('host')}:"
-            f"{self.credentials.get('port')}/"
+            f"@{self.credentials.get('host')}/"
             f"{self.credentials.get('database')}"
         )
+        print(f"engine_url:\n{engine_url}")
         return alchemy_engine(engine_url)
