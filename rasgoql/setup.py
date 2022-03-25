@@ -28,6 +28,10 @@ with open(os.path.join(_here, 'requirements-postgres.txt'), encoding='utf-8') as
     req_lines = f.read()
     postgres_requirements = req_lines.splitlines()
 
+with open(os.path.join(_here, 'requirements-mysql.txt'), encoding='utf-8') as f:
+    req_lines = f.read()
+    mysql_requirements = req_lines.splitlines() 
+
 setup(
     name='rasgoql',
     version=__version__,
@@ -52,7 +56,8 @@ setup(
     extras_require={
         "snowflake":  sf_requirements,
         "bigquery": bq_requirements,
-        "postgres": postgres_requirements
+        "postgres": postgres_requirements,
+        "mysql": mysql_requirements
     },
     include_package_data=True,
     classifiers=[

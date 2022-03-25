@@ -23,11 +23,7 @@ from rasgoql.primitives.enums import (
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe
 from rasgoql.utils.messaging import verbose_message
-from rasgoql.utils.sql import (
-    is_scary_sql, magic_fqtn_handler,
-    parse_fqtn, parse_namespace,
-    validate_namespace
-)
+from rasgoql.utils.sql import is_scary_sql
 
 logging.basicConfig()
 logger = logging.getLogger('BigQuery DataWarehouse')
@@ -142,8 +138,8 @@ class BigQueryDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (project.dataset)
         """
-        namespace = self._validate_namespace(namespace)
-        project, dataset = parse_namespace(namespace)
+        namespace = self.validate_namespace(namespace)
+        project, dataset = self.parse_namespace(namespace)
         try:
             self.execute_query(f'USE PROJECT {project}')
             self.execute_query(f'USE DATASET {dataset}')
@@ -228,7 +224,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_write_table_type(table_type)
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         if self._table_exists(fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
@@ -253,8 +249,8 @@ class BigQueryDataWarehouse(DataWarehouse):
         """
         Setter method for the `default_namespace` property
         """
-        namespace = self._validate_namespace(new_namespace)
-        project, dataset = parse_namespace(namespace)
+        namespace = self.validate_namespace(new_namespace)
+        project, dataset = self.parse_namespace(namespace)
         self.default_project = project
         self.default_dataset = dataset
 
@@ -304,8 +300,8 @@ class BigQueryDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        proj, ds, tbl = parse_fqtn(fqtn)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        proj, ds, tbl = self.parse_fqtn(fqtn)
         sql = f"SELECT DDL FROM {proj}.{ds}.INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='{tbl}'"
         query_response = self.execute_query(sql)
         return query_response[0]
@@ -326,7 +322,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             is rasgo object: bool
             object type: [table|view|unknown]
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         obj_exists = False
         is_rasgo_obj = False
         obj_type = 'unknown'
@@ -358,7 +354,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             and the fqtn does not already exist, it will be created and profiled based
             on this statement. The view will be dropped after profiling
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         response = []
         try:
             if self._table_exists(fqtn):
@@ -464,7 +460,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         """
         if method:
             method = check_write_method(method)
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         table_exists = self._table_exists(fqtn)
         if table_exists and not method:
             msg = f"A table named {fqtn} already exists. " \
@@ -502,30 +498,12 @@ class BigQueryDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         try:
             self.connection.get_table(fqtn)
             return True
         except gcp_exc.NotFound:
             return False
-
-    def _validate_namespace(
-            self,
-            namespace: str
-        ) -> str:
-        """
-        Checks a namespace string for compliance with BigQuery format
-
-        Params:
-        `namespace`: str:
-            namespace (project.dataset)
-        """
-        # Does this match a 'string.string' pattern?
-        try:
-            validate_namespace(namespace)
-            return namespace
-        except ValueError:
-            raise ParameterException("Bigquery namespaces should be format: PROJECT.DATASET")
 
     # --------------------------
     # BigQuery specific helpers

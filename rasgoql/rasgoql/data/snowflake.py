@@ -21,11 +21,7 @@ from rasgoql.primitives.enums import (
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
 from rasgoql.utils.messaging import verbose_message
-from rasgoql.utils.sql import (
-    is_scary_sql, magic_fqtn_handler,
-    parse_fqtn, parse_namespace,
-    validate_namespace
-)
+from rasgoql.utils.sql import is_scary_sql
 
 logging.basicConfig()
 logger = logging.getLogger('Snowflake DataWarehouse')
@@ -166,8 +162,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (database.schema)
         """
-        namespace = self._validate_namespace(namespace)
-        database, schema = parse_namespace(namespace)
+        namespace = self.validate_namespace(namespace)
+        database, schema = self.parse_namespace(namespace)
         try:
             self.execute_query(f'USE DATABASE {database}')
             self.execute_query(f'USE SCHEMA {schema}')
@@ -253,7 +249,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_write_table_type(table_type)
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         if self._table_exists(fqtn) and not overwrite:
             msg = f'A table or view named {fqtn} already exists. ' \
                    'If you are sure you want to overwrite it, ' \
@@ -278,8 +274,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
         """
         Setter method for the `default_namespace` property
         """
-        namespace = self._validate_namespace(new_namespace)
-        db, schema = parse_namespace(namespace)
+        namespace = self.validate_namespace(new_namespace)
+        db, schema = self.parse_namespace(namespace)
         self.default_database = db
         self.default_schema = schema
         
@@ -330,7 +326,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         sql = f"SELECT GET_DDL('TABLE', '{fqtn}') AS DDL"
         query_response = self.execute_query(sql, response='dict')
         return query_response[0]['DDL']
@@ -351,8 +347,8 @@ class SnowflakeDataWarehouse(DataWarehouse):
             is rasgo object: bool
             object type: [table|view|unknown]
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        database, schema, table = parse_fqtn(fqtn)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        database, schema, table = self.parse_fqtn(fqtn)
         sql = f"SHOW OBJECTS LIKE '{table}' IN {database}.{schema}"
         result = self.execute_query(sql, response='dict')
         obj_exists = len(result) > 0
@@ -379,7 +375,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             and the fqtn does not already exist, it will be created and profiled based
             on this statement. The view will be dropped after profiling
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         desc_sql = f"DESC TABLE {fqtn}"
         response = []
         try:
@@ -466,7 +462,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         """
         if method:
             method = check_write_method(method)
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         table_exists = self._table_exists(fqtn)
         if table_exists and not method:
             msg = f"A table named {fqtn} already exists. " \
@@ -505,26 +501,9 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         do_i_exist, _, _ = self.get_object_details(fqtn)
         return do_i_exist
-
-    def _validate_namespace(
-            self,
-            namespace: str
-        ) -> str:
-        """
-        Checks a namespace string for compliance with Snowflake format
-
-        Params:
-        `namespace`: str:
-            namespace (database.schema)
-        """
-        try:
-            validate_namespace(namespace)
-            return namespace.upper()
-        except ValueError:
-            raise ParameterException("Snowflake namespaces should be format: DATABASE.SCHEMA")
 
     # --------------------------
     # Snowflake specific helpers

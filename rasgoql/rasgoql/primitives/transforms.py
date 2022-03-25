@@ -8,14 +8,6 @@ import pandas as pd
 import rasgotransforms as rtx
 
 from rasgoql.errors import ParameterException
-from rasgoql.utils.decorators import (
-    beta, require_dw,
-    require_materialized, require_transforms
-)
-from rasgoql.utils.sql import (
-    parse_fqtn, make_namespace_from_fqtn,
-    random_table_name, validate_fqtn
-)
 from rasgoql.primitives.enums import (
     check_render_method, check_table_type, check_write_table_type,
     TableType, TableState
@@ -24,6 +16,11 @@ from rasgoql.primitives.rendering import (
     assemble_cte_chain, assemble_view_chain, create_dbt_files,
     _gen_udt_func_docstring, _gen_udt_func_signature
 )
+from rasgoql.utils.decorators import (
+    beta, require_dw,
+    require_materialized, require_transforms
+)
+from rasgoql.utils.sql import random_table_name
 
 logging.basicConfig()
 ds_logger = logging.getLogger('Dataset')
@@ -118,10 +115,10 @@ class Dataset(TransformableClass):
         ):
         super().__init__(dw)
         try:
-            self.fqtn: str = validate_fqtn(fqtn)
-            self.table_name: str = parse_fqtn(fqtn)[2]
-            self.namespace: str = make_namespace_from_fqtn(fqtn)
-            self._dw._validate_namespace(self.namespace)
+            self.fqtn: str = self._dw.validate_fqtn(fqtn)
+            self.table_name: str = self._dw.parse_fqtn(fqtn)[-1]
+            self.namespace: str = self._dw.make_namespace_from_fqtn(fqtn)
+            self._dw.validate_namespace(self.namespace)
         except ValueError:
             raise ParameterException("Must pass in a valid 'fqtn' parameter to create a Dataset")
         self.table_type: str = TableType.UNKNOWN.value

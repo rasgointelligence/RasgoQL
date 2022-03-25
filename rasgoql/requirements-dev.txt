@@ -5,7 +5,7 @@ pandas
 pre-commit
 python-dotenv
 pyyaml
-rasgotransforms~=1.1
+rasgotransforms~=1.2
 requests
 snowflake-connector-python
 snowflake-connector-python[pandas]

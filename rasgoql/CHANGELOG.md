@@ -61,6 +61,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added a parameter to allow batch returning of Pandas DataFrames from `to_df()` and `query_into_df()` methods
 
+## [1.3.0] - 2022-03-25
+### Added
+- Added support for MySQL
+
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
@@ -68,3 +72,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.1.0]: https://pypi.org/project/rasgoql/1.1.0/
 [1.1.1]: https://pypi.org/project/rasgoql/1.1.1/
 [1.2.0]: https://pypi.org/project/rasgoql/1.2.0/
+[1.3.0]: https://pypi.org/project/rasgoql/1.3.0/
