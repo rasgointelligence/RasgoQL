@@ -3,6 +3,7 @@ MySQL DataWarehouse classes
 """
 import logging
 import os
+import re
 from typing import Union
 from urllib.parse import quote_plus as urlquote
 
@@ -22,7 +23,6 @@ from rasgoql.imports import alchemy_engine, alchemy_session
 from rasgoql.primitives.enums import check_table_type
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.messaging import verbose_message
-from rasgoql.utils.sql import magic_fqtn_handler, parse_fqtn, validate_namespace
 
 logging.basicConfig()
 logger = logging.getLogger("MySQL DataWarehouse")
@@ -115,6 +115,88 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
     # ---------------------------
     # FQTN and namespace methods
     # ---------------------------
+    # FQTNs in MySQL DBs consist only of "DB"."TABLE". This means that a MySQL
+    # namespace should be only the DB name
+    def magic_fqtn_handler(
+        self,
+        possible_fqtn: str,
+        default_namespace: str
+    ) -> str:
+        """
+        Makes all of your wildest dreams come true... well not *that* one
+        """
+        input_db, table = self.parse_fqtn(possible_fqtn, default_namespace, False)
+        default_database = self.parse_namespace(default_namespace)
+        database = input_db or default_database
+        return self.make_fqtn(database, table)
+
+    def make_fqtn(
+        self,
+        database: str,
+        table: str
+    ) -> str:
+        """
+        Accepts component parts and returns a fully qualified table string
+        """
+        return f"{database}.{table}"
+
+    def make_namespace_from_fqtn(
+        self,
+        fqtn: str
+    ) -> str:
+        """
+        Accepts component parts and returns a fully qualified namespace string
+        """
+        database, _ = self.parse_fqtn(fqtn)
+        return f"{database}"
+
+    def parse_fqtn(
+        self,
+        fqtn: str,
+        default_namespace: str = None,
+        strict: bool = True
+    ) -> tuple:
+        """
+        Accepts a possible fully qualified table string and returns its component parts
+        """
+        if strict:
+            fqtn = self.validate_fqtn(fqtn)
+            return (* fqtn.split("."),)
+        database = self.parse_namespace(default_namespace)
+        if fqtn.count(".") == 1:
+            return (* fqtn.split("."),)
+        if fqtn.count(".") == 0:
+            return (database, fqtn)
+        raise ValueError(f'{fqtn} is not a well-formed fqtn')
+
+    def parse_namespace(
+        self,
+        namespace: str
+    ) -> str:
+        """
+        Accepts a possible namespace string and returns its component parts
+        """
+        namespace = self.validate_namespace(namespace)
+        return namespace
+
+    def validate_fqtn(self, fqtn: str) -> str:
+        """
+        Accepts a possible fully qualified table string and decides whether it is well formed
+        """
+        if re.match(r'^[^\s]+\.[^\s]+', fqtn):
+            return fqtn
+        raise ValueError(f'{fqtn} is not a well-formed fqtn')
+
+    def validate_namespace(
+        self,
+        namespace: str
+    ) -> str:
+        """
+        Accepts a possible namespace string and decides whether it is well formed
+        """
+        if namespace.count(".") == 0:
+            return namespace
+        raise ValueError(f'{namespace} is not a well-formed namespace')
     
     # ---------------------------
     # Core Data Warehouse methods
@@ -130,18 +212,6 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
     @default_namespace.setter
     def default_namespace(self, new_namespace: str):
         self.database = new_namespace
-
-    def _validate_namespace(self, namespace: str) -> str:
-        """
-        Checks a namespace string for compliance with required format
-
-        Params:
-        `namespace`: str:
-            namespace (database)
-        """
-        if "." in namespace:
-            raise ParameterException("MySQL Namespaces should be format: DATABASE")
-        return namespace.upper()
 
     def change_namespace(self, namespace: str) -> None:
         """
@@ -196,7 +266,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_table_type(table_type)
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         if self._table_exists(fqtn=fqtn) and not overwrite:
             msg = (
                 f"A table or view named {fqtn} already exists. "
@@ -215,8 +285,8 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        db, _, table_name = parse_fqtn(
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        db, table_name = self.parse_fqtn(
             fqtn, default_namespace=self.default_namespace, strict=False
         )
         sql = f"SHOW CREATE TABLE {db}.{table_name}"
@@ -236,8 +306,8 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
             is rasgo object: bool
             object type: [table|view|unknown]
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        db, _, table = parse_fqtn(
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        db, table = self.parse_fqtn(
             fqtn, default_namespace=self.default_namespace, strict=False
         )
         sql = f"SHOW TABLES IN {db} LIKE '{table}'"
@@ -247,6 +317,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
         obj_type = "unknown"
         return obj_exists, is_rasgo_obj, obj_type
 
+    # TODO: delete unused code?
     # def preview(self, sql: str = None, limit: int = 10) -> pd.DataFrame:
     #     """
     #     Returns 10 records into a pandas DataFrame
@@ -286,5 +357,4 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
             f"@{self.credentials.get('host')}/"
             f"{self.credentials.get('database')}"
         )
-        print(f"engine_url:\n{engine_url}")
         return alchemy_engine(engine_url)

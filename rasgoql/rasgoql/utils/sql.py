@@ -49,11 +49,32 @@ def is_restricted_sql(
     return False
 
 
+def parse_namespace(
+    namespace: str
+) -> tuple:
+    """
+    Accepts a possible namespace string and returns its component parts
+    """
+    namespace = validate_namespace(namespace)
+    return tuple(namespace.split("."))
+
+
 def random_table_name() -> str:
     """
     Returns a random unique table name prefixed with "RQL"
     """
     return 'RQL_'+''.join(random.choice(string.ascii_uppercase) for x in range(10))
+
+
+def validate_namespace(
+    namespace: str
+) -> bool:
+    """
+    Accepts a possible namespace string and decides whether it is well formed
+    """
+    if re.match(r'^[^\s]+\.[^\s]+', namespace):
+        return namespace
+    raise ValueError(f'{namespace} is not a well-formed namespace')
 
 
 def wrap_table(

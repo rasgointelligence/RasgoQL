@@ -116,7 +116,7 @@ class Dataset(TransformableClass):
         super().__init__(dw)
         try:
             self.fqtn: str = self._dw.validate_fqtn(fqtn)
-            self.table_name: str = self._dw.parse_fqtn(fqtn)[2]
+            self.table_name: str = self._dw.parse_fqtn(fqtn)[-1]
             self.namespace: str = self._dw.make_namespace_from_fqtn(fqtn)
             self._dw.validate_namespace(self.namespace)
         except ValueError:

@@ -25,13 +25,7 @@ from rasgoql.primitives.enums import (
 )
 from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
 from rasgoql.utils.messaging import verbose_message
-from rasgoql.utils.sql import (
-    is_scary_sql,
-    magic_fqtn_handler,
-    parse_fqtn,
-    validate_namespace,
-    parse_namespace,
-)
+from rasgoql.utils.sql import is_scary_sql
 
 logging.basicConfig()
 logger = logging.getLogger("SQLAlchemy DataWarehouse")
@@ -156,8 +150,8 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (database.schema)
         """
-        namespace = self._validate_namespace(namespace)
-        database, schema = parse_namespace(namespace)
+        namespace = self.validate_namespace(namespace)
+        database, schema = self.parse_namespace(namespace)
         try:
             self.execute_query(f"USE DATABASE {database}")
             self.execute_query(f"USE SCHEMA {schema}")
@@ -218,7 +212,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_table_type(table_type)
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         if self._table_exists(fqtn=fqtn) and not overwrite:
             msg = (
                 f"A table or view named {fqtn} already exists. "
@@ -240,12 +234,16 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
     @default_namespace.setter
     def default_namespace(self, new_namespace: str):
         namespace = self._validate_namespace(new_namespace)
-        db, schema = parse_namespace(namespace)
+        db, schema = self.parse_namespace(namespace)
         self.default_database = db
         self.default_schema = schema
 
     def execute_query(
-        self, sql: str, response: str = "tuple", acknowledge_risk: bool = False
+        self,
+        sql: str,
+        response: str = "tuple",
+        acknowledge_risk: bool = False,
+        **kwargs
     ):
         """
         Run a query against DB and return all results
@@ -283,8 +281,8 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        db_name, schema_name, table_name = parse_fqtn(fqtn)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        db_name, schema_name, table_name = self.parse_fqtn(fqtn)
         sql = (
             f"select table_schema, table_name, column_name, data_type, "
             f"character_maximum_length, column_default, is_nullable from "
@@ -308,8 +306,8 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             is rasgo object: bool
             object type: [table|view|unknown]
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        database, schema, table = parse_fqtn(fqtn)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        database, schema, table = self.parse_fqtn(fqtn)
         sql = f"SHOW OBJECTS LIKE '{table}' IN {database}.{schema}"
         result = self.execute_query(sql, response="dict")
         obj_exists = len(result) > 0
@@ -331,8 +329,8 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             and the fqtn does not already exist, it will be created and profiled based
             on this statement. The view will be dropped after profiling
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        database, schema, table = parse_fqtn(fqtn)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        database, schema, table = self.parse_fqtn(fqtn)
         query_sql = (
             f"SELECT * FROM INFORMATION_SCHEMA.TABLES "
             f"WHERE table_catalog = '{database}' "
@@ -413,8 +411,8 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         """
         if method:
             method = check_write_method(method)
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        database, schema, table = parse_fqtn(fqtn)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        database, schema, table = self.parse_fqtn(fqtn)
         table_exists = self._table_exists(fqtn)
         if table_exists and not method:
             msg = (
@@ -452,22 +450,9 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         `fqtn`: str:
             Fully-qualified table name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         do_i_exist, _, _ = self.get_object_details(fqtn)
         return do_i_exist
-
-    def _validate_namespace(self, namespace: str) -> str:
-        """
-        Checks a namespace string for compliance with required format
-        Params:
-        `namespace`: str:
-            namespace (database.schema)
-        """
-        try:
-            validate_namespace(namespace)
-            return namespace.upper()
-        except ValueError:
-            raise ParameterException("Namespaces should be format: DATABASE.SCHEMA")
 
     # --------------------------
     # SQLAlchemy and derived class helpers

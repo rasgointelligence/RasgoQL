@@ -21,12 +21,6 @@ from rasgoql.imports import alchemy_engine, alchemy_session
 from rasgoql.primitives.enums import check_table_type
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.messaging import verbose_message
-from rasgoql.utils.sql import (
-    magic_fqtn_handler,
-    parse_fqtn,
-    # TODO: implement this as a class DW Method
-    parse_table_and_schema_from_fqtn,
-)
 
 logging.basicConfig()
 logger = logging.getLogger("Postgres DataWarehouse")
@@ -133,6 +127,19 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
         super().__init__()
 
     # ---------------------------
+    # FQTN and namespace methods
+    # ---------------------------
+    def parse_table_and_schema_from_fqtn(
+        self,
+        fqtn: str
+    ) -> tuple:
+        """
+        Accepts a possible FQTN and returns the schema and table from it
+        """
+        fqtn = self.validate_fqtn(fqtn)
+        return tuple(fqtn.split(".")[1:])
+
+    # ---------------------------
     # Core Data Warehouse methods
     # ---------------------------
     def change_namespace(self, namespace: str) -> None:
@@ -185,9 +192,8 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
             WARNING: This will completely overwrite data in the existing table
         """
         table_type = check_table_type(table_type)
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        # TODO: make this a DW class method
-        schema, table = parse_table_and_schema_from_fqtn(fqtn=fqtn)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        schema, table = self.parse_table_and_schema_from_fqtn(fqtn=fqtn)
         if self._table_exists(fqtn=fqtn) and not overwrite:
             msg = (
                 f"A table or view named {fqtn} already exists. "
@@ -205,8 +211,8 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
         `fqtn`: str:
             Fully-qualified Table Name (database.schema.table)
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        _, schema_name, table_name = parse_fqtn(fqtn)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        _, schema_name, table_name = self.parse_fqtn(fqtn)
         sql = (
             f"select table_schema, table_name, column_name, data_type, "
             f"character_maximum_length, column_default, is_nullable from "
@@ -227,8 +233,8 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
             is rasgo object: bool
             object type: [table|view|unknown]
         """
-        fqtn = magic_fqtn_handler(fqtn, self.default_namespace)
-        database, schema, table = parse_fqtn(fqtn)
+        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
+        database, schema, table = self.parse_fqtn(fqtn)
         sql = (
             f"SELECT EXISTS(SELECT FROM pg_catalog.pg_class c JOIN "
             f"pg_catalog.pg_namespace n ON n.oid = c.relnamespace WHERE "
