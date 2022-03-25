@@ -2,5 +2,5 @@ jinja2
 pandas
 python-dotenv
 pyyaml
-rasgotransforms~=1.1
+rasgotransforms~=1.2
 requests
