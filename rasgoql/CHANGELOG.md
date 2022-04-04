@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Add
 - Add SQLChain to/from YAML workflow
+- Add support for Redshift
 
 ### Change
 - N/A
@@ -65,6 +66,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added support for MySQL
 
+## [1.3.1] - 2022-04-04
+### Added
+- Added `tags` property to `TransformTemplate` class
+### Removed
+- Removed `transform_type` property from `TransformTemplate` class
+
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
@@ -73,3 +80,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.1.1]: https://pypi.org/project/rasgoql/1.1.1/
 [1.2.0]: https://pypi.org/project/rasgoql/1.2.0/
 [1.3.0]: https://pypi.org/project/rasgoql/1.3.0/
+[1.3.1]: https://pypi.org/project/rasgoql/1.3.1/
