@@ -197,7 +197,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
         if namespace.count(".") == 0:
             return namespace
         raise ValueError(f'{namespace} is not a well-formed namespace')
-    
+
     # ---------------------------
     # Core Data Warehouse methods
     # ---------------------------

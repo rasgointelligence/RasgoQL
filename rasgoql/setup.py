@@ -30,7 +30,7 @@ with open(os.path.join(_here, 'requirements-postgres.txt'), encoding='utf-8') as
 
 with open(os.path.join(_here, 'requirements-mysql.txt'), encoding='utf-8') as f:
     req_lines = f.read()
-    mysql_requirements = req_lines.splitlines() 
+    mysql_requirements = req_lines.splitlines()
 
 setup(
     name='rasgoql',

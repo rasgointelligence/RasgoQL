@@ -88,7 +88,7 @@ creds = rasgoql.SnowflakeCredentials(
     schema=""
 )
 
-# Connect to DW 
+# Connect to DW
 rql = rasgoql.connect(creds)
 
 # List available tables
@@ -109,7 +109,7 @@ agg_weekly_sales = weekly_sales.aggregate(
     aggregations={'SALESAMOUNT': ['SUM']},
     )
 
-# Quickly validate output 
+# Quickly validate output
 agg_weekly_sales.to_df()
 
 # Print the SQL
@@ -117,7 +117,7 @@ print(agg_weekly_sales.sql())
 ```
 
 ## Getting Stared Tutorials
-The best way to get familiar with the RasgoQL basics is by running through [these notebooks](https://github.com/rasgointelligence/RasgoQL/tree/main/tutorials) in the tutorials folder. 
+The best way to get familiar with the RasgoQL basics is by running through [these notebooks](https://github.com/rasgointelligence/RasgoQL/tree/main/tutorials) in the tutorials folder.
 
 # Advanced Examples
 
@@ -156,7 +156,7 @@ sales_agg_drop.preview()
 
 ![Multiple rasgoql transforms](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/rasgoql_chain.gif)
 
-## Transpose unique values with pivots 
+## Transpose unique values with pivots
 Quickly generate pivot tables of your data.
 
 ```python
