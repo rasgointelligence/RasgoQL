@@ -278,7 +278,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         db, schema = self.parse_namespace(namespace)
         self.default_database = db
         self.default_schema = schema
-        
+
 
     def execute_query(
             self,

@@ -19,8 +19,16 @@ repos:
     - id: name-tests-test
     # General quality checks
     - id: mixed-line-ending
+      exclude: 'tutorials'
     - id: trailing-whitespace
       args: [--markdown-linebreak-ext=md]
     - id: check-executables-have-shebangs
     - id: end-of-file-fixer
+      exclude: 'tutorials'
     - id: no-commit-to-branch
+ci:
+  autofix_commit_msg: '[pre-commit.ci] auto fixes from pre-commit.com hooks'
+  autofix_prs: true
+  autoupdate_branch: 'pre-commit-autoupdate'
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: quarterly
