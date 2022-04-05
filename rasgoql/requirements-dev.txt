@@ -9,3 +9,5 @@ rasgotransforms~=1.3
 requests
 snowflake-connector-python
 snowflake-connector-python[pandas]
+redshift_connector
+pytest

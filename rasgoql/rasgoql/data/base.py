@@ -3,9 +3,12 @@ Base DataWarehouse classes
 """
 from abc import ABC
 import re
-from typing import Union
+from typing import Union, Optional
+from collections import namedtuple
 
 import pandas as pd
+
+FQTN = namedtuple("FQTN", ["database", "schema", "table"], defaults=(None, None, None))
 
 
 class DWCredentials(ABC):
@@ -49,6 +52,7 @@ class DWCredentials(ABC):
         Saves credentials to a .env file on your machine
         """
         raise NotImplementedError()
+
 
 class DataWarehouse(ABC):
     """
@@ -102,23 +106,28 @@ class DataWarehouse(ABC):
     def parse_fqtn(
         self,
         fqtn: str,
-        default_namespace: str = None,
+        default_namespace: Optional[str] = None,
         strict: bool = True
-    ) -> tuple:
+    ) -> FQTN:
         """
         Accepts a possible fully qualified table string and returns its component parts
         """
-        # TODO: review the logic of this method
         if strict:
             fqtn = self.validate_fqtn(fqtn)
-            return (* fqtn.split("."),)
-        database, schema = self.parse_namespace(default_namespace)
+            return FQTN(* fqtn.split("."))
+
         if fqtn.count(".") == 2:
-            return (* fqtn.split("."),)
+            return FQTN(* fqtn.split("."))
+
+        if not default_namespace:
+            raise ValueError(f'{fqtn} is not a well-formed fqtn')
+
+        database, schema = self.parse_namespace(default_namespace)
+
         if fqtn.count(".") == 1:
-            return (database, * fqtn.split("."),)
+            return FQTN(database, * fqtn.split("."))
         if fqtn.count(".") == 0:
-            return (database, schema, fqtn)
+            return FQTN(database, schema, fqtn)
         raise ValueError(f'{fqtn} is not a well-formed fqtn')
 
     def parse_namespace(
@@ -133,7 +142,7 @@ class DataWarehouse(ABC):
 
     def validate_fqtn(self, fqtn: str) -> str:
         """
-        Accepts a possible fully qualified table string and decides whether it is well formed
+        Accepts a possible fully qualified table string and decides whether it is well-formed
         """
         if re.match(r'^[^\s]+\.[^\s]+\.[^\s]+', fqtn):
             return fqtn
@@ -142,9 +151,9 @@ class DataWarehouse(ABC):
     def validate_namespace(
         self,
         namespace: str
-    ) -> bool:
+    ) -> str:
         """
-        Accepts a possible namespace string and decides whether it is well formed
+        Accepts a possible namespace string and decides whether it is well-formed
         """
         if re.match(r'^[^\s]+\.[^\s]+', namespace):
             return namespace

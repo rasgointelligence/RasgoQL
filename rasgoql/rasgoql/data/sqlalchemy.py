@@ -4,7 +4,7 @@ Generic SQLAlchemy DataWarehouse classes
 from abc import abstractmethod
 import logging
 import re
-from typing import List
+from typing import List, Optional
 from urllib.parse import quote_plus as urlquote
 
 import pandas as pd
@@ -31,7 +31,6 @@ logging.basicConfig()
 logger = logging.getLogger("SQLAlchemy DataWarehouse")
 logger.setLevel(logging.INFO)
 
-
 # Each DB derived from the generic SQLAlchemy class will have slightly
 # different connection strings. Build a unique Credentials class for each DB
 
@@ -46,99 +45,12 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
 
     def __init__(self):
         super().__init__()
-        self.credentials: dict = None
+        self.credentials: Optional[dict] = None
         self.connection: alchemy_session = None
         self.database = None
         self.schema = None
-
-    # ---------------------------
-    # FQTN and namespace methods
-    # ---------------------------
-    def validate_fqtn(self, fqtn: str) -> str:
-        """
-        Accepts a possible fully qualified table string and decides whether it is well formed
-        """
-        if re.match(r'^[^\s]+\.[^\s]+\.[^\s]+', fqtn):
-            return fqtn
-        raise ValueError(f'{fqtn} is not a well-formed fqtn')
-
-    def parse_fqtn(
-        self,
-        fqtn: str,
-        default_namespace: str = None,
-        strict: bool = True
-    ) -> tuple:
-        """
-        Accepts a possible fully qualified table string and returns its component parts
-        """
-        # TODO: review the logic of this method
-        if strict:
-            fqtn = self.validate_fqtn(fqtn)
-            return (* fqtn.split("."),)
-        database, schema = self.parse_namespace(default_namespace)
-        if fqtn.count(".") == 2:
-            return (* fqtn.split("."),)
-        if fqtn.count(".") == 1:
-            return (database, * fqtn.split("."),)
-        if fqtn.count(".") == 0:
-            return (database, schema, fqtn)
-        raise ValueError(f'{fqtn} is not a well-formed fqtn')
-
-    def make_fqtn(
-        self,
-        database: str,
-        schema: str,
-        table: str
-    ) -> str:
-        """
-        Accepts component parts and returns a fully qualified table string
-        """
-        return f"{database}.{schema}.{table}"
-
-    def magic_fqtn_handler(
-        self,
-        possible_fqtn: str,
-        default_namespace: str
-    ) -> str:
-        """
-        Makes all of your wildest dreams come true... well not *that* one
-        """
-        input_db, input_schema, table = self.parse_fqtn(possible_fqtn, default_namespace, False)
-        default_database, default_schema = self.parse_namespace(default_namespace)
-        database = input_db or default_database
-        schema = input_schema or default_schema
-        return self.make_fqtn(database, schema, table)
-
-    def validate_namespace(
-        self,
-        namespace: str
-    ) -> bool:
-        """
-        Accepts a possible namespace string and decides whether it is well formed
-        """
-        if re.match(r'^[^\s]+\.[^\s]+', namespace):
-            return namespace
-        raise ValueError(f'{namespace} is not a well-formed namespace')
-
-    def parse_namespace(
-        self,
-        namespace: str
-    ) -> tuple:
-        """
-        Accepts a possible namespace string and returns its component parts
-        """
-        namespace = self.validate_namespace(namespace)
-        return tuple(namespace.split("."))
-
-    def make_namespace_from_fqtn(
-        self,
-        fqtn: str
-    ) -> str:
-        """
-        Accepts component parts and returns a fully qualified namespace string
-        """
-        database, schema, _ = self.parse_fqtn(fqtn)
-        return f"{database}.{schema}"
+        self.default_database = None
+        self.default_schema = None
 
     # ---------------------------
     # Core Data Warehouse methods

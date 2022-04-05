@@ -159,7 +159,7 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
         Connect to Postgres
         Params:
         `credentials`: dict:
-            dict (or DWCredentials class) holding the connection credentials
+            dict (or PostgresCredentials class) holding the connection credentials
         """
         if isinstance(credentials, PostgresCredentials):
             credentials = credentials.to_dict()
