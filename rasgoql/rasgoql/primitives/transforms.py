@@ -188,14 +188,14 @@ class TransformTemplate:
             name: str,
             arguments: List[dict],
             source_code: str,
-            transform_type: str,
-            description: str = None
+            description: str = None,
+            tags: List[str] = None
         ):
         self.name = name
         self.arguments = arguments
         self.source_code = source_code
-        self.transform_type = transform_type
         self.description = description
+        self.tags = tags
 
     def __repr__(self) -> str:
         arg_str = ', '.join(f'{arg.get("name")}: {arg.get("type")}' for arg in self.arguments)
@@ -205,7 +205,7 @@ class TransformTemplate:
         """
         Return a pretty string definition of this Transform
         """
-        pretty_string = f'''{self.transform_type.title()} Transform: {self.name}
+        pretty_string = f'''Transform: {self.name}
         Description: {self.description}
         Arguments: {self.arguments}
         SourceCode: {self.source_code}
