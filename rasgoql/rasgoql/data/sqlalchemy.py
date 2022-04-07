@@ -1,10 +1,11 @@
 """
 Generic SQLAlchemy DataWarehouse classes
 """
+from __future__ import annotations
 from abc import abstractmethod
 import logging
 import re
-from typing import List, Optional
+from typing import Optional, Union
 from urllib.parse import quote_plus as urlquote
 
 import pandas as pd
@@ -156,7 +157,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         response: str = "tuple",
         acknowledge_risk: bool = False,
         **kwargs
-    ):
+    ) -> Union[list[dict], pd.DataFrame, list[tuple], None]:
         """
         Run a query against DB and return all results
         `sql`: str:
@@ -399,7 +400,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             ) from exception
         raise exception
 
-    def _execute_string(self, query: str, ignore_results: bool = False) -> List[tuple]:
+    def _execute_string(self, query: str, ignore_results: bool = False) -> list[tuple]:
         """
         Execute a query string against the DataWarehouse connection and fetch all results
         """
@@ -411,7 +412,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         except Exception as e:
             self._error_handler(e)
 
-    def _query_into_dict(self, query: str) -> List[dict]:
+    def _query_into_dict(self, query: str) -> list[dict]:
         """
         Run a query string and return results in a Snowflake DictCursor
         PRO:

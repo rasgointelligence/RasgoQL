@@ -1,8 +1,10 @@
 """
 Base DataWarehouse classes
 """
+from __future__ import annotations
 from abc import ABC
 import re
+import os
 from typing import Union, Optional
 from collections import namedtuple
 
@@ -52,6 +54,22 @@ class DWCredentials(ABC):
         Saves credentials to a .env file on your machine
         """
         raise NotImplementedError()
+
+    @staticmethod
+    def _parse_env_vars(prefix: str) -> dict[str, Union[str, bool, int]]:
+        prefix = prefix.upper()
+        if not prefix.endswith("_"):
+            prefix = f"{prefix}_"
+
+        env_vars = {}
+        for var_name, value in os.environ.items():
+            if var_name.upper().startswith(prefix):
+                if value.lower().strip() in ("false", "true"):
+                    value = False if value.lower().strip() == "false" else True
+                elif value.lower().strip().isnumeric():
+                    value = int(value)
+                env_vars[var_name.lower()[len(prefix):]] = value
+        return env_vars
 
 
 class DataWarehouse(ABC):

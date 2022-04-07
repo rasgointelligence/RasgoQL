@@ -110,6 +110,7 @@ class ResponseType(Enum):
     TUPLE = 'TUPLE'
     NONE = 'NONE'
 
+
 def check_response_type(input_value: str):
     """
     Warn if an incorrect response type is passed
@@ -130,6 +131,7 @@ class WriteMethod(Enum):
     REPLACE = 'REPLACE'
     UPSERT = 'UPSERT'
 
+
 def check_write_method(input_value: str):
     """
     Warn if an incorrect write method is passed
@@ -148,6 +150,7 @@ class WriteTableType(Enum):
     """
     TABLE = 'TABLE'
     VIEW = 'VIEW'
+
 
 def check_write_table_type(input_value: str):
     """
