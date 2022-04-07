@@ -3,26 +3,24 @@ Verbose messaging functions
 """
 import logging
 
-rql_run_verbose: bool = False
-
+RQL_RUN_VERBOSE: bool = False
 
 def verbose_message(
         message: str,
         logger: logging.Logger
-) -> None:
+    ) -> None:
     """
     Logs messages only if verbose flag is set to true
     """
     logger.setLevel(logging.INFO)
-    if rql_run_verbose:
+    if RQL_RUN_VERBOSE:
         logger.info(message)
-
 
 def set_verbose(
         value: bool
-) -> None:
+    ) -> None:
     """
     Set global var
     """
-    global rql_run_verbose
-    rql_run_verbose = value
+    global RQL_RUN_VERBOSE
+    RQL_RUN_VERBOSE = value

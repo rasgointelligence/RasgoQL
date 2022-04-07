@@ -50,8 +50,6 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         self.connection: alchemy_session = None
         self.database = None
         self.schema = None
-        self.default_database = None
-        self.default_schema = None
 
     # ---------------------------
     # Core Data Warehouse methods
@@ -63,17 +61,11 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (database.schema)
         """
-        namespace = self.validate_namespace(namespace)
-        database, schema = self.parse_namespace(namespace)
-        try:
-            self.execute_query(f"USE DATABASE {database}")
-            self.execute_query(f"USE SCHEMA {schema}")
-            self.default_namespace = namespace
-            self.default_database = database
-            self.default_schema = schema
-            verbose_message(f"Namespace reset to {self.default_namespace}", logger)
-        except Exception as e:
-            self._error_handler(e)
+        raise NotImplementedError(
+            "Connecting to a new Database in a single session is not supported "
+            "by the SQLAlchemy Engine. Please build a new connection."
+        )
+
 
     @abstractmethod
     def connect(self, credentials: dict):

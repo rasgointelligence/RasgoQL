@@ -2,13 +2,14 @@
 DataWarehouse credential functions
 """
 import os
+from pathlib import Path
 import yaml
 
 import dotenv
 
 
 def load_env(
-        filepath: os.PathLike = None
+        filepath: Path = None
     ):
     """
     Loads a .env file, allowing contents to be callable by os.getenv()
@@ -22,7 +23,7 @@ def load_env(
     dotenv.load_dotenv(filepath)
 
 def load_yml(
-        filepath: os.PathLike
+        filepath: Path
     ):
     """
     Loads a yml file and returns the contents
@@ -32,7 +33,7 @@ def load_yml(
     return contents
 
 def read_file(
-        filepath: os.PathLike = None
+        filepath: Path = None
     ) -> str:
     """
     Reads the contents of a file
@@ -45,7 +46,7 @@ def read_file(
 
 def save_env(
         creds: dict,
-        filepath: os.PathLike = None,
+        filepath: Path = None,
         overwrite: bool = False
     ):
     """
@@ -69,7 +70,7 @@ def save_env(
 
 def save_yml(
         creds: str,
-        filepath: os.PathLike = None,
+        filepath: Path = None,
         overwrite: bool = True
     ):
     """
