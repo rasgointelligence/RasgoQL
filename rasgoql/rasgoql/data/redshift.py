@@ -84,7 +84,8 @@ class RedshiftCredentials(DWCredentials):
         except KeyError as key_name:
             raise DWCredentialsWarning(
                 f"Your env file is missing expected credential variable {key_name}. Consider running "
-                "RedshiftCredentials(*args).to_env() to repair this.") from None
+                "RedshiftCredentials(*args).to_env() to repair this."
+            ) from None
         except ValueError:
             raise DWCredentialsWarning(f"Redshift port number must be an integer") from None
         return cls(username, password, host, port, database, schema, **env_vars)
@@ -132,8 +133,8 @@ class RedshiftDataWarehouse(SQLAlchemyDataWarehouse):
         super().__init__()
         self.credentials: dict
         self.connection: alchemy_session
-        self.database = None
-        self.schema = None
+        self.database: Optional[str] = None
+        self.schema: Optional[str] = None
 
     # ---------------------------
     # Core Data Warehouse methods
@@ -171,7 +172,7 @@ class RedshiftDataWarehouse(SQLAlchemyDataWarehouse):
             self.credentials = credentials
             self.database = credentials.get("database")
             self.schema = credentials.get("schema")
-            self.connection = alchemy_session(self._engine)
+            self.connection = alchemy_session(self._engine, autocommit=True)
             verbose_message("Connected to Redshift", logger)
         except Exception as e:
             self._error_handler(e)
