@@ -57,6 +57,11 @@ class DWCredentials(ABC):
 
     @staticmethod
     def _parse_env_vars(prefix: str) -> dict[str, Union[str, bool, int]]:
+        """
+        Pull out all environment variables starting with a prefix
+        ( usual same name as data warehouse, i.e. REDSHIFT )
+        Auto-detect and convert integers and boolean values.
+        """
         prefix = prefix.upper()
         if not prefix.endswith("_"):
             prefix = f"{prefix}_"
@@ -64,10 +69,12 @@ class DWCredentials(ABC):
         env_vars = {}
         for var_name, value in os.environ.items():
             if var_name.upper().startswith(prefix):
+                # Convert Booleans
                 if value.lower().strip() in ("false", "true"):
                     value = False if value.lower().strip() == "false" else True
-                elif value.lower().strip().isnumeric():
-                    value = int(value)
+                # Convert Integers
+                elif value.strip().isnumeric():
+                    value = int(value.strip())
                 env_vars[var_name.lower()[len(prefix):]] = value
         return env_vars
 

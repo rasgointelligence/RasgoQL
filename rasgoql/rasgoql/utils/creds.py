@@ -9,7 +9,8 @@ import dotenv
 
 
 def load_env(
-        filepath: Path = None
+        filepath: Path = None,
+        raise_on_missing: bool = False
     ):
     """
     Loads a .env file, allowing contents to be callable by os.getenv()
@@ -19,6 +20,8 @@ def load_env(
     if not filepath.endswith('.env'):
         filepath = os.path.join(filepath, '.env')
     if not os.path.exists(filepath):
+        if not raise_on_missing:
+            return
         raise FileNotFoundError(f'File {filepath} does not exist')
     dotenv.load_dotenv(filepath)
 

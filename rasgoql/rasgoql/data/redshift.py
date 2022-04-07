@@ -49,7 +49,7 @@ class RedshiftCredentials(DWCredentials):
         try:
             self.port = int(port)
         except ValueError:
-            raise DWCredentialsWarning(f"Your port number must be an integer")
+            raise DWCredentialsWarning(f"Redshift port number must be an integer") from None
         self.database = database
         self.schema = schema
         self.conn_params = kwargs
@@ -71,16 +71,11 @@ class RedshiftCredentials(DWCredentials):
         """
         Creates an instance of this Class from a .env file on your machine
         """
-        try:
-            load_env(filepath)
-        except FileNotFoundError:
-            if filepath:
-                raise
-
+        load_env(filepath)
         env_vars = cls._parse_env_vars("REDSHIFT_")
 
         try:
-            username = env_vars.pop("username" if "username" in env_vars else "user")
+            username = env_vars.pop("user" if "user" in env_vars else "username")
             password = env_vars.pop("password")
             host = env_vars.pop("host")
             port = int(env_vars.pop("port"))
@@ -89,10 +84,9 @@ class RedshiftCredentials(DWCredentials):
         except KeyError as key_name:
             raise DWCredentialsWarning(
                 f"Your env file is missing expected credential variable {key_name}. Consider running "
-                "RedshiftCredentials(*args).to_env() to repair this."
-            )
+                "RedshiftCredentials(*args).to_env() to repair this.") from None
         except ValueError:
-            raise DWCredentialsWarning(f"Your port number must be an integer")
+            raise DWCredentialsWarning(f"Redshift port number must be an integer") from None
         return cls(username, password, host, port, database, schema, **env_vars)
 
     def to_dict(self) -> dict:
