@@ -259,9 +259,9 @@ class RedshiftDataWarehouse(SQLAlchemyDataWarehouse):
         fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         database, schema, table = self.parse_fqtn(fqtn)
         sql = (
-            f"SELECT EXISTS(SELECT FROM pg_catalog.pg_class c JOIN "
+            f"SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_class c JOIN "
             f"pg_catalog.pg_namespace n ON n.oid = c.relnamespace WHERE "
-            f"n.nspname = '{schema}' AND    c.relname = '{table}')"
+            f"n.nspname = '{schema}' AND c.relname = '{table}')"
         )
         result = self.execute_query(sql, response="dict")
         obj_exists = len(result) > 0

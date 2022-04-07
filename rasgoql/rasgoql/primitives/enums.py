@@ -14,26 +14,6 @@ logger.setLevel(logging.INFO)
 def _wrap_in_quotes(string: str) -> str:
     return f"'{string}'"
 
-class DWType(Enum):
-    """
-    Supported Data Warehouses
-    """
-    BIGQUERY = 'BIGQUERY'
-    #FUTURE: POSTGRES = 'POSTGRES'
-    SNOWFLAKE = 'SNOWFLAKE'
-
-def check_data_warehouse(input_value: str):
-    """
-    Warn if an incorrect Data Warehouse is passed
-    """
-    supported_dws = _wrap_in_quotes("', '".join([e.value for e in DWType]))
-    try:
-        output_value = DWType[input_value.upper()].value
-    except Exception:
-        raise ParameterException(f'data_warehouse parameter accepts values: {supported_dws}')
-    return output_value
-
-
 class TableState(Enum):
     """
     State of a table
