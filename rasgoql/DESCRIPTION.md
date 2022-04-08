@@ -60,6 +60,8 @@ https://docs.rasgoql.com
 - v1.3.0 (Mar 25, 2022)
     - Added support for MySQL
 
+- v1.4.0 (April 8, 2022)
+    - Added failure and execution telemetry for methods in Transform and Dataset classes
 
 See [Changelog](https://github.com/rasgointelligence/RasgoQL/blob/main/rasgoql/CHANGELOG.md) for full minor version release notes
 

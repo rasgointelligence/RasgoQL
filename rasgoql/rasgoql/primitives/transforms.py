@@ -21,6 +21,7 @@ from rasgoql.utils.decorators import (
     require_materialized, require_transforms
 )
 from rasgoql.utils.sql import random_table_name
+from rasgoql.utils.telemetry import failure_telemetry
 
 logging.basicConfig()
 ds_logger = logging.getLogger('Dataset')
@@ -39,6 +40,9 @@ class TransformableClass:
         ):
         self._dw = dw
         self._transform_sync()
+
+    def __getattribute__(self, item):
+        return failure_telemetry(self, item)
 
     def _create_aliased_function(
             self,
@@ -201,6 +205,9 @@ class TransformTemplate:
         arg_str = ', '.join(f'{arg.get("name")}: {arg.get("type")}' for arg in self.arguments)
         return f"RasgoTemplate: {self.name}({arg_str})"
 
+    def __getattribute__(self, item):
+        return failure_telemetry(self, item)
+
     def define(self) -> str:
         """
         Return a pretty string definition of this Transform
@@ -235,6 +242,9 @@ class Transform:
 
     def __repr__(self) -> str:
         return f"Transform({self.output_alias}: {self.name})"
+
+    def __getattribute__(self, item):
+        return failure_telemetry(self, item)
 
     @property
     def fqtn(self) -> str:

@@ -174,6 +174,9 @@ sales_by_product.preview()
 
 ![Rasgoql pivot example](https://f.hubspotusercontent30.net/hubfs/20517936/rasgoql/rasgoql_pivot.gif)
 
+# Does any of my data get collected?
+Rasgo will not collect any personal information. We log execution of methods in `transforms.py` for success and failure so that we can more accurately track what's useful and what's problematic.
+
 # Where do I go for help?
 If you have any questions please:
 
