@@ -4,7 +4,6 @@ Base DataWarehouse classes
 from abc import ABC
 import re
 from typing import Union
-from rasgoql.utils.telemetry import failure_telemetry
 
 import pandas as pd
 
@@ -61,9 +60,6 @@ class DataWarehouse(ABC):
     def __init__(self):
         self.credentials = None
         self.connection = None
-
-    # def __getattribute__(self, item):
-    #     return failure_telemetry(self, item)
     
     # ---------------------------
     # FQTN and namespace methods
