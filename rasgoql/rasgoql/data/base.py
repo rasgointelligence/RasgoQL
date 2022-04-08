@@ -60,7 +60,7 @@ class DataWarehouse(ABC):
     def __init__(self):
         self.credentials = None
         self.connection = None
-    
+
     # ---------------------------
     # FQTN and namespace methods
     # ---------------------------

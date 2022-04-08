@@ -204,7 +204,7 @@ class TransformTemplate:
     def __repr__(self) -> str:
         arg_str = ', '.join(f'{arg.get("name")}: {arg.get("type")}' for arg in self.arguments)
         return f"RasgoTemplate: {self.name}({arg_str})"
-        
+
     def __getattribute__(self, item):
         return failure_telemetry(self, item)
 
