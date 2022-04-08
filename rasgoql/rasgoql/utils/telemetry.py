@@ -15,6 +15,7 @@ atexit.register(thread_pool.terminate)
 
 def failure_telemetry(obj, name):
     attr = object.__getattribute__(obj, name)
+    # TODO: change check to isinstance(attr, Callable)
     if hasattr(attr, "__call__") and not name.startswith("_") and not name.startswith("connect"):
         def logged_function(*args, **kwargs):
             tracked_properties = {
@@ -28,7 +29,7 @@ def failure_telemetry(obj, name):
                 result = attr(*args, **kwargs)
             except Exception as err:
                 tracked_properties["execution_status"] = "failed"
-                thread_pool.apply_async(track_call, args=(tracked_properties, str(err)))
+                thread_pool.apply_async(track_call, args=(tracked_properties, f"{err.__class__.__name__}: {err}"))
                 raise err from None
             else:
                 tracked_properties["execution_status"] = "completed"
