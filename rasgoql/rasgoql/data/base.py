@@ -62,8 +62,8 @@ class DataWarehouse(ABC):
         self.credentials = None
         self.connection = None
 
-    def __getattribute__(self, item):
-        return failure_telemetry(self, item)
+    # def __getattribute__(self, item):
+    #     return failure_telemetry(self, item)
     
     # ---------------------------
     # FQTN and namespace methods

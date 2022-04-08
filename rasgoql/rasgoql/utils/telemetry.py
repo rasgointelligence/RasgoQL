@@ -8,10 +8,7 @@ HEAP_URL = "https://heapanalytics.com/api"
 def failure_telemetry(obj, name):
     attr = object.__getattribute__(obj, name)
     if hasattr(attr, '__call__') and not name.startswith("_") and not name.startswith("connect"):
-        def tracked_function(*args, **kwargs):
-            print(f"class:\n{obj.__class__.__name__}")
-            print(f"module:\n{attr.__module__}")
-            print(f"method:\n{attr.__name__}")
+        def logged_function(*args, **kwargs):
             try:
                 track_call(
                     app_id=HEAP_KEY,
@@ -21,16 +18,14 @@ def failure_telemetry(obj, name):
                         "source": "RasgoQL",
                         "class": obj.__class__.__name__,
                         "module": attr.__module__,
-                        "method": attr.__name__,
-                        "execution_status": "TODO: determine failure",
-                        "userId": "TODO: user ID?",
+                        "method": attr.__name__
                     }
                 )
             except Exception as e:
                 logging.info(f"Called {attr.__name__} with parameters: {kwargs}")
                 logging.info(e)
             return attr(*args, **kwargs)
-        return tracked_function
+        return logged_function
     # TODO: add try except here, and catch exceptions and throw to a failure logger?
     return attr
 
