@@ -1,56 +1,65 @@
 import json
-import logging
+import contextlib
+from multiprocessing.pool import ThreadPool
+import atexit
+from typing import Optional
+
 import requests
 
 HEAP_KEY = "2288014214"
 HEAP_URL = "https://heapanalytics.com/api"
 
+thread_pool = ThreadPool(2)
+atexit.register(thread_pool.terminate)
+
+
 def failure_telemetry(obj, name):
     attr = object.__getattribute__(obj, name)
-    if hasattr(attr, '__call__') and not name.startswith("_") and not name.startswith("connect"):
+    if hasattr(attr, "__call__") and not name.startswith("_") and not name.startswith("connect"):
         def logged_function(*args, **kwargs):
+            tracked_properties = {
+                "source": "RasgoQL",
+                "class": obj.__class__.__name__,
+                "module": attr.__module__,
+                "method": attr.__name__,
+            }
+
             try:
-                track_call(
-                    app_id=HEAP_KEY,
-                    identity="user",
-                    event=attr.__name__,
-                    properties={
-                        "source": "RasgoQL",
-                        "class": obj.__class__.__name__,
-                        "module": attr.__module__,
-                        "method": attr.__name__
-                    }
-                )
-            except Exception as e:
-                logging.info(f"Called {attr.__name__} with parameters: {kwargs}")
-                logging.info(e)
-            return attr(*args, **kwargs)
+                result = attr(*args, **kwargs)
+            except Exception as err:
+                tracked_properties["execution_status"] = "failed"
+                thread_pool.apply_async(track_call, args=(tracked_properties, str(err)))
+                raise err from None
+            else:
+                tracked_properties["execution_status"] = "completed"
+                thread_pool.apply_async(track_call, args=(tracked_properties, None))
+                return result
+
         return logged_function
-    # TODO: add try except here, and catch exceptions and throw to a failure logger?
     return attr
 
 
-def track_call(app_id: str,
-               identity: int,
-               event: str,
-               properties: dict = None):
+def track_call(tracked_properties: dict, error_message: Optional[str]):
     """
     Send a "track" event to the Heap Analytics API server.
-    :param identity: unique id used to identify the user
-    :param event: event name
-    :param properties: optional, additional event properties
+    :param tracked_properties:  contains event data for heap to track
+    :param error_message: if the called function fails, this string will
+    be the failure message
     """
     data = {
-        "app_id": app_id,
-        "identity": identity,
-        "event": event
+        "app_id": HEAP_KEY,
+        # TODO: implement cookies and opt-out for individual level tracking
+        "identity": "user",
+        "event": tracked_properties["method"],
+        "properties": tracked_properties,
     }
+    if error_message:
+        data["properties"]["error_message"] = error_message
 
-    if properties is not None:
-        data["properties"] = properties
-
-    response = requests.post(url=f"{HEAP_URL}/track",
-                             data=json.dumps(data),
-                             headers={"Content-Type": "application/json"})
-    response.raise_for_status()
-    return response
+    with contextlib.suppress(Exception):
+        requests.post(
+            url=f"{HEAP_URL}/track",
+            data=json.dumps(data),
+            headers={"Content-Type": "application/json"},
+            timeout=60,
+        )
