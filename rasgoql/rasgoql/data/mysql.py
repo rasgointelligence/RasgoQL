@@ -232,19 +232,10 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
 
         Params:
         `credentials`: dict:
-            dict (or DWCredentials class) holding the connection credentials
+            dict (or MySQLCredentials class) holding the connection credentials
         """
-        if isinstance(credentials, MySQLCredentials):
-            credentials = credentials.to_dict()
+        super().connect(credentials)
 
-        try:
-            self.credentials = credentials
-            self.database = credentials.get("database")
-            self.schema = credentials.get("schema")
-            self.connection = alchemy_session(self._engine)
-            verbose_message("Connected to MySQL", logger)
-        except Exception as e:
-            self._error_handler(e)
 
     def create(
         self, sql: str, fqtn: str, table_type: str = "VIEW", overwrite: bool = False

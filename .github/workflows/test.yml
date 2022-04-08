@@ -1,0 +1,32 @@
+name: Test
+on: pull_request
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install psycopg2-binary wheel
+          pip install -r rasgoql/requirements.txt
+          pip install -r rasgoql/requirements-dev.txt
+
+      - name: Run test suite
+        run: |
+          cd rasgoql
+          pytest tests

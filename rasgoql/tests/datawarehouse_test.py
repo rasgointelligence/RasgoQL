@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from rasgoql.data import sqlalchemy, snowflake, redshift, mysql, bigquery, base
+from rasgoql.data import redshift, base, postgres
 
 test_creds = {
     "username": "snek",
@@ -18,9 +18,25 @@ test_creds = {
 def base_dw():
     return base.DataWarehouse()
 
+
 @pytest.fixture()
 def redshift_creds():
     return redshift.RedshiftCredentials(**test_creds)
+
+
+@pytest.fixture()
+def postgres_creds():
+    return postgres.PostgresCredentials(**test_creds)
+
+
+@pytest.fixture()
+def redshift_dw():
+    return redshift.RedshiftDataWarehouse()
+
+
+@pytest.fixture()
+def postgres_dw():
+    return postgres.PostgresDataWarehouse()
 
 
 def test_parse_fqtn(base_dw):
@@ -56,3 +72,21 @@ def test_redshift_creds_from_env(redshift_creds):
 
     redshift_creds_from_env = redshift.RedshiftCredentials.from_env()
     assert redshift_creds.to_dict() == redshift_creds_from_env.to_dict()
+
+
+def test_redshift_connect(redshift_dw, redshift_creds, mocker):
+    mocker.patch("rasgoql.data.redshift.alchemy_session", return_value="Mocked")
+    mocker.patch("rasgoql.data.sqlalchemy.alchemy_session", return_value="Mocked")
+    redshift_dw.connect(redshift_creds)
+    assert redshift_dw.connection == "Mocked"
+    assert redshift_dw.database == "super_prod"
+    assert redshift_dw.schema == "very_important_schema"
+
+
+def test_postgres_connect(postgres_dw, postgres_creds, mocker):
+    mocker.patch("rasgoql.data.postgres.alchemy_session", return_value="Mocked")
+    mocker.patch("rasgoql.data.sqlalchemy.alchemy_session", return_value="Mocked")
+    postgres_dw.connect(postgres_creds)
+    assert postgres_dw.connection == "Mocked"
+    assert postgres_dw.database == "super_prod"
+    assert postgres_dw.schema == "very_important_schema"

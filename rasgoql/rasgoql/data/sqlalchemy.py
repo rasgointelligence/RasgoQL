@@ -10,7 +10,7 @@ from urllib.parse import quote_plus as urlquote
 
 import pandas as pd
 
-from rasgoql.data.base import DataWarehouse
+from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
     DWConnectionError,
     ParameterException,
@@ -46,8 +46,8 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
 
     def __init__(self):
         super().__init__()
-        self.credentials: Optional[dict] = None
-        self.connection: alchemy_session = None
+        self.credentials: Optional[Union[dict, DWCredentials]]
+        self.connection: alchemy_session
         self.database = None
         self.schema = None
 
@@ -68,19 +68,21 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
 
 
     @abstractmethod
-    def connect(self, credentials: dict):
+    def connect(self, credentials: Union[dict, DWCredentials]):
         """
         Connect to DB
         Params:
         `credentials`: dict:
             dict  holding the connection credentials
         """
+        if isinstance(credentials, DWCredentials):
+            credentials = credentials.to_dict()
+
         try:
             self.credentials = credentials
             self.database = credentials.get("database")
             self.schema = credentials.get("schema")
-            self.connection = alchemy_session(self._engine)
-            verbose_message("Connected to DB", logger)
+            self.connection = alchemy_session(self._engine, autocommit=True)
         except Exception as e:
             self._error_handler(e)
 

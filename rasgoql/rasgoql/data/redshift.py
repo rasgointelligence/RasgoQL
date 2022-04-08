@@ -162,20 +162,12 @@ class RedshiftDataWarehouse(SQLAlchemyDataWarehouse):
         if isinstance(credentials, RedshiftCredentials):
             credentials = credentials.to_dict()
 
-        # This allows you to track what queries were run by RasgoQL in your history tab
         try:
-            credentials["conn_params"].update({"application_name": "rasgoql"})
+            credentials["conn_params"]["application_name"] = "rasgoql"
         except KeyError:
             credentials["conn_params"] = {"application_name": "rasgoql"}
 
-        try:
-            self.credentials = credentials
-            self.database = credentials.get("database")
-            self.schema = credentials.get("schema")
-            self.connection = alchemy_session(self._engine, autocommit=True)
-            verbose_message("Connected to Redshift", logger)
-        except Exception as e:
-            self._error_handler(e)
+        super().connect(credentials)
 
     def close_connection(self):
         """

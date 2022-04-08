@@ -3,7 +3,10 @@ google-cloud-bigquery
 jinja2
 pandas
 pre-commit
+psycopg2
+pymysql
 pytest
+pytest-mock
 python-dotenv
 pyyaml
 rasgotransforms~=1.3
