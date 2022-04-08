@@ -81,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for Amazon Redshift
 ### Removed
 - Removed `check_data_warehouse` function
-- 
+-
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
 [1.0.2]: https://pypi.org/project/rasgoql/1.0.2/
