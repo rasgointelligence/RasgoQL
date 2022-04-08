@@ -72,6 +72,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Removed `transform_type` property from `TransformTemplate` class
 
+## [1.4.0] - 2022-04-08
+### Added
+- Added failure and execution telemetry for methods in Transform and Dataset classes 
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
@@ -81,3 +84,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.2.0]: https://pypi.org/project/rasgoql/1.2.0/
 [1.3.0]: https://pypi.org/project/rasgoql/1.3.0/
 [1.3.1]: https://pypi.org/project/rasgoql/1.3.1/
+[1.4.0]: https://pypi.org/project/rasgoql/1.4.0/
