@@ -68,3 +68,4 @@ except ImportError:
     alchemy_engine = None
     alchemy_exceptions = None
     alchemy_session = None
+    alchemy_url = None

@@ -14,3 +14,5 @@ redshift_connector
 requests
 snowflake-connector-python
 snowflake-connector-python[pandas]
+SQLAlchemy
+sqlalchemy-redshift
