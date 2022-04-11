@@ -42,6 +42,16 @@ https://docs.rasgoql.com
 - google-auth-oauthlib
 - google-cloud-bigquery
 
+[postgres]
+- psycopg2
+- SQLAlchemy
+- psycopg2-binary # Linux
+
+[redshift]
+- redshift_connector
+- SQLAlchemy
+- sqlalchemy-redshift
+
 
 ## Major Version Releases
 -------------------------------------------------------------------------------
@@ -62,6 +72,9 @@ https://docs.rasgoql.com
 
 - v1.4.0 (April 8, 2022)
     - Added failure and execution telemetry for methods in Transform and Dataset classes
+
+- v1.5.0 (April 9, 2022)
+    - Added support for Amazon Redshift
 
 See [Changelog](https://github.com/rasgointelligence/RasgoQL/blob/main/rasgoql/CHANGELOG.md) for full minor version release notes
 

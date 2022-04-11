@@ -159,19 +159,9 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
         Connect to Postgres
         Params:
         `credentials`: dict:
-            dict (or DWCredentials class) holding the connection credentials
+            dict (or PostgresCredentials class) holding the connection credentials
         """
-        if isinstance(credentials, PostgresCredentials):
-            credentials = credentials.to_dict()
-
-        try:
-            self.credentials = credentials
-            self.database = credentials.get("database")
-            self.schema = credentials.get("schema")
-            self.connection = alchemy_session(self._engine)
-            verbose_message("Connected to Postgres", logger)
-        except Exception as e:
-            self._error_handler(e)
+        super().connect(credentials)
 
     def create(
         self, sql: str, fqtn: str, table_type: str = "VIEW", overwrite: bool = False

@@ -181,7 +181,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
 
     def validate_fqtn(self, fqtn: str) -> str:
         """
-        Accepts a possible fully qualified table string and decides whether it is well formed
+        Accepts a possible fully qualified table string and decides whether it is well-formed
         """
         if re.match(r'^[^\s]+\.[^\s]+', fqtn):
             return fqtn
@@ -192,7 +192,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
         namespace: str
     ) -> str:
         """
-        Accepts a possible namespace string and decides whether it is well formed
+        Accepts a possible namespace string and decides whether it is well-formed
         """
         if namespace.count(".") == 0:
             return namespace
@@ -228,23 +228,14 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
 
     def connect(self, credentials: Union[dict, MySQLCredentials]):
         """
-        Connect to Postgres
+        Connect to MySQL
 
         Params:
         `credentials`: dict:
-            dict (or DWCredentials class) holding the connection credentials
+            dict (or MySQLCredentials class) holding the connection credentials
         """
-        if isinstance(credentials, MySQLCredentials):
-            credentials = credentials.to_dict()
+        super().connect(credentials)
 
-        try:
-            self.credentials = credentials
-            self.database = credentials.get("database")
-            self.schema = credentials.get("schema")
-            self.connection = alchemy_session(self._engine)
-            verbose_message("Connected to MySQL", logger)
-        except Exception as e:
-            self._error_handler(e)
 
     def create(
         self, sql: str, fqtn: str, table_type: str = "VIEW", overwrite: bool = False

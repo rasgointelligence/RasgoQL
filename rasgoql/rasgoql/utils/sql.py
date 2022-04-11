@@ -70,7 +70,7 @@ def validate_namespace(
     namespace: str
 ) -> bool:
     """
-    Accepts a possible namespace string and decides whether it is well formed
+    Accepts a possible namespace string and decides whether it is well-formed
     """
     if re.match(r'^[^\s]+\.[^\s]+', namespace):
         return namespace

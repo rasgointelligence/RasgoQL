@@ -3,9 +3,16 @@ google-cloud-bigquery
 jinja2
 pandas
 pre-commit
+psycopg2
+pymysql
+pytest
+pytest-mock
 python-dotenv
 pyyaml
 rasgotransforms~=1.3
+redshift_connector
 requests
 snowflake-connector-python
 snowflake-connector-python[pandas]
+SQLAlchemy
+sqlalchemy-redshift

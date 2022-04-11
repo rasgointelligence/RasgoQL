@@ -1,15 +1,16 @@
 """
 Generic SQLAlchemy DataWarehouse classes
 """
+from __future__ import annotations
 from abc import abstractmethod
 import logging
 import re
-from typing import List
+from typing import Optional, Union
 from urllib.parse import quote_plus as urlquote
 
 import pandas as pd
 
-from rasgoql.data.base import DataWarehouse
+from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
     DWConnectionError,
     ParameterException,
@@ -31,7 +32,6 @@ logging.basicConfig()
 logger = logging.getLogger("SQLAlchemy DataWarehouse")
 logger.setLevel(logging.INFO)
 
-
 # Each DB derived from the generic SQLAlchemy class will have slightly
 # different connection strings. Build a unique Credentials class for each DB
 
@@ -46,99 +46,10 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
 
     def __init__(self):
         super().__init__()
-        self.credentials: dict = None
-        self.connection: alchemy_session = None
+        self.credentials: Optional[Union[dict, DWCredentials]]
+        self.connection: alchemy_session
         self.database = None
         self.schema = None
-
-    # ---------------------------
-    # FQTN and namespace methods
-    # ---------------------------
-    def validate_fqtn(self, fqtn: str) -> str:
-        """
-        Accepts a possible fully qualified table string and decides whether it is well formed
-        """
-        if re.match(r'^[^\s]+\.[^\s]+\.[^\s]+', fqtn):
-            return fqtn
-        raise ValueError(f'{fqtn} is not a well-formed fqtn')
-
-    def parse_fqtn(
-        self,
-        fqtn: str,
-        default_namespace: str = None,
-        strict: bool = True
-    ) -> tuple:
-        """
-        Accepts a possible fully qualified table string and returns its component parts
-        """
-        # TODO: review the logic of this method
-        if strict:
-            fqtn = self.validate_fqtn(fqtn)
-            return (* fqtn.split("."),)
-        database, schema = self.parse_namespace(default_namespace)
-        if fqtn.count(".") == 2:
-            return (* fqtn.split("."),)
-        if fqtn.count(".") == 1:
-            return (database, * fqtn.split("."),)
-        if fqtn.count(".") == 0:
-            return (database, schema, fqtn)
-        raise ValueError(f'{fqtn} is not a well-formed fqtn')
-
-    def make_fqtn(
-        self,
-        database: str,
-        schema: str,
-        table: str
-    ) -> str:
-        """
-        Accepts component parts and returns a fully qualified table string
-        """
-        return f"{database}.{schema}.{table}"
-
-    def magic_fqtn_handler(
-        self,
-        possible_fqtn: str,
-        default_namespace: str
-    ) -> str:
-        """
-        Makes all of your wildest dreams come true... well not *that* one
-        """
-        input_db, input_schema, table = self.parse_fqtn(possible_fqtn, default_namespace, False)
-        default_database, default_schema = self.parse_namespace(default_namespace)
-        database = input_db or default_database
-        schema = input_schema or default_schema
-        return self.make_fqtn(database, schema, table)
-
-    def validate_namespace(
-        self,
-        namespace: str
-    ) -> bool:
-        """
-        Accepts a possible namespace string and decides whether it is well formed
-        """
-        if re.match(r'^[^\s]+\.[^\s]+', namespace):
-            return namespace
-        raise ValueError(f'{namespace} is not a well-formed namespace')
-
-    def parse_namespace(
-        self,
-        namespace: str
-    ) -> tuple:
-        """
-        Accepts a possible namespace string and returns its component parts
-        """
-        namespace = self.validate_namespace(namespace)
-        return tuple(namespace.split("."))
-
-    def make_namespace_from_fqtn(
-        self,
-        fqtn: str
-    ) -> str:
-        """
-        Accepts component parts and returns a fully qualified namespace string
-        """
-        database, schema, _ = self.parse_fqtn(fqtn)
-        return f"{database}.{schema}"
 
     # ---------------------------
     # Core Data Warehouse methods
@@ -150,32 +61,28 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         `namespace`: str:
             namespace (database.schema)
         """
-        namespace = self.validate_namespace(namespace)
-        database, schema = self.parse_namespace(namespace)
-        try:
-            self.execute_query(f"USE DATABASE {database}")
-            self.execute_query(f"USE SCHEMA {schema}")
-            self.default_namespace = namespace
-            self.default_database = database
-            self.default_schema = schema
-            verbose_message(f"Namespace reset to {self.default_namespace}", logger)
-        except Exception as e:
-            self._error_handler(e)
+        raise NotImplementedError(
+            "Connecting to a new Database in a single session is not supported "
+            "by the SQLAlchemy Engine. Please build a new connection."
+        )
+
 
     @abstractmethod
-    def connect(self, credentials: dict):
+    def connect(self, credentials: Union[dict, DWCredentials]):
         """
         Connect to DB
         Params:
         `credentials`: dict:
             dict  holding the connection credentials
         """
+        if isinstance(credentials, DWCredentials):
+            credentials = credentials.to_dict()
+
         try:
             self.credentials = credentials
             self.database = credentials.get("database")
             self.schema = credentials.get("schema")
-            self.connection = alchemy_session(self._engine)
-            verbose_message("Connected to DB", logger)
+            self.connection = alchemy_session(self._engine, autocommit=True)
         except Exception as e:
             self._error_handler(e)
 
@@ -244,7 +151,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         response: str = "tuple",
         acknowledge_risk: bool = False,
         **kwargs
-    ):
+    ) -> Union[list[dict], pd.DataFrame, list[tuple], None]:
         """
         Run a query against DB and return all results
         `sql`: str:
@@ -487,7 +394,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             ) from exception
         raise exception
 
-    def _execute_string(self, query: str, ignore_results: bool = False) -> List[tuple]:
+    def _execute_string(self, query: str, ignore_results: bool = False) -> list[tuple]:
         """
         Execute a query string against the DataWarehouse connection and fetch all results
         """
@@ -499,7 +406,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         except Exception as e:
             self._error_handler(e)
 
-    def _query_into_dict(self, query: str) -> List[dict]:
+    def _query_into_dict(self, query: str) -> list[dict]:
         """
         Run a query string and return results in a Snowflake DictCursor
         PRO:

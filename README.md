@@ -46,7 +46,9 @@ RasgoQL does these things well:
 - Offers dozens of free SQL transforms to use
 - Coming Soon: allows users to create & add custom transforms
 
-Rasgo supports [Snowflake](https://docs.rasgoql.com/datawarehouses/credentials), [BigQuery](https://docs.rasgoql.com/datawarehouses/bigquery), and [Postgres](https://www.postgresql.org/) with more Data Warehouses being added soon. If you'd like to suggest another database type, submit your idea to our [GitHub Discussions page](https://github.com/rasgointelligence/RasgoQL/discussions) so that other community members can weight in and show their support.
+Rasgo supports [Snowflake](https://docs.rasgoql.com/datawarehouses/credentials), [BigQuery](https://docs.rasgoql.com/datawarehouses/bigquery), [Postgres](https://www.postgresql.org/), and [Amazon Redshift](https://aws.amazon.com/redshift/)
+with more Data Warehouses being added soon. If you'd like to suggest another database type,
+submit your idea to our [GitHub Discussions page](https://github.com/rasgointelligence/RasgoQL/discussions) so that other community members can weight in and show their support.
 
 # Can RasgoQL help you?
 
