@@ -95,8 +95,8 @@ class RasgoQL:
                 udt = t
         if udt:
             return udt.define()
-        raise ValueError(f'{name} is not a valid Tranform name. ' \
-                           'Run `.list_transforms()` to see available transforms.')
+        raise ValueError(f'{name} is not a valid Tranform name. '
+                         'Run `.list_transforms()` to see available transforms.')
 
     def query(
             self,

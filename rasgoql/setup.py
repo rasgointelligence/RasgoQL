@@ -32,6 +32,10 @@ with open(os.path.join(_here, 'requirements-mysql.txt'), encoding='utf-8') as f:
     req_lines = f.read()
     mysql_requirements = req_lines.splitlines()
 
+with open(os.path.join(_here, 'requirements-redshift.txt'), encoding='utf-8') as f:
+    req_lines = f.read()
+    redshift_requirements = req_lines.splitlines()
+
 setup(
     name='rasgoql',
     version=__version__,
@@ -57,11 +61,12 @@ setup(
         "snowflake":  sf_requirements,
         "bigquery": bq_requirements,
         "postgres": postgres_requirements,
-        "mysql": mysql_requirements
+        "mysql": mysql_requirements,
+        "redshift": redshift_requirements,
     },
     include_package_data=True,
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)',
         'Intended Audience :: Science/Research',
         'Intended Audience :: Developers',

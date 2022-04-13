@@ -68,7 +68,7 @@ def random_table_name() -> str:
 
 def validate_namespace(
     namespace: str
-) -> bool:
+) -> str:
     """
     Accepts a possible namespace string and decides whether it is well-formed
     """
@@ -79,7 +79,7 @@ def validate_namespace(
 
 def wrap_table(
         parent_table: str
-    )-> str:
+) -> str:
     """
     Calculates a unique table string
     """
