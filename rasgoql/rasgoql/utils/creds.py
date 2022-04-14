@@ -9,9 +9,9 @@ import dotenv
 
 
 def load_env(
-        filepath: Path = None,
-        raise_on_missing: bool = False
-    ):
+    filepath: Path = None,
+    raise_on_missing: bool = False,
+):
     """
     Loads a .env file, allowing contents to be callable by os.getenv()
     """
@@ -25,9 +25,10 @@ def load_env(
         raise FileNotFoundError(f'File {filepath} does not exist')
     dotenv.load_dotenv(filepath)
 
+
 def load_yml(
-        filepath: Path
-    ):
+    filepath: Path,
+):
     """
     Loads a yml file and returns the contents
     """
@@ -35,9 +36,10 @@ def load_yml(
         contents = yaml.load(yml_file, Loader=yaml.Loader)
     return contents
 
+
 def read_file(
-        filepath: Path = None
-    ) -> str:
+    filepath: Path = None,
+) -> str:
     """
     Reads the contents of a file
     """
@@ -47,11 +49,12 @@ def read_file(
         contents = _file.read()
     return contents
 
+
 def save_env(
-        creds: dict,
-        filepath: Path = None,
-        overwrite: bool = False
-    ):
+    creds: dict,
+    filepath: Path = None,
+    overwrite: bool = False,
+):
     """
     Writes creds to a .env file
     """
@@ -63,7 +66,8 @@ def save_env(
         if not overwrite:
             raise FileExistsError(
                 f'File {filepath} already exist, pass in overwrite=True to overwrite it. '
-                'Warning: this will overwrite all existing values in this .env file.')
+                'Warning: this will overwrite all existing values in this .env file.'
+            )
     else:
         f = open(filepath, "x")
         f.close()
@@ -71,11 +75,12 @@ def save_env(
         dotenv.set_key(filepath, k, v)
     return filepath
 
+
 def save_yml(
-        creds: str,
-        filepath: Path = None,
-        overwrite: bool = True
-    ):
+    creds: str,
+    filepath: Path = None,
+    overwrite: bool = True,
+):
     """
     Write creds to a .yml file
     """
@@ -91,7 +96,8 @@ def save_yml(
     if os.path.exists(filepath) and not overwrite:
         raise FileExistsError(
             f'{filepath} already exists. If you wish to overwrite it, '
-            'pass overwrite=True and run this function again.')
+            'pass overwrite=True and run this function again.'
+        )
     with open(filepath, "w") as _yaml:
         yaml.dump(data=creds, Dumper=yaml.SafeDumper, stream=_yaml)
     return filepath

@@ -5,6 +5,7 @@ from typing import Union
 
 import webbrowser
 
+# fmt: off
 from rasgoql.data import (
     DWCredentials,
     BigQueryCredentials, BigQueryDataWarehouse,
@@ -12,7 +13,7 @@ from rasgoql.data import (
     PostgresCredentials, PostgresDataWarehouse,
     MySQLCredentials, MySQLDataWarehouse,
     RedshiftCredentials, RedshiftDataWarehouse
-)
+)  # fmt: on
 from rasgoql.errors import ParameterException
 from rasgoql.main import RasgoQL
 from rasgoql.version import __version__
@@ -40,13 +41,12 @@ def docs():
     webbrowser.open(url)
     print(url)
 
-def connect(
-        credentials: DWCredentials
-    ):
+
+def connect(credentials: DWCredentials):
     """
     Return a RasgoQL object connected to a Data Warehouse
     """
     return RasgoQL(
         connection=DW_MAP[credentials.dw_type],
-        credentials=credentials.to_dict()
+        credentials=credentials.to_dict(),
     )

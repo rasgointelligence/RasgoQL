@@ -39,7 +39,7 @@ with open(os.path.join(_here, 'requirements-redshift.txt'), encoding='utf-8') as
 setup(
     name='rasgoql',
     version=__version__,
-    description=('Alpha version of rasgoQL open-source package.'),
+    description='Alpha version of rasgoQL open-source package.',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Rasgo Intelligence',
@@ -54,11 +54,11 @@ setup(
         'rasgoql',
         'rasgoql.data',
         'rasgoql.primitives',
-        'rasgoql.utils'
-        ],
+        'rasgoql.utils',
+    ],
     install_requires=requirements,
     extras_require={
-        "snowflake":  sf_requirements,
+        "snowflake": sf_requirements,
         "bigquery": bq_requirements,
         "postgres": postgres_requirements,
         "mysql": mysql_requirements,
@@ -76,6 +76,6 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Topic :: Database',
         'Topic :: Scientific/Engineering :: Information Analysis',
-        'Topic :: Software Development :: Code Generators'
-        ]
+        'Topic :: Software Development :: Code Generators',
+    ],
 )

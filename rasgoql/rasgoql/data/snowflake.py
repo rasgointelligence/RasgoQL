@@ -1,6 +1,7 @@
 """
 Snowflake DataWarehouse classes
 """
+from __future__ import annotations
 import logging
 import os
 from typing import List, Optional, Union
@@ -10,14 +11,17 @@ import pandas as pd
 
 from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
-    DWCredentialsWarning, DWConnectionError, DWQueryError,
-    PackageDependencyWarning, ParameterException,
-    SQLWarning, TableAccessError, TableConflictException
+    DWCredentialsWarning,
+    DWConnectionError,
+    DWQueryError,
+    PackageDependencyWarning,
+    ParameterException,
+    SQLWarning,
+    TableAccessError,
+    TableConflictException,
 )
 from rasgoql.imports import sf_connector, write_pandas
-from rasgoql.primitives.enums import (
-    check_response_type, check_write_method, check_write_table_type
-)
+from rasgoql.primitives.enums import check_response_type, check_write_method, check_write_table_type
 from rasgoql.utils.creds import load_env, save_env
 from rasgoql.utils.df import cleanse_sql_dataframe, generate_dataframe_ddl
 from rasgoql.utils.messaging import verbose_message
@@ -32,23 +36,16 @@ class SnowflakeCredentials(DWCredentials):
     """
     Snowflake Credentials
     """
+
     dw_type = 'snowflake'
 
-    def __init__(
-            self,
-            account: str,
-            user: str,
-            password: str,
-            role: str,
-            warehouse: str,
-            database: str,
-            schema: str
-        ):
+    def __init__(self, account: str, user: str, password: str, role: str, warehouse: str, database: str, schema: str):
         if sf_connector is None:
             raise PackageDependencyWarning(
                 'Missing a required python package to run Snowflake. '
                 'Please download the Snowflake package by running: '
-                'pip install rasgoql[snowflake]')
+                'pip install rasgoql[snowflake]'
+            )
         self.account = account
         self.user = user
         self.password = password
@@ -70,10 +67,7 @@ class SnowflakeCredentials(DWCredentials):
         )
 
     @classmethod
-    def from_env(
-            cls,
-            filepath: str = None
-        ) -> 'SnowflakeCredentials':
+    def from_env(cls, filepath: str = None) -> SnowflakeCredentials:
         """
         Creates an instance of this Class from a .env file on your machine
         """
@@ -97,7 +91,7 @@ class SnowflakeCredentials(DWCredentials):
             role,
             warehouse,
             database,
-            schema
+            schema,
         )
 
     def to_dict(self) -> dict:
@@ -111,14 +105,14 @@ class SnowflakeCredentials(DWCredentials):
             "role": self.role,
             "warehouse": self.warehouse,
             "database": self.database,
-            "schema": self.schema
+            "schema": self.schema,
         }
 
     def to_env(
-            self,
-            filepath: str = None,
-            overwrite: bool = False
-        ):
+        self,
+        filepath: str = None,
+        overwrite: bool = False,
+    ):
         """
         Saves credentials to a .env file on your machine
         """
@@ -138,6 +132,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
     """
     Snowflake DataWarehouse
     """
+
     dw_type = 'snowflake'
     credentials_class = SnowflakeCredentials
 
@@ -152,9 +147,9 @@ class SnowflakeDataWarehouse(DataWarehouse):
     # Core Data Warehouse methods
     # ---------------------------
     def change_namespace(
-            self,
-            namespace: str
-        ) -> None:
+        self,
+        namespace: str,
+    ) -> None:
         """
         Changes the default namespace of your connection
 
@@ -170,17 +165,14 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self.default_namespace = namespace
             self.default_database = database
             self.default_schema = schema
-            verbose_message(
-                f"Namespace reset to {self.default_namespace}",
-                logger
-            )
+            verbose_message(f"Namespace reset to {self.default_namespace}", logger)
         except Exception as e:
             self._error_handler(e)
 
     def connect(
-            self,
-            credentials: Union[dict, SnowflakeCredentials]
-        ):
+        self,
+        credentials: Union[dict, SnowflakeCredentials],
+    ):
         """
         Connect to Snowflake
 
@@ -192,21 +184,18 @@ class SnowflakeDataWarehouse(DataWarehouse):
             credentials = credentials.to_dict()
 
         # This allows you to track what queries were run by RasgoQL in your history tab
-        credentials.update({
-            "application": "rasgoql",
-            "session_parameters": {
-                "QUERY_TAG": "rasgoql"
+        credentials.update(
+            {
+                "application": "rasgoql",
+                "session_parameters": {"QUERY_TAG": "rasgoql"},
             }
-        })
+        )
         try:
             self.credentials = credentials
             self.default_database = credentials.get('database')
             self.default_schema = credentials.get('schema')
             self.connection = sf_connector.connect(**credentials)
-            verbose_message(
-                "Connected to Snowflake",
-                logger
-            )
+            verbose_message("Connected to Snowflake", logger)
         except Exception as e:
             self._error_handler(e)
 
@@ -218,20 +207,17 @@ class SnowflakeDataWarehouse(DataWarehouse):
             if self.connection:
                 self.connection.close()
             self.connection = None
-            verbose_message(
-                "Connection to Snowflake closed",
-                logger
-            )
+            verbose_message("Connection to Snowflake closed", logger)
         except Exception as e:
             self._error_handler(e)
 
     def create(
-            self,
-            sql: str,
-            fqtn: str,
-            table_type: str = 'VIEW',
-            overwrite: bool = False
-        ):
+        self,
+        sql: str,
+        fqtn: str,
+        table_type: str = 'VIEW',
+        overwrite: bool = False,
+    ):
         """
         Create a view or table from given SQL
 
@@ -251,9 +237,11 @@ class SnowflakeDataWarehouse(DataWarehouse):
         table_type = check_write_table_type(table_type)
         fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         if self._table_exists(fqtn) and not overwrite:
-            msg = f'A table or view named {fqtn} already exists. ' \
-                   'If you are sure you want to overwrite it, ' \
-                   'pass in overwrite=True and run this function again'
+            msg = (
+                f'A table or view named {fqtn} already exists. '
+                'If you are sure you want to overwrite it, '
+                'pass in overwrite=True and run this function again'
+            )
             raise TableConflictException(msg)
         query = f"CREATE OR REPLACE {table_type} {fqtn} COMMENT='rasgoql' AS {sql}"
         self.execute_query(query, acknowledge_risk=True, response='None')
@@ -269,7 +257,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
     @default_namespace.setter
     def default_namespace(
         self,
-        new_namespace: str
+        new_namespace: str,
     ):
         """
         Setter method for the `default_namespace` property
@@ -279,14 +267,13 @@ class SnowflakeDataWarehouse(DataWarehouse):
         self.default_database = db
         self.default_schema = schema
 
-
     def execute_query(
-            self,
-            sql: str,
-            response: str = 'tuple',
-            acknowledge_risk: bool = False,
-            batches: bool = False
-        ):
+        self,
+        sql: str,
+        response: str = 'tuple',
+        acknowledge_risk: bool = False,
+        batches: bool = False,
+    ):
         """
         Run a query against Snowflake and return all results
 
@@ -301,15 +288,14 @@ class SnowflakeDataWarehouse(DataWarehouse):
         """
         response = check_response_type(response)
         if is_scary_sql(sql) and not acknowledge_risk:
-            msg = 'It looks like your SQL statement contains a ' \
-                  'potentially dangerous or data-altering operation.' \
-                  'If you are positive you want to run this, ' \
-                  'pass in acknowledge_risk=True and run this function again.'
+            msg = (
+                'It looks like your SQL statement contains a '
+                'potentially dangerous or data-altering operation.'
+                'If you are positive you want to run this, '
+                'pass in acknowledge_risk=True and run this function again.'
+            )
             raise SQLWarning(msg)
-        verbose_message(
-            f"Executing query: {sql}",
-            logger
-        )
+        verbose_message(f"Executing query: {sql}", logger)
         if response == 'DICT':
             return self._execute_dict_cursor(sql)
         if response == 'DF':
@@ -317,9 +303,9 @@ class SnowflakeDataWarehouse(DataWarehouse):
         return self._execute_string(sql, ignore_results=(response == 'NONE'))
 
     def get_ddl(
-            self,
-            fqtn: str
-        ) -> str:
+        self,
+        fqtn: str,
+    ) -> str:
         """
         Returns the create statement for a table or view
 
@@ -332,9 +318,9 @@ class SnowflakeDataWarehouse(DataWarehouse):
         return query_response[0]['DDL']
 
     def get_object_details(
-            self,
-            fqtn: str
-        ) -> tuple:
+        self,
+        fqtn: str,
+    ) -> tuple:
         """
         Return details of a table or view in Snowflake
 
@@ -355,15 +341,15 @@ class SnowflakeDataWarehouse(DataWarehouse):
         is_rasgo_obj = False
         obj_type = 'unknown'
         if obj_exists:
-            is_rasgo_obj = (result[0].get('comment') == 'rasgoql')
+            is_rasgo_obj = result[0].get('comment') == 'rasgoql'
             obj_type = result[0].get('kind')
         return obj_exists, is_rasgo_obj, obj_type
 
     def get_schema(
-            self,
-            fqtn: str,
-            create_sql: str = None
-        ) -> dict:
+        self,
+        fqtn: str,
+        create_sql: str = None,
+    ) -> dict:
         """
         Return the schema of a table or view
 
@@ -394,10 +380,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self._error_handler(e)
 
     def list_tables(
-            self,
-            database: str = None,
-            schema: str = None
-        ) -> pd.DataFrame:
+        self,
+        database: str = None,
+        schema: str = None,
+    ) -> pd.DataFrame:
         """
         List all tables and views available in default namespace
 
@@ -407,10 +393,12 @@ class SnowflakeDataWarehouse(DataWarehouse):
         `schema`: str:
             override schema
         """
-        select_clause = "SELECT TABLE_NAME, " \
-                        "TABLE_CATALOG||'.'||TABLE_SCHEMA||'.'||TABLE_NAME AS FQTN, " \
-                        "CASE TABLE_TYPE WHEN 'BASE TABLE' THEN 'TABLE' ELSE TABLE_TYPE END AS TABLE_TYPE, " \
-                        "ROW_COUNT, CREATED, LAST_ALTERED "
+        select_clause = (
+            "SELECT TABLE_NAME, "
+            "TABLE_CATALOG||'.'||TABLE_SCHEMA||'.'||TABLE_NAME AS FQTN, "
+            "CASE TABLE_TYPE WHEN 'BASE TABLE' THEN 'TABLE' ELSE TABLE_TYPE END AS TABLE_TYPE, "
+            "ROW_COUNT, CREATED, LAST_ALTERED "
+        )
         from_clause = " FROM INFORMATION_SCHEMA.TABLES "
         if database:
             from_clause = f" FROM {database.upper()}.INFORMATION_SCHEMA.TABLES "
@@ -419,10 +407,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
         return self.execute_query(sql, response='df', acknowledge_risk=True)
 
     def preview(
-            self,
-            sql: str,
-            limit: int = 10
-        ) -> pd.DataFrame:
+        self,
+        sql: str,
+        limit: int = 10,
+    ) -> pd.DataFrame:
         """
         Returns 10 records into a pandas DataFrame
 
@@ -435,15 +423,15 @@ class SnowflakeDataWarehouse(DataWarehouse):
         return self.execute_query(
             f'{sql} LIMIT {limit}',
             response='df',
-            acknowledge_risk=True
+            acknowledge_risk=True,
         )
 
     def save_df(
-            self,
-            df: pd.DataFrame,
-            fqtn: str,
-            method: str = None
-        ) -> str:
+        self,
+        df: pd.DataFrame,
+        fqtn: str,
+        method: str = None,
+    ) -> str:
         """
         Creates a table in Snowflake from a pandas Dataframe
 
@@ -465,9 +453,11 @@ class SnowflakeDataWarehouse(DataWarehouse):
         fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
         table_exists = self._table_exists(fqtn)
         if table_exists and not method:
-            msg = f"A table named {fqtn} already exists. " \
-                   "If you are sure you want to write over it, pass in " \
-                   "method='append' or method='replace' and run this function again"
+            msg = (
+                f"A table named {fqtn} already exists. "
+                "If you are sure you want to write over it, pass in "
+                "method='append' or method='replace' and run this function again"
+            )
             raise TableConflictException(msg)
         try:
             cleanse_sql_dataframe(df)
@@ -481,7 +471,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
                 conn=self.connection,
                 df=df,
                 table_name=fqtn,
-                quote_identifiers=False
+                quote_identifiers=False,
             )
             return fqtn
         except Exception as e:
@@ -491,9 +481,9 @@ class SnowflakeDataWarehouse(DataWarehouse):
     # Core Data Warehouse helpers
     # ---------------------------
     def _table_exists(
-            self,
-            fqtn: str
-        ) -> bool:
+        self,
+        fqtn: str,
+    ) -> bool:
         """
         Check for existence of fqtn in the Data Warehouse and return a boolean
 
@@ -509,17 +499,14 @@ class SnowflakeDataWarehouse(DataWarehouse):
     # Snowflake specific helpers
     # --------------------------
     def _error_handler(
-            self,
-            exception: Exception,
-            query: str = None
-        ) -> None:
+        self,
+        exception: Exception,
+        query: str = None,
+    ) -> None:
         """
         Handle Snowflake exceptions that need additional info
         """
-        verbose_message(
-            f"Exception occurred while running query: {query}",
-            logger
-        )
+        verbose_message(f"Exception occurred while running query: {query}", logger)
         if exception is None:
             return
         if isinstance(exception, sf_connector.errors.ProgrammingError):
@@ -547,9 +534,9 @@ class SnowflakeDataWarehouse(DataWarehouse):
         raise exception
 
     def _execute_dict_cursor(
-            self,
-            query: str
-        ) -> List[dict]:
+        self,
+        query: str,
+    ) -> List[dict]:
         """
         Run a query string and return results in a Snowflake DictCursor
 
@@ -573,11 +560,11 @@ class SnowflakeDataWarehouse(DataWarehouse):
                 cursor.close()
 
     def _execute_df_cursor(
-            self,
-            query: str,
-            params: Optional[dict] = None,
-            batches: Optional[bool] = False
-        ) -> pd.DataFrame:
+        self,
+        query: str,
+        params: Optional[dict] = None,
+        batches: Optional[bool] = False,
+    ) -> pd.DataFrame:
         """
         Run a query string and return results in a pandas DataFrame
         """
@@ -595,10 +582,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
                 cursor.close()
 
     def _execute_string(
-            self,
-            query: str,
-            ignore_results: bool = False
-        ) -> List[tuple]:
+        self,
+        query: str,
+        ignore_results: bool = False,
+    ) -> List[tuple]:
         """
         Execute a query string against the Data Warehouse connection and fetch all results
         """

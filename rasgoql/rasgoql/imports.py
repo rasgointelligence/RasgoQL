@@ -32,10 +32,12 @@ try:
 except:
     latest_version = transforms_version
 if transforms_version != latest_version:
-    logger.warning('You are not running the lastest version of rasgotransforms. '
-                   'RasgoQL relies on this package to serve transform templates. '
-                   'Please consider running `pip install rasgotransforms --upgrade` '
-                   'to download our full library of SQL transforms.')
+    logger.warning(
+        'You are not running the lastest version of rasgotransforms. '
+        'RasgoQL relies on this package to serve transform templates. '
+        'Please consider running `pip install rasgotransforms --upgrade` '
+        'to download our full library of SQL transforms.'
+    )
 
 # Attempt safe imports of all DW packages so we can warn later if they are missing
 try:

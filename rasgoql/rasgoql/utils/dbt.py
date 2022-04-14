@@ -37,13 +37,13 @@ DBT_PROJECT_TEMPLATE = {
     "log-path": "logs",
     "packages-install-path": "dbt_packages",
     "clean-targets": ["target", "dbt_packages"],
-    "models": None
+    "models": None,
 }
 
 
 def check_project_name(
-        project_name: str
-    ):
+    project_name: str,
+):
     """
     Checks a project name for dbt compliance
     """
@@ -56,15 +56,15 @@ def check_project_name(
         )
     return project_name.lower()
 
+
 def prepare_dbt_path(
-        project_name: str,
-        project_directory: Path
-    ) -> None:
+    project_name: str,
+    project_directory: Path,
+) -> None:
     """
     Checks for a specified filepath and creates one if it doesn't exist
     """
-    dbt_dirs = ['analyses', 'dbt_packages', 'logs', 'macros',
-                'models', 'seeds', 'target', 'tests']
+    dbt_dirs = ['analyses', 'dbt_packages', 'logs', 'macros', 'models', 'seeds', 'target', 'tests']
     if project_name not in project_directory:
         project_directory = os.path.join(project_directory, project_name)
     if not os.path.exists(project_directory):
@@ -75,12 +75,13 @@ def prepare_dbt_path(
             os.makedirs(this_dir)
     return project_directory
 
+
 def save_project_file(
-        project_name: str,
-        filepath: Path,
-        namespace: str,
-        materialize: str
-    ) -> bool:
+    project_name: str,
+    filepath: Path,
+    namespace: str,
+    materialize: str,
+) -> Path:
     """
     Writes a yaml definition to a dbt project file
     """
@@ -97,23 +98,22 @@ def save_project_file(
             yaml.dump(data=yml_definition, Dumper=yaml.SafeDumper, stream=_yaml, sort_keys=False)
     return filepath
 
+
 def save_model_file(
-        sql_definition: str,
-        output_directory: Path,
-        file_name: str,
-        schema: List[Tuple[str, str]],
-        config_args: dict = None,
-        include_schema: bool = False
-) -> bool:
+    sql_definition: str,
+    output_directory: Path,
+    file_name: str,
+    schema: List[Tuple[str, str]],
+    config_args: dict = None,
+    include_schema: bool = False,
+) -> str:
     """
     Writes a sql script to a dbt model file
     """
     filepath = os.path.join(output_directory, file_name)
     if config_args:
         # TODO: Should we validate whether args are valid dbt keywords?
-        model_config = DBT_MODEL_CONFIG_TEMPLATE.format(
-            config_args=config_args
-        )
+        model_config = DBT_MODEL_CONFIG_TEMPLATE.format(config_args=config_args)
         model_config = '{{' + model_config + '}}'
         sql_definition = f'{model_config}\n\n{sql_definition}'
     with open(filepath, "w") as _file:
@@ -123,17 +123,17 @@ def save_model_file(
         save_schema_file(output_directory, model_name, schema, config_args)
     return filepath
 
+
 def save_schema_file(
-        output_directory: Path,
-        model_name: str,
-        schema: List[Tuple[str, str]],
-        config_args: dict = None,
-    ):
+    output_directory: Path,
+    model_name: str,
+    schema: List[Tuple[str, str]],
+    config_args: dict = None,
+) -> str:
     """
     Writes a table def to a dbt schema file
     """
     filepath = os.path.join(output_directory, 'schema.yml')
-    schema_definition = None
     columns_list = []
     for row in schema:
         columns_list.append({"name:": row[0]})

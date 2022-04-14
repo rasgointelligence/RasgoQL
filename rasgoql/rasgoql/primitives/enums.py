@@ -14,13 +14,16 @@ logger.setLevel(logging.INFO)
 def _wrap_in_quotes(string: str) -> str:
     return f"'{string}'"
 
+
 class TableState(Enum):
     """
     State of a table
     """
+
     IN_DW = 'IN DW'
     IN_MEMORY = 'IN MEMORY'
     UNKNOWN = 'UNKNOWN'
+
 
 def check_table_state(input_value: str):
     """
@@ -38,11 +41,13 @@ class TableType(Enum):
     """
     Type of table in a DW
     """
+
     EXTERNAL = 'EXTERNAL'
     TABLE = 'TABLE'
     TEMPORARY = 'TEMPORARY'
     UNKNOWN = 'UNKNOWN'
     VIEW = 'VIEW'
+
 
 def check_table_type(input_value: str):
     """
@@ -55,7 +60,8 @@ def check_table_type(input_value: str):
         logger.warning(
             f'{input_value} is an unexpected value for table_type. '
             f'Expected values are: {table_types}. '
-            'Defaulting to UNKNOWN type.')
+            'Defaulting to UNKNOWN type.'
+        )
         return TableType.UNKNOWN.value
     return output_value
 
@@ -64,10 +70,12 @@ class RenderMethod(Enum):
     """
     Ways to render a sql chain
     """
+
     SELECT = 'SELECT'
     TABLE = 'TABLE'
     VIEW = 'VIEW'
     VIEWS = 'VIEWS'
+
 
 def check_render_method(input_value: str):
     """
@@ -85,10 +93,12 @@ class ResponseType(Enum):
     """
     Formats to return query results
     """
+
     DICT = 'DICT'
     DF = 'DF'
     TUPLE = 'TUPLE'
     NONE = 'NONE'
+
 
 def check_response_type(input_value: str):
     """
@@ -106,9 +116,11 @@ class WriteMethod(Enum):
     """
     Ways to write data
     """
+
     APPEND = 'APPEND'
     REPLACE = 'REPLACE'
     UPSERT = 'UPSERT'
+
 
 def check_write_method(input_value: str):
     """
@@ -126,8 +138,10 @@ class WriteTableType(Enum):
     """
     Type of table in a DW
     """
+
     TABLE = 'TABLE'
     VIEW = 'VIEW'
+
 
 def check_write_table_type(input_value: str):
     """
