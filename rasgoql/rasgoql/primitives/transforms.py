@@ -42,14 +42,20 @@ class TransformableClass:
     Class to attach Rasgo transform methods to other classes
     """
 
-    def __init__(self, dw: 'DataWarehouse'):
+    def __init__(
+        self,
+        dw: 'DataWarehouse',
+    ):
         self._dw = dw
         self._transform_sync()
 
     def __getattribute__(self, item):
         return failure_telemetry(self, item)
 
-    def _create_aliased_function(self, transform: TransformTemplate) -> Callable:
+    def _create_aliased_function(
+        self,
+        transform: TransformTemplate,
+    ) -> Callable:
         """
         Returns a new function to dynamically attach to a class on init
         """
@@ -71,7 +77,13 @@ class TransformableClass:
             setattr(self, transform.name, f)
 
     @require_dw
-    def transform(self, name: str, arguments: dict = None, output_alias: str = None, **kwargs) -> SQLChain:
+    def transform(
+        self,
+        name: str,
+        arguments: dict = None,
+        output_alias: str = None,
+        **kwargs,
+    ) -> SQLChain:
         """
         Apply a Rasgo transform and return a SQLChain
         """
@@ -166,7 +178,11 @@ class Dataset(TransformableClass):
         """
         Return a pandas DataFrame of the entire table
         """
-        return self._dw.execute_query(f"SELECT * FROM {self.fqtn}", response='df', batches=batches)
+        return self._dw.execute_query(
+            f"SELECT * FROM {self.fqtn}",
+            response='df',
+            batches=batches,
+        )
 
 
 class TransformTemplate:
@@ -328,7 +344,10 @@ class SQLChain(TransformableClass):
             return f"SELECT * FROM {self.output_table.fqtn}"
         if render_method == 'VIEWS':
             return assemble_view_chain(self.transforms)
-        return assemble_cte_chain(self.transforms, render_method if render_method in ['TABLE', 'VIEW'] else None)
+        return assemble_cte_chain(
+            self.transforms,
+            render_method if render_method in ['TABLE', 'VIEW'] else None,
+        )
 
     @require_dw
     @require_transforms
@@ -390,10 +409,21 @@ class SQLChain(TransformableClass):
                     'your_chn.save() to update the view definition in your Data Warehouse.'
                 )
             schema = []
-        return create_dbt_files(self.transforms, schema, output_directory, file_name, config_args, include_schema)
+        return create_dbt_files(
+            self.transforms,
+            schema,
+            output_directory,
+            file_name,
+            config_args,
+            include_schema,
+        )
 
     def to_df(self, batches: bool = False) -> pd.DataFrame:
         """
         Returns data into a pandas DataFrame
         """
-        return self._dw.execute_query(self.sql(), response='df', batches=batches)
+        return self._dw.execute_query(
+            self.sql(),
+            response='df',
+            batches=batches,
+        )

@@ -39,7 +39,16 @@ class SnowflakeCredentials(DWCredentials):
 
     dw_type = 'snowflake'
 
-    def __init__(self, account: str, user: str, password: str, role: str, warehouse: str, database: str, schema: str):
+    def __init__(
+        self,
+        account: str,
+        user: str,
+        password: str,
+        role: str,
+        warehouse: str,
+        database: str,
+        schema: str,
+    ):
         if sf_connector is None:
             raise PackageDependencyWarning(
                 'Missing a required python package to run Snowflake. '
@@ -67,7 +76,10 @@ class SnowflakeCredentials(DWCredentials):
         )
 
     @classmethod
-    def from_env(cls, filepath: str = None) -> SnowflakeCredentials:
+    def from_env(
+        cls,
+        filepath: str = None,
+    ) -> SnowflakeCredentials:
         """
         Creates an instance of this Class from a .env file on your machine
         """
@@ -165,7 +177,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self.default_namespace = namespace
             self.default_database = database
             self.default_schema = schema
-            verbose_message(f"Namespace reset to {self.default_namespace}", logger)
+            verbose_message(
+                f"Namespace reset to {self.default_namespace}",
+                logger,
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -195,7 +210,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             self.default_database = credentials.get('database')
             self.default_schema = credentials.get('schema')
             self.connection = sf_connector.connect(**credentials)
-            verbose_message("Connected to Snowflake", logger)
+            verbose_message(
+                "Connected to Snowflake",
+                logger,
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -207,7 +225,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
             if self.connection:
                 self.connection.close()
             self.connection = None
-            verbose_message("Connection to Snowflake closed", logger)
+            verbose_message(
+                "Connection to Snowflake closed",
+                logger,
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -295,7 +316,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
                 'pass in acknowledge_risk=True and run this function again.'
             )
             raise SQLWarning(msg)
-        verbose_message(f"Executing query: {sql}", logger)
+        verbose_message(
+            f"Executing query: {sql}",
+            logger,
+        )
         if response == 'DICT':
             return self._execute_dict_cursor(sql)
         if response == 'DF':
@@ -506,7 +530,10 @@ class SnowflakeDataWarehouse(DataWarehouse):
         """
         Handle Snowflake exceptions that need additional info
         """
-        verbose_message(f"Exception occurred while running query: {query}", logger)
+        verbose_message(
+            f"Exception occurred while running query: {query}",
+            logger,
+        )
         if exception is None:
             return
         if isinstance(exception, sf_connector.errors.ProgrammingError):

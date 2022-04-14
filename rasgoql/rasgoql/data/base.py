@@ -46,7 +46,11 @@ class DWCredentials(ABC):
         """
         raise NotImplementedError()
 
-    def to_env(self, filepath: str, overwrite: bool):
+    def to_env(
+        self,
+        filepath: str,
+        overwrite: bool,
+    ):
         """
         Saves credentials to a .env file on your machine
         """

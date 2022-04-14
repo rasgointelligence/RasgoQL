@@ -42,7 +42,9 @@ def docs():
     print(url)
 
 
-def connect(credentials: DWCredentials):
+def connect(
+        credentials: DWCredentials,
+):
     """
     Return a RasgoQL object connected to a Data Warehouse
     """

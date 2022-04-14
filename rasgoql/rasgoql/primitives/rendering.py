@@ -69,7 +69,9 @@ def assemble_cte_chain(
     return create_stmt + 'WITH ' + ', \n'.join(t_list) + final_select
 
 
-def assemble_view_chain(transforms: List['Transform']):
+def assemble_view_chain(
+    transforms: List['Transform'],
+):
     """
     Returns a nested view statement to render input Transforms
     """
@@ -321,8 +323,17 @@ def _source_code_functions(
     Get custom functions to add to the template parser
     """
     return {
-        "run_query": functools.partial(_run_query, dw=dw, source_table=source_table, running_sql=running_sql),
+        "run_query": functools.partial(
+            _run_query,
+            dw=dw,
+            source_table=source_table,
+            running_sql=running_sql,
+        ),
         "cleanse_name": _cleanse_template_symbol,
         "raise_exception": _raise_exception,
-        "itertools": {"combinations": combinations, "permutations": permutations, "product": product},
+        "itertools": {
+            "combinations": combinations,
+            "permutations": permutations,
+            "product": product,
+        },
     }

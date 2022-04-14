@@ -4,7 +4,7 @@ BigQuery Data Warehouse classes
 
 import logging
 import os
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 
 import json
 import pandas as pd
@@ -38,7 +38,12 @@ class BigQueryCredentials(DWCredentials):
 
     dw_type = 'bigquery'
 
-    def __init__(self, json_filepath: str, project: str = None, dataset: str = None):
+    def __init__(
+        self,
+        json_filepath: str,
+        project: str = None,
+        dataset: str = None,
+    ):
         self.json_filepath = json_filepath
         self.project = project
         self.dataset = dataset
@@ -53,7 +58,10 @@ class BigQueryCredentials(DWCredentials):
         )
 
     @classmethod
-    def from_env(cls, filepath: str = None) -> 'BigQueryCredentials':
+    def from_env(
+        cls,
+        filepath: str = None,
+    ) -> 'BigQueryCredentials':
         """
         Creates an instance of this Class from a .env file on your machine
         """
@@ -82,7 +90,11 @@ class BigQueryCredentials(DWCredentials):
             "dataset": self.dataset,
         }
 
-    def to_env(self, filepath: str = None, overwrite: bool = False):
+    def to_env(
+        self,
+        filepath: str = None,
+        overwrite: bool = False,
+    ):
         """
         Saves credentials to a .env file on your machine
         """
@@ -138,7 +150,10 @@ class BigQueryDataWarehouse(DataWarehouse):
             self.default_namespace = namespace
             self.default_project = project
             self.default_dataset = dataset
-            verbose_message(f"Namespace reset to {self.default_namespace}", logger)
+            verbose_message(
+                f"Namespace reset to {self.default_namespace}",
+                logger,
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -161,8 +176,14 @@ class BigQueryDataWarehouse(DataWarehouse):
             self.default_dataset = credentials.get('dataset')
             if not self.credentials:
                 self.credentials = self._get_credentials(credentials.get('json_filepath'))
-            self.connection = bq.Client(credentials=self.credentials, project=self.default_project)
-            verbose_message("Connected to BigQuery", logger)
+            self.connection = bq.Client(
+                credentials=self.credentials,
+                project=self.default_project,
+            )
+            verbose_message(
+                "Connected to BigQuery",
+                logger,
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -174,7 +195,10 @@ class BigQueryDataWarehouse(DataWarehouse):
             if self.connection:
                 self.connection.close()
             self.connection = None
-            verbose_message("Connection to BigQuery closed", logger)
+            verbose_message(
+                "Connection to BigQuery closed",
+                logger,
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -222,7 +246,10 @@ class BigQueryDataWarehouse(DataWarehouse):
         return f'{self.default_project}.{self.default_dataset}'
 
     @default_namespace.setter
-    def default_namespace(self, new_namespace: str):
+    def default_namespace(
+        self,
+        new_namespace: str,
+    ):
         """
         Setter method for the `default_namespace` property
         """
@@ -259,7 +286,10 @@ class BigQueryDataWarehouse(DataWarehouse):
                 'pass in acknowledge_risk=True and run this function again.'
             )
             raise SQLWarning(msg)
-        verbose_message(f"Executing query: {sql}", logger)
+        verbose_message(
+            f"Executing query: {sql}",
+            logger,
+        )
         if response == 'DICT':
             return self._query_into_dict(sql)
         if response == 'DF':
@@ -387,7 +417,10 @@ class BigQueryDataWarehouse(DataWarehouse):
                         table.modified,
                     )
                 )
-            return pd.DataFrame(records, columns=columns)
+            return pd.DataFrame(
+                records,
+                columns=columns,
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -445,7 +478,11 @@ class BigQueryDataWarehouse(DataWarehouse):
         try:
             cleanse_sql_dataframe(df)
             job_config = bq.LoadJobConfig(write_disposition='WRITE_TRUNCATE' if method == 'REPLACE' else None)
-            _job = self.connection.load_table_from_dataframe(df, fqtn, job_config=job_config)
+            _job = self.connection.load_table_from_dataframe(
+                df,
+                fqtn,
+                job_config=job_config,
+            )
             # Wait for the job to complete
             _job.result()
             return fqtn
@@ -488,7 +525,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         """
         Handle Snowflake exceptions that need additional info
         """
-        verbose_message(f'Exception occurred while running query: {query}', logger)
+        verbose_message(f'Exception occurred while running query: {query}', logger),
         if exception is None:
             return
         if isinstance(exception, gcp_exc.NotFound):
@@ -510,12 +547,15 @@ class BigQueryDataWarehouse(DataWarehouse):
         self,
         query: str,
         ignore_results: bool = False,
-    ) -> List[tuple]:
+    ) -> Optional[List[tuple]]:
         """
         Execute a query string against the DataWarehouse connection and fetch all results
         """
         try:
-            query_job = self.connection.query(query, job_config=self._default_job_config)
+            query_job = self.connection.query(
+                query,
+                job_config=self._default_job_config,
+            )
             if ignore_results:
                 return
             return list(query_job.result())
@@ -528,7 +568,8 @@ class BigQueryDataWarehouse(DataWarehouse):
     ) -> 'bq.Credentials':
         try:
             appflow = gcp_flow.InstalledAppFlow.from_client_secrets_file(
-                filepath, scopes=["https://www.googleapis.com/auth/bigquery"]
+                filepath,
+                scopes=["https://www.googleapis.com/auth/bigquery"],
             )
             appflow.run_local_server()
             # appflow.run_console()
@@ -551,7 +592,8 @@ class BigQueryDataWarehouse(DataWarehouse):
     ) -> 'bq.Credentials':
         try:
             credentials = gcp_svc.Credentials.from_service_account_file(
-                filepath, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                filepath,
+                scopes=["https://www.googleapis.com/auth/cloud-platform"],
             )
             return credentials
         except Exception as e:
@@ -565,7 +607,15 @@ class BigQueryDataWarehouse(DataWarehouse):
         Return results of query in a pandas DataFrame
         """
         try:
-            return self.connection.query(query, job_config=self._default_job_config).result().to_dataframe().to_dict()
+            return (
+                self.connection.query(
+                    query,
+                    job_config=self._default_job_config,
+                )
+                .result()
+                .to_dataframe()
+                .to_dict()
+            )
         except Exception as e:
             self._error_handler(e)
 
@@ -577,6 +627,13 @@ class BigQueryDataWarehouse(DataWarehouse):
         Return results of query in a pandas DataFrame
         """
         try:
-            return self.connection.query(query, job_config=self._default_job_config).result().to_dataframe()
+            return (
+                self.connection.query(
+                    query,
+                    job_config=self._default_job_config,
+                )
+                .result()
+                .to_dataframe()
+            )
         except Exception as e:
             self._error_handler(e)
