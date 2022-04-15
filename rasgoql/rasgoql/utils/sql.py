@@ -7,8 +7,8 @@ import string
 
 
 def cleanse_sql_data_type(
-        dtype: str
-    ) -> str:
+    dtype: str,
+) -> str:
     """
     Converts pandas data types to SQL compliant data type
     """
@@ -19,7 +19,7 @@ def cleanse_sql_data_type(
 
 
 def cleanse_sql_name(
-        name: str
+    name: str,
 ) -> str:
     """
     Converts a string to a SQL compliant value
@@ -28,7 +28,7 @@ def cleanse_sql_name(
 
 
 def is_scary_sql(
-        sql: str
+    sql: str,
 ) -> bool:
     """
     Checks a SQL string for presence of injection keywords
@@ -39,7 +39,7 @@ def is_scary_sql(
 
 
 def is_restricted_sql(
-        sql: str
+    sql: str,
 ) -> bool:
     """
     Checks a SQL string for presence of dangerous keywords
@@ -50,7 +50,7 @@ def is_restricted_sql(
 
 
 def parse_namespace(
-    namespace: str
+    namespace: str,
 ) -> tuple:
     """
     Accepts a possible namespace string and returns its component parts
@@ -63,11 +63,11 @@ def random_table_name() -> str:
     """
     Returns a random unique table name prefixed with "RQL"
     """
-    return 'RQL_'+''.join(random.choice(string.ascii_uppercase) for x in range(10))
+    return 'RQL_' + ''.join(random.choice(string.ascii_uppercase) for x in range(10))
 
 
 def validate_namespace(
-    namespace: str
+    namespace: str,
 ) -> str:
     """
     Accepts a possible namespace string and decides whether it is well-formed
@@ -78,20 +78,22 @@ def validate_namespace(
 
 
 def wrap_table(
-        parent_table: str
+    parent_table: str,
 ) -> str:
     """
     Calculates a unique table string
     """
     prefix = 'RQL'
-    suffix = ''.join(random.choice(string.ascii_uppercase) for x in range(5))
+    suffix = ''.join(random.choice(string.ascii_uppercase) for _ in range(5))
     if parent_table.startswith('RQL'):
         return f"{parent_table}_{suffix}"
     return f"{prefix}_{parent_table}_{suffix}"
 
 
 SQL_RESTRICTED_CHARACTERS = [
-    ' ', '-', ';'
+    ' ',
+    '-',
+    ';',
 ]
 
 SQL_INJECTION_KEYWORDS = [
@@ -101,9 +103,10 @@ SQL_INJECTION_KEYWORDS = [
     'ALTER',
     'UPDATE',
     'INSERT',
-    'MERGE'
+    'MERGE',
 ]
 
+# fmt: off
 SQL_RESTRICTED_KEYWORDS = [
     'ACCOUNT', 'ALL', 'ALTER', 'AND', 'ANY', 'AS', 'BETWEEN', 'BY',
     'CASE', 'CAST', 'CHECK', 'COLUMN', 'CONNECT', 'CONNECTION', 'CONSTRAINT',
@@ -116,3 +119,4 @@ SQL_RESTRICTED_KEYWORDS = [
     'SAMPLE', 'SCHEMA', 'SELECT', 'SET', 'SOME', 'START', 'TABLE', 'TABLESAMPLE', 'THEN', 'TO', 'TRIGGER',
     'TRUE', 'TRY_CAST', 'UNION', 'UNIQUE', 'UPDATE', 'USING', 'VALUES', 'VIEW', 'WHEN', 'WHENEVER', 'WHERE', 'WITH'
 ]
+# fmt: on

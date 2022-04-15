@@ -120,7 +120,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
     def magic_fqtn_handler(
         self,
         possible_fqtn: str,
-        default_namespace: str
+        default_namespace: str,
     ) -> str:
         """
         Makes all of your wildest dreams come true... well not *that* one
@@ -133,7 +133,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
     def make_fqtn(
         self,
         database: str,
-        table: str
+        table: str,
     ) -> str:
         """
         Accepts component parts and returns a fully qualified table string
@@ -142,7 +142,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
 
     def make_namespace_from_fqtn(
         self,
-        fqtn: str
+        fqtn: str,
     ) -> str:
         """
         Accepts component parts and returns a fully qualified namespace string
@@ -154,24 +154,24 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
         self,
         fqtn: str,
         default_namespace: str = None,
-        strict: bool = True
+        strict: bool = True,
     ) -> tuple:
         """
         Accepts a possible fully qualified table string and returns its component parts
         """
         if strict:
             fqtn = self.validate_fqtn(fqtn)
-            return (* fqtn.split("."),)
+            return (*fqtn.split("."),)
         database = self.parse_namespace(default_namespace)
         if fqtn.count(".") == 1:
-            return (* fqtn.split("."),)
+            return (*fqtn.split("."),)
         if fqtn.count(".") == 0:
             return (database, fqtn)
         raise ValueError(f'{fqtn} is not a well-formed fqtn')
 
     def parse_namespace(
         self,
-        namespace: str
+        namespace: str,
     ) -> str:
         """
         Accepts a possible namespace string and returns its component parts
@@ -189,7 +189,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
 
     def validate_namespace(
         self,
-        namespace: str
+        namespace: str,
     ) -> str:
         """
         Accepts a possible namespace string and decides whether it is well-formed
@@ -236,9 +236,12 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
         """
         super().connect(credentials)
 
-
     def create(
-        self, sql: str, fqtn: str, table_type: str = "VIEW", overwrite: bool = False
+        self,
+        sql: str,
+        fqtn: str,
+        table_type: str = "VIEW",
+        overwrite: bool = False,
     ):
         """
         Create a view or table from given SQL
@@ -277,9 +280,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
             Fully-qualified Table Name (database.schema.table)
         """
         fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
-        db, table_name = self.parse_fqtn(
-            fqtn, default_namespace=self.default_namespace, strict=False
-        )
+        db, table_name = self.parse_fqtn(fqtn, default_namespace=self.default_namespace, strict=False)
         sql = f"SHOW CREATE TABLE {db}.{table_name}"
         query_response = self.execute_query(sql, response="DF")
         return query_response
@@ -298,9 +299,7 @@ class MySQLDataWarehouse(SQLAlchemyDataWarehouse):
             object type: [table|view|unknown]
         """
         fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
-        db, table = self.parse_fqtn(
-            fqtn, default_namespace=self.default_namespace, strict=False
-        )
+        db, table = self.parse_fqtn(fqtn, default_namespace=self.default_namespace, strict=False)
         sql = f"SHOW TABLES IN {db} LIKE '{table}'"
         result = self.execute_query(sql, response="dict")
         obj_exists = len(result) > 0

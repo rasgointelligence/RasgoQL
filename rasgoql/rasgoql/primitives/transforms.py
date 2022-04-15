@@ -1,27 +1,34 @@
 """
 Primitive Classes
 """
+from __future__ import annotations
 import logging
-from typing import Callable, List
+from typing import Callable, List, TYPE_CHECKING
 
 import pandas as pd
 import rasgotransforms as rtx
 
 from rasgoql.errors import ParameterException
 from rasgoql.primitives.enums import (
-    check_render_method, check_table_type, check_write_table_type,
-    TableType, TableState
+    check_render_method,
+    check_table_type,
+    check_write_table_type,
+    TableType,
+    TableState,
 )
 from rasgoql.primitives.rendering import (
-    assemble_cte_chain, assemble_view_chain, create_dbt_files,
-    _gen_udt_func_docstring, _gen_udt_func_signature
+    assemble_cte_chain,
+    assemble_view_chain,
+    create_dbt_files,
+    _gen_udt_func_docstring,
+    _gen_udt_func_signature,
 )
-from rasgoql.utils.decorators import (
-    beta, require_dw,
-    require_materialized, require_transforms
-)
+from rasgoql.utils.decorators import beta, require_dw, require_materialized, require_transforms
 from rasgoql.utils.sql import random_table_name
 from rasgoql.utils.telemetry import failure_telemetry
+
+if TYPE_CHECKING:
+    from rasgoql.data.base import DataWarehouse
 
 logging.basicConfig()
 ds_logger = logging.getLogger('Dataset')
@@ -34,10 +41,11 @@ class TransformableClass:
     """
     Class to attach Rasgo transform methods to other classes
     """
+
     def __init__(
-            self,
-            dw: 'DataWarehouse'
-        ):
+        self,
+        dw: 'DataWarehouse',
+    ):
         self._dw = dw
         self._transform_sync()
 
@@ -45,12 +53,13 @@ class TransformableClass:
         return failure_telemetry(self, item)
 
     def _create_aliased_function(
-            self,
-            transform: 'TransformTemplate'
-        ) -> Callable:
+        self,
+        transform: TransformTemplate,
+    ) -> Callable:
         """
         Returns a new function to dynamically attach to a class on init
         """
+
         def f(*arg, **kwargs) -> 'SQLChain':
             return self.transform(name=transform.name, *arg, **kwargs)
 
@@ -69,12 +78,12 @@ class TransformableClass:
 
     @require_dw
     def transform(
-            self,
-            name: str,
-            arguments: dict = None,
-            output_alias: str = None,
-            **kwargs
-        ) -> 'SQLChain':
+        self,
+        name: str,
+        arguments: dict = None,
+        output_alias: str = None,
+        **kwargs,
+    ) -> SQLChain:
         """
         Apply a Rasgo transform and return a SQLChain
         """
@@ -97,13 +106,7 @@ class TransformableClass:
         arguments = arguments if arguments else {}
         arguments.update(kwargs)
         arguments['source_table'] = source_table
-        new_transform = Transform(
-            name,
-            arguments,
-            namespace,
-            output_alias,
-            self._dw
-        )
+        new_transform = Transform(name, arguments, namespace, output_alias, self._dw)
         transforms.append(new_transform)
         return SQLChain(entry_table, namespace, transforms, self._dw)
 
@@ -112,11 +115,12 @@ class Dataset(TransformableClass):
     """
     Reference to a table or view in the Data Warehouse
     """
+
     def __init__(
-            self,
-            fqtn: str,
-            dw: 'DataWarehouse' = None
-        ):
+        self,
+        fqtn: str,
+        dw: 'DataWarehouse' = None,
+    ):
         super().__init__(dw)
         try:
             self.fqtn: str = self._dw.validate_fqtn(fqtn)
@@ -131,9 +135,7 @@ class Dataset(TransformableClass):
         self._dw_sync()
 
     def __repr__(self) -> str:
-        return f"Dataset(fqtn={self.fqtn}, " \
-               f"type={self.table_type}, " \
-               f"state={self.table_state})"
+        return f"Dataset(fqtn={self.fqtn}, type={self.table_type}, state={self.table_state})"
 
     @require_dw
     def _dw_sync(self):
@@ -179,7 +181,7 @@ class Dataset(TransformableClass):
         return self._dw.execute_query(
             f"SELECT * FROM {self.fqtn}",
             response='df',
-            batches=batches
+            batches=batches,
         )
 
 
@@ -187,14 +189,15 @@ class TransformTemplate:
     """
     Reference to a Rasgo transform template
     """
+
     def __init__(
-            self,
-            name: str,
-            arguments: List[dict],
-            source_code: str,
-            description: str = None,
-            tags: List[str] = None
-        ):
+        self,
+        name: str,
+        arguments: List[dict],
+        source_code: str,
+        description: str = None,
+        tags: List[str] = None,
+    ):
         self.name = name
         self.arguments = arguments
         self.source_code = source_code
@@ -224,14 +227,15 @@ class Transform:
     """
     Reference to a Transform
     """
+
     def __init__(
-            self,
-            name: str,
-            arguments: dict,
-            namespace: str,
-            output_alias: str = None,
-            dw: 'DataWarehouse' = None
-        ):
+        self,
+        name: str,
+        arguments: dict,
+        namespace: str,
+        output_alias: str = None,
+        dw: 'DataWarehouse' = None,
+    ):
         self._dw = dw
 
         self.arguments = arguments
@@ -260,12 +264,12 @@ class SQLChain(TransformableClass):
     """
 
     def __init__(
-            self,
-            entry_table: Dataset,
-            namespace: str,
-            transforms: List[Transform] = None,
-            dw: 'DataWarehouse' = None
-        ) -> None:
+        self,
+        entry_table: Dataset,
+        namespace: str,
+        transforms: List[Transform] = None,
+        dw: 'DataWarehouse' = None,
+    ) -> None:
         super().__init__(dw)
         self.entry_table = entry_table
         self.transforms = transforms
@@ -276,9 +280,9 @@ class SQLChain(TransformableClass):
         return f"SQLChain({self.entry_table.fqtn} + {transform_count} transforms)"
 
     def change_namespace(
-            self,
-            new_namespace: str
-        ):
+        self,
+        new_namespace: str,
+    ):
         """
         Re-sets the class's namespace
         """
@@ -327,9 +331,9 @@ class SQLChain(TransformableClass):
 
     @require_dw
     def sql(
-            self,
-            render_method: str = 'SELECT'
-        ) -> str:
+        self,
+        render_method: str = 'SELECT',
+    ) -> str:
         """
         Returns the SQL to build this Transform Chain
 
@@ -342,28 +346,23 @@ class SQLChain(TransformableClass):
             return assemble_view_chain(self.transforms)
         return assemble_cte_chain(
             self.transforms,
-            render_method if render_method in ['TABLE', 'VIEW'] else None
+            render_method if render_method in ['TABLE', 'VIEW'] else None,
         )
 
     @require_dw
     @require_transforms
     def save(
-            self,
-            table_name: str = None,
-            table_type: str = 'view',
-            overwrite: bool = False
-        ):
+        self,
+        table_name: str = None,
+        table_type: str = 'view',
+        overwrite: bool = False,
+    ):
         """
         Materializes this Transform Chain into SQL objects
         """
         table_type = check_write_table_type(table_type)
         table_name = table_name or self.output_table.fqtn
-        new_table = self._dw.create(
-            self.sql(),
-            table_name,
-            table_type,
-            overwrite
-        )
+        new_table = self._dw.create(self.sql(), table_name, table_type, overwrite)
         return Dataset(new_table, self._dw)
 
     @property
@@ -377,12 +376,12 @@ class SQLChain(TransformableClass):
 
     @beta
     def to_dbt(
-            self,
-            output_directory: str = None,
-            file_name: str = None,
-            config_args: dict = None,
-            include_schema: bool = False
-        ) -> str:
+        self,
+        output_directory: str = None,
+        file_name: str = None,
+        config_args: dict = None,
+        include_schema: bool = False,
+    ) -> str:
         """
         Saves a new model.sql file to your dbt models directory
 
@@ -400,7 +399,7 @@ class SQLChain(TransformableClass):
         """
         try:
             schema = self.get_schema()
-        except:
+        except Exception:
             if include_schema:
                 chn_logger.warning(
                     'Unexpected error generating the schema of this SQLChain. '
@@ -416,7 +415,7 @@ class SQLChain(TransformableClass):
             output_directory,
             file_name,
             config_args,
-            include_schema
+            include_schema,
         )
 
     def to_df(self, batches: bool = False) -> pd.DataFrame:
@@ -426,5 +425,5 @@ class SQLChain(TransformableClass):
         return self._dw.execute_query(
             self.sql(),
             response='df',
-            batches=batches
+            batches=batches,
         )

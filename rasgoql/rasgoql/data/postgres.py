@@ -131,7 +131,7 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
     # ---------------------------
     def parse_table_and_schema_from_fqtn(
         self,
-        fqtn: str
+        fqtn: str,
     ) -> tuple:
         """
         Accepts a possible FQTN and returns the schema and table from it
@@ -164,7 +164,11 @@ class PostgresDataWarehouse(SQLAlchemyDataWarehouse):
         super().connect(credentials)
 
     def create(
-        self, sql: str, fqtn: str, table_type: str = "VIEW", overwrite: bool = False
+        self,
+        sql: str,
+        fqtn: str,
+        table_type: str = "VIEW",
+        overwrite: bool = False,
     ):
         """
         Create a view or table from given SQL

@@ -11,17 +11,19 @@ from rasgoql.primitives import Dataset, SQLChain, TransformTemplate
 from rasgoql.utils.messaging import set_verbose
 from rasgoql.version import __version__
 
+
 class RasgoQL:
     """
     Entry class for rasgoql
     """
+
     __version__ = __version__
 
     def __init__(
-            self,
-            connection: Type[DataWarehouse],
-            credentials: dict
-        ):
+        self,
+        connection: Type[DataWarehouse],
+        credentials: dict,
+    ):
         self.credentials = credentials
         self._dw = connection()
         self._dw.connect(credentials)
@@ -33,10 +35,10 @@ class RasgoQL:
         self._dw.close_connection()
 
     def list_tables(
-            self,
-            database: str = None,
-            schema: str = None
-        ):
+        self,
+        database: str = None,
+        schema: str = None,
+    ):
         """
         Returns a list of tables in your Data Warehouse
         """
@@ -49,20 +51,20 @@ class RasgoQL:
         return rtx.serve_rasgo_transform_templates(self._dw.dw_type)
 
     def dataset(
-            self,
-            fqtn: str
-        ) -> Dataset:
+        self,
+        fqtn: str,
+    ) -> Dataset:
         """
         Returns a Dataset connected to the Cloud Data Warehouse
         """
         return Dataset(fqtn, self._dw)
 
     def dataset_from_df(
-            self,
-            df: pd.DataFrame,
-            table_name: str,
-            method: str = None
-        ) -> Dataset:
+        self,
+        df: pd.DataFrame,
+        table_name: str,
+        method: str = None,
+    ) -> Dataset:
         """
         Writes a pandas Dataframe to a table in your Data Warehouse
         and returns it as a Dataset
@@ -83,9 +85,9 @@ class RasgoQL:
         return Dataset(fqtn, self._dw)
 
     def define_transform(
-            self,
-            name: str
-        ) -> str:
+        self,
+        name: str,
+    ) -> str:
         """
         Returns full details of a RasgoQL transform
         """
@@ -95,39 +97,31 @@ class RasgoQL:
                 udt = t
         if udt:
             return udt.define()
-        raise ValueError(f'{name} is not a valid Tranform name. '
-                         'Run `.list_transforms()` to see available transforms.')
+        raise ValueError(f'{name} is not a valid Transform name. Run `.list_transforms()` to see available transforms.')
 
     def query(
-            self,
-            sql: str,
-            acknowledge_risk: bool = False
-        ):
+        self,
+        sql: str,
+        acknowledge_risk: bool = False,
+    ):
         """
         Execute a query against your Data Warehouse
         """
         return self._dw.execute_query(sql, acknowledge_risk=acknowledge_risk)
 
     def query_into_df(
-            self,
-            sql: str,
-            acknowledge_risk: bool = False,
-            batches: bool = False
-        ) -> pd.DataFrame:
+        self,
+        sql: str,
+        acknowledge_risk: bool = False,
+        batches: bool = False,
+    ) -> pd.DataFrame:
         """
         Execute a query against your Data Warehouse and return results in a pandas DataFrame
         """
-        return self._dw.execute_query(
-            sql,
-            response='df',
-            acknowledge_risk=acknowledge_risk,
-            batches=batches
-        )
+        return self._dw.execute_query(sql, response='df', acknowledge_risk=acknowledge_risk, batches=batches)
 
-    def set_verbose(
-            self,
-            value: bool
-        ) -> None:
+    @staticmethod
+    def set_verbose(value: bool) -> None:
         """
         Turn verbose logging on or off
 
@@ -138,18 +132,13 @@ class RasgoQL:
         set_verbose(value)
 
     def sqlchain(
-            self,
-            fqtn: str,
-            namespace: str = None
-        ) -> SQLChain:
+        self,
+        fqtn: str,
+        namespace: str = None,
+    ) -> SQLChain:
         """
         Returns a SQLChain connected to the Cloud Data Warehouse
         """
         return SQLChain(
-            entry_table=Dataset(
-                fqtn,
-                self._dw
-            ),
-            namespace=namespace or self._dw.default_namespace,
-            dw=self._dw
+            entry_table=Dataset(fqtn, self._dw), namespace=namespace or self._dw.default_namespace, dw=self._dw
         )

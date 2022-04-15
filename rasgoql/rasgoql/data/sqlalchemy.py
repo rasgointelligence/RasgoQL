@@ -4,7 +4,6 @@ Generic SQLAlchemy DataWarehouse classes
 from __future__ import annotations
 from abc import abstractmethod
 import logging
-import re
 from typing import Optional, Union
 from urllib.parse import quote_plus as urlquote
 
@@ -13,7 +12,6 @@ import pandas as pd
 from rasgoql.data.base import DataWarehouse, DWCredentials
 from rasgoql.errors import (
     DWConnectionError,
-    ParameterException,
     SQLWarning,
     TableAccessError,
     TableConflictException,
@@ -66,7 +64,6 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             "by the SQLAlchemy Engine. Please build a new connection."
         )
 
-
     @abstractmethod
     def connect(self, credentials: Union[dict, DWCredentials]):
         """
@@ -99,7 +96,11 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             self._error_handler(e)
 
     def create(
-        self, sql: str, fqtn: str, table_type: str = "VIEW", overwrite: bool = False
+        self,
+        sql: str,
+        fqtn: str,
+        table_type: str = "VIEW",
+        overwrite: bool = False,
     ):
         """
         Create a view or table from given SQL
@@ -150,7 +151,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         sql: str,
         response: str = "tuple",
         acknowledge_risk: bool = False,
-        **kwargs
+        **kwargs,
     ) -> Union[list[dict], pd.DataFrame, list[tuple], None]:
         """
         Run a query against DB and return all results
@@ -257,9 +258,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
                     acknowledge_risk=True,
                 )
             else:
-                raise TableAccessError(
-                    f"Table {fqtn} does not exist or cannot be accessed."
-                )
+                raise TableAccessError(f"Table {fqtn} does not exist or cannot be accessed.")
             for row in query_response:
                 response.append((row["name"], row["type"]))
             return response
@@ -296,9 +295,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         `limit`: int:
             Records to return
         """
-        return self.execute_query(
-            f"{sql} LIMIT {limit}", response="df", acknowledge_risk=True
-        )
+        return self.execute_query(f"{sql} LIMIT {limit}", response="df", acknowledge_risk=True)
 
     def save_df(self, df: pd.DataFrame, fqtn: str, method: str = None) -> str:
         """
@@ -389,8 +386,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             return
         if isinstance(exception, alchemy_exceptions.DisconnectionError):
             raise DWConnectionError(
-                "Disconnected from DataWarehouse. Please validate connection "
-                "or reconnect."
+                "Disconnected from DataWarehouse. Please validate connection or reconnect."
             ) from exception
         raise exception
 

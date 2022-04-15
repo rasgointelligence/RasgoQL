@@ -17,13 +17,14 @@ class DWCredentials(ABC):
     """
     Base DW Credentials
     """
+
     dw_type = None
 
     @classmethod
     def from_dict(
-            cls,
-            source_dict: dict
-        ) -> 'DWCredentials':
+        cls,
+        source_dict: dict,
+    ) -> DWCredentials:
         """
         Creates an instance of this Class from a dict
         """
@@ -31,9 +32,9 @@ class DWCredentials(ABC):
 
     @classmethod
     def from_env(
-            cls,
-            filepath: str = None
-        ) -> 'DWCredentials':
+        cls,
+        filepath: str = None,
+    ) -> DWCredentials:
         """
         Creates an instance of this Class from a .env file on your machine
         """
@@ -46,10 +47,10 @@ class DWCredentials(ABC):
         raise NotImplementedError()
 
     def to_env(
-            self,
-            filepath: str,
-            overwrite: bool
-        ):
+        self,
+        filepath: str,
+        overwrite: bool,
+    ):
         """
         Saves credentials to a .env file on your machine
         """
@@ -75,7 +76,7 @@ class DWCredentials(ABC):
                 # Convert Integers
                 elif value.strip().isnumeric():
                     value = int(value.strip())
-                env_vars[var_name.lower()[len(prefix):]] = value
+                env_vars[var_name.lower()[len(prefix) :]] = value
         return env_vars
 
 
@@ -83,6 +84,7 @@ class DataWarehouse(ABC):
     """
     Base DW Class
     """
+
     dw_type = None
     credentials_class = DWCredentials
 
@@ -96,7 +98,7 @@ class DataWarehouse(ABC):
     def magic_fqtn_handler(
         self,
         possible_fqtn: str,
-        default_namespace: str
+        default_namespace: str,
     ) -> str:
         """
         Makes all of your wildest dreams come true... well not *that* one
@@ -111,7 +113,7 @@ class DataWarehouse(ABC):
         self,
         database: str,
         schema: str,
-        table: str
+        table: str,
     ) -> str:
         """
         Accepts component parts and returns a fully qualified table string
@@ -120,7 +122,7 @@ class DataWarehouse(ABC):
 
     def make_namespace_from_fqtn(
         self,
-        fqtn: str
+        fqtn: str,
     ) -> str:
         """
         Accepts component parts and returns a fully qualified namespace string
@@ -132,17 +134,17 @@ class DataWarehouse(ABC):
         self,
         fqtn: str,
         default_namespace: Optional[str] = None,
-        strict: bool = True
+        strict: bool = True,
     ) -> FQTN:
         """
         Accepts a possible fully qualified table string and returns its component parts
         """
         if strict:
             fqtn = self.validate_fqtn(fqtn)
-            return FQTN(* fqtn.split("."))
+            return FQTN(*fqtn.split("."))
 
         if fqtn.count(".") == 2:
-            return FQTN(* fqtn.split("."))
+            return FQTN(*fqtn.split("."))
 
         if not default_namespace:
             raise ValueError(f'{fqtn} is not a well-formed fqtn')
@@ -150,14 +152,14 @@ class DataWarehouse(ABC):
         database, schema = self.parse_namespace(default_namespace)
 
         if fqtn.count(".") == 1:
-            return FQTN(database, * fqtn.split("."))
+            return FQTN(database, *fqtn.split("."))
         if fqtn.count(".") == 0:
             return FQTN(database, schema, fqtn)
         raise ValueError(f'{fqtn} is not a well-formed fqtn')
 
     def parse_namespace(
         self,
-        namespace: str
+        namespace: str,
     ) -> tuple:
         """
         Accepts a possible namespace string and returns its component parts
@@ -165,7 +167,10 @@ class DataWarehouse(ABC):
         namespace = self.validate_namespace(namespace)
         return tuple(namespace.split("."))
 
-    def validate_fqtn(self, fqtn: str) -> str:
+    def validate_fqtn(
+        self,
+        fqtn: str,
+    ) -> str:
         """
         Accepts a possible fully qualified table string and decides whether it is well-formed
         """
@@ -175,7 +180,7 @@ class DataWarehouse(ABC):
 
     def validate_namespace(
         self,
-        namespace: str
+        namespace: str,
     ) -> str:
         """
         Accepts a possible namespace string and decides whether it is well-formed
@@ -187,8 +192,8 @@ class DataWarehouse(ABC):
     # Core methods
 
     def change_namespace(
-            self,
-            namespace: str
+        self,
+        namespace: str,
     ):
         """
         Change the default namespace of this connection
@@ -196,9 +201,9 @@ class DataWarehouse(ABC):
         raise NotImplementedError()
 
     def connect(
-            self,
-            credentials: Union[dict, DWCredentials]
-        ):
+        self,
+        credentials: Union[dict, DWCredentials],
+    ):
         """
         Connect to this DataWarehouse
         """
@@ -211,12 +216,12 @@ class DataWarehouse(ABC):
         raise NotImplementedError()
 
     def create(
-            self,
-            sql: str,
-            fqtn: str,
-            table_type: str = 'VIEW',
-            overwrite: bool = False
-        ):
+        self,
+        sql: str,
+        fqtn: str,
+        table_type: str = 'VIEW',
+        overwrite: bool = False,
+    ):
         """
         Create a view or table from given SQL
         """
@@ -232,7 +237,7 @@ class DataWarehouse(ABC):
     @default_namespace.setter
     def default_namespace(
         self,
-        new_namespace: str
+        new_namespace: str,
     ):
         """
         Setter method for the `default_namespace` property
@@ -240,71 +245,71 @@ class DataWarehouse(ABC):
         raise NotImplementedError()
 
     def execute_query(
-            self,
-            sql: str,
-            response: str = 'tuple',
-            acknowledge_risk: bool = False,
-            **kwargs
-        ):
+        self,
+        sql: str,
+        response: str = 'tuple',
+        acknowledge_risk: bool = False,
+        **kwargs,
+    ):
         """
         Run a query against this DataWarehouse
         """
         raise NotImplementedError()
 
     def get_ddl(
-            self,
-            fqtn: str
-        ) -> str:
+        self,
+        fqtn: str,
+    ) -> str:
         """
         Returns the create statement for a table or view
         """
         raise NotImplementedError()
 
     def get_object_details(
-            self,
-            fqtn: str
-        ) -> tuple:
+        self,
+        fqtn: str,
+    ) -> tuple:
         """
         Return details of a table or view in this DataWarehouse
         """
         raise NotImplementedError()
 
     def get_schema(
-            self,
-            fqtn: str,
-            create_sql: str = None
-        ) -> dict:
+        self,
+        fqtn: str,
+        create_sql: str = None,
+    ) -> dict:
         """
         Return the schema of a table or view
         """
         raise NotImplementedError()
 
     def list_tables(
-            self,
-            database: str = None,
-            schema: str = None
-        ):
+        self,
+        database: str = None,
+        schema: str = None,
+    ):
         """
         List all available tables in this DataWarehouse
         """
         raise NotImplementedError()
 
     def preview(
-            self,
-            sql: str,
-            limit: int = 10
-        ) -> pd.DataFrame:
+        self,
+        sql: str,
+        limit: int = 10,
+    ) -> pd.DataFrame:
         """
         Returns 10 records into a pandas DataFrame
         """
         raise NotImplementedError()
 
     def save_df(
-            self,
-            df: pd.DataFrame,
-            fqtn: str,
-            method: str = None
-        ):
+        self,
+        df: pd.DataFrame,
+        fqtn: str,
+        method: str = None,
+    ):
         """
         Creates a table in this DataWarehouse from a pandas Dataframe
         """
@@ -314,18 +319,18 @@ class DataWarehouse(ABC):
     # Core Data Warehouse helpers
     # ---------------------------
     def _table_exists(
-            self,
-            fqtn: str
-        ) -> bool:
+        self,
+        fqtn: str,
+    ) -> bool:
         """
         Check for existence of fqtn in this Data Warehouse and return a boolean
         """
         raise NotImplementedError()
 
     def _validate_namespace(
-            self,
-            namespace: str
-        ):
+        self,
+        namespace: str,
+    ):
         """
         Checks a namespace string for compliance with this DataWarehouse format
         """

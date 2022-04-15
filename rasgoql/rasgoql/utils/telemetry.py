@@ -2,7 +2,7 @@ import json
 import contextlib
 from multiprocessing.pool import ThreadPool
 import atexit
-from typing import Optional
+from typing import Optional, Any
 
 import requests
 
@@ -13,10 +13,14 @@ thread_pool = ThreadPool(2)
 atexit.register(thread_pool.terminate)
 
 
-def failure_telemetry(obj, name):
+def failure_telemetry(
+    obj: Any,
+    name: str,
+):
     attr = object.__getattribute__(obj, name)
     # TODO: change check to isinstance(attr, Callable)
     if hasattr(attr, "__call__") and not name.startswith("_") and not name.startswith("connect"):
+
         def logged_function(*args, **kwargs):
             tracked_properties = {
                 "source": "RasgoQL",
@@ -40,7 +44,10 @@ def failure_telemetry(obj, name):
     return attr
 
 
-def track_call(tracked_properties: dict, error_message: Optional[str]):
+def track_call(
+    tracked_properties: dict,
+    error_message: Optional[str],
+):
     """
     Send a "track" event to the Heap Analytics API server.
     :param tracked_properties:  contains event data for heap to track
