@@ -101,4 +101,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.4.0]: https://pypi.org/project/rasgoql/1.4.0/
 [1.5.0]: https://pypi.org/project/rasgoql/1.5.0/
 [1.5.1]: https://pypi.org/project/rasgoql/1.5.1/
-[1.5.1]: https://pypi.org/project/rasgoql/1.5.2/
+[1.5.2]: https://pypi.org/project/rasgoql/1.5.2/
