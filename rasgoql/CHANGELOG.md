@@ -85,6 +85,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Support for redshift extras during pip install
 
+## [1.5.2] - 2022-04-29
+### Fixed
+- Fixing get_object_details for postgres
+
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
@@ -97,3 +101,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.4.0]: https://pypi.org/project/rasgoql/1.4.0/
 [1.5.0]: https://pypi.org/project/rasgoql/1.5.0/
 [1.5.1]: https://pypi.org/project/rasgoql/1.5.1/
+[1.5.1]: https://pypi.org/project/rasgoql/1.5.2/
