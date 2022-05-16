@@ -314,11 +314,7 @@ def _set_final_select_statement(
     return sql
 
 
-def get_columns(
-    source_table: str,
-    running_sql: str = None,
-    dw: 'DataWarehouse' = None
-) -> str:
+def get_columns(source_table: str, running_sql: str = None, dw: 'DataWarehouse' = None) -> str:
     if not running_sql:
         database, schema, table_name = source_table.split('.')
         query_string = f"""
@@ -357,11 +353,7 @@ def _source_code_functions(
         ),
         "cleanse_name": _cleanse_template_symbol,
         "raise_exception": _raise_exception,
-        "get_columns": functools.partial(
-            get_columns,
-            dw=dw,
-            running_sql=running_sql
-        ),
+        "get_columns": functools.partial(get_columns, dw=dw, running_sql=running_sql),
         "itertools": {
             "combinations": combinations,
             "permutations": permutations,
