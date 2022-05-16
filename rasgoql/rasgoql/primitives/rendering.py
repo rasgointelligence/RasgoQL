@@ -314,6 +314,32 @@ def _set_final_select_statement(
     return sql
 
 
+def get_columns(
+    source_table: str,
+    running_sql: str = None,
+    dw: 'DataWarehouse' = None
+) -> str:
+    if not running_sql:
+        database, schema, table_name = source_table.split('.')
+        query_string = f"""
+        SELECT COLUMN_NAME, DATA_TYPE
+        FROM {database}.information_schema.columns
+        WHERE TABLE_CATALOG = '{database.upper()}'
+            AND TABLE_SCHEMA = '{schema.upper()}'
+            AND TABLE_NAME = '{table_name.upper()}'
+        """
+    else:
+        query_string = f"""
+        SELECT COLUMN_NAME, DATA_TYPE
+        FROM {dw.default_database}.information_schema.columns
+        WHERE TABLE_CATALOG = '{dw.default_database}'
+            AND TABLE_SCHEMA = '{dw.default_schema}'
+            AND TABLE_NAME = '{source_table}'
+        """
+    df = _run_query(query_string, dw=dw, running_sql=running_sql, source_table=source_table)
+    return df.set_index('COLUMN_NAME')['DATA_TYPE'].to_dict()
+
+
 def _source_code_functions(
     dw: 'DataWarehouse',
     source_table: str = None,
@@ -331,6 +357,11 @@ def _source_code_functions(
         ),
         "cleanse_name": _cleanse_template_symbol,
         "raise_exception": _raise_exception,
+        "get_columns": functools.partial(
+            get_columns,
+            dw=dw,
+            running_sql=running_sql
+        ),
         "itertools": {
             "combinations": combinations,
             "permutations": permutations,
