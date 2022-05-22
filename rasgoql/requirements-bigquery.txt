@@ -1,2 +1,4 @@
+# Needed until Google fixes breaking changes of v3.0.0
+db-dtypes
 google-auth-oauthlib
 google-cloud-bigquery
