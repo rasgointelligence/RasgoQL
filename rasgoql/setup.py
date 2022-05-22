@@ -48,6 +48,7 @@ setup(
         'Documentation': 'https://docs.rasgoql.com',
         'Source': 'https://github.com/rasgointelligence/RasgoQL',
         'Rasgo': 'https://www.rasgoml.com/',
+        'Changelog': 'https://github.com/rasgointelligence/RasgoQL/blob/main/rasgoql/CHANGELOG.md',
     },
     license='GNU Affero General Public License v3 or later (AGPLv3+)',
     packages=[
