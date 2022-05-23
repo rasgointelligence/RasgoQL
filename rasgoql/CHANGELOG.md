@@ -89,6 +89,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixing get_object_details for postgres
 
+## [1.5.3] - 2022-05-20
+### Added
+- Added `get_columns` to list of source functions
+
+## [1.5.4] - 2022-05-23
+### Added
+- Added db-dtypes as a dependency to optional rasgoql[bigquery] package to prevent breaking changes in google-cloud-bigquery v3.0.0
+
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
@@ -102,3 +110,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.5.0]: https://pypi.org/project/rasgoql/1.5.0/
 [1.5.1]: https://pypi.org/project/rasgoql/1.5.1/
 [1.5.2]: https://pypi.org/project/rasgoql/1.5.2/
+[1.5.3]: https://pypi.org/project/rasgoql/1.5.3/
+[1.5.4]: https://pypi.org/project/rasgoql/1.5.4/
