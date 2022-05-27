@@ -34,4 +34,5 @@ jobs:
       - name: Test building wheel
         run: |
           pip install setuptools wheel --upgrade
+          cd rasgoql
           python setup.py sdist bdist_wheel
