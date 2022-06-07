@@ -7,7 +7,7 @@ import pandas as pd
 import rasgotransforms as rtx
 
 from rasgoql.data import DataWarehouse
-from rasgoql.primitives import Dataset, SQLChain, TransformTemplate
+from rasgoql.primitives import Dataset, SQLChain, TransformTemplate, rendering
 from rasgoql.utils.messaging import set_verbose
 from rasgoql.version import __version__
 
@@ -48,7 +48,8 @@ class RasgoQL:
         """
         Returns a list of RasgoQL transforms
         """
-        return rtx.serve_rasgo_transform_templates(self._dw.dw_type)
+        return rendering.serve_macros_as_templates(self._dw.dw_type)
+        # return rtx.serve_rasgo_transform_templates(self._dw.dw_type)
 
     def dataset(
         self,
@@ -92,7 +93,8 @@ class RasgoQL:
         Returns full details of a RasgoQL transform
         """
         udt: TransformTemplate = None
-        for t in rtx.serve_rasgo_transform_templates(self._dw.dw_type):
+        # for t in rtx.serve_rasgo_transform_templates(self._dw.dw_type):
+        for t in rendering.serve_macros_as_templates(self._dw.dw_type):
             if t.name == name:
                 udt = t
         if udt:

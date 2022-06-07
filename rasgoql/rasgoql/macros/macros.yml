@@ -1,0 +1,76 @@
+version: 2
+
+macros:
+  - name: aggregate
+    tags:
+      - table
+      - reshape
+      - aggregate
+    description: aggreate data
+    docs:
+      show: true | false
+    arguments:
+      - name: group_by
+        type: column_list
+        description: Columns to group by
+      - name: aggregations
+        type: agg_dict
+        description: Aggregations to apply for other columns. Dict keys are column names, and values are a list of aggegations to apply for that column.
+
+  - name: cast
+    tags:
+      - column
+      - data_cleaning
+      - data_quality
+    description: Cast selected columns to a new type
+    arguments:
+      - name: casts
+        type: cast_value_dict
+        description: A dict where the keys are columns and the values are the new type to cast them to.
+      - name: overwrite_columns
+        type: boolean
+        is_optional: true
+        description: to overwrite column names with the new casted column, use 'true'. otherwise, use 'false'. defaults to 'false'.
+
+  - name: dateadd
+    description: Increments a date by the specified interval value.
+    tags:
+      - column
+      - date_time
+    arguments:
+      - name: date_part
+        type: date_part
+        description: |
+          A valid SQL date part.
+          Must be one of the values listed in [Supported Date and Time Parts](https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts)
+      - name: date
+        type: mixed_value
+        description: Date value to increment. Can be a column or literal of these types (date, datetime, time, or timestamp).
+      - name: offset
+        type: int
+        description: Numeric value to increment the date by.
+      - name: alias
+        type: string
+        description: Name of output column
+        is_optional: true
+      - name: overwrite_columns
+        type: boolean
+        description: "Optional: if true, the output column will replace the existing 'date' column"
+        is_optional: true
+
+  - name: drop_columns
+    tags:
+      - column
+      - data_cleaning
+    description: |
+      Drop columns by passing either an include_cols list of columns to include or an exclude_cols list of columns to exclude.
+      Passing both include_cols and exclude_cols will result in an error.
+    arguments:
+      - name: include_cols
+        type: column_list
+        description: A list of the columns from the dataset you want to keep.
+        is_optional: true
+      - name: exclude_cols
+        type: column_list
+        description: A list of the columns from the dataset you want to drop. Any columns not in the exclude_cols list will be kept.
+        is_optional: true

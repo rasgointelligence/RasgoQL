@@ -4,13 +4,15 @@ Transform rendering methods
 import functools
 import inspect
 from itertools import combinations, permutations, product
+from pathlib import Path
 import re
 import os
-from typing import Callable, Dict, List, Tuple, Optional, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Tuple, Optional, TYPE_CHECKING
 
 import jinja2
 import pandas as pd
 import rasgotransforms as rtx
+import yaml
 
 from rasgoql.errors import TransformRenderingError
 from rasgoql.primitives.enums import check_write_table_type
@@ -127,7 +129,8 @@ def generate_transform_sql(
     """
     Returns the SQL for a Transform with applied arguments
     """
-    templates = rtx.serve_rasgo_transform_templates(dw.dw_type)
+    # templates = rtx.serve_rasgo_transform_templates(dw.dw_type)
+    templates = serve_macros_as_templates(dw.dw_type)
     udt: 'TransformTemplate' = [t for t in templates if t.name == name][0]
     if not udt:
         raise TransformRenderingError(f'Cannot find a transform named {name}')
@@ -267,6 +270,15 @@ def _raise_exception(
     raise TransformRenderingError(message)
 
 
+def _log_message(
+    message: str,
+) -> None:
+    """
+    Print a message from within a template
+    """
+    print(message)
+
+
 def _run_query(
     query: str,
     source_table: str = None,
@@ -314,26 +326,18 @@ def _set_final_select_statement(
     return sql
 
 
-def get_columns(source_table: str, running_sql: str = None, dw: 'DataWarehouse' = None) -> str:
-    if not running_sql:
-        database, schema, table_name = source_table.split('.')
-        query_string = f"""
-        SELECT COLUMN_NAME, DATA_TYPE
-        FROM {database}.information_schema.columns
-        WHERE TABLE_CATALOG = '{database.upper()}'
-            AND TABLE_SCHEMA = '{schema.upper()}'
-            AND TABLE_NAME = '{table_name.upper()}'
-        """
-    else:
-        query_string = f"""
-        SELECT COLUMN_NAME, DATA_TYPE
-        FROM {dw.default_database}.information_schema.columns
-        WHERE TABLE_CATALOG = '{dw.default_database}'
-            AND TABLE_SCHEMA = '{dw.default_schema}'
-            AND TABLE_NAME = '{source_table}'
-        """
-    df = _run_query(query_string, dw=dw, running_sql=running_sql, source_table=source_table)
-    return df.set_index('COLUMN_NAME')['DATA_TYPE'].to_dict()
+def get_columns(
+    source_table: str,
+    running_sql: str = None,
+    dw: 'DataWarehouse' = None,
+) -> Dict[str, str]:
+    return [
+        row[0]
+        for row in dw.get_schema(
+            fqtn=dw.magic_fqtn_handler(source_table, dw.default_namespace),
+            create_sql=running_sql,
+        )
+    ]
 
 
 def _source_code_functions(
@@ -353,6 +357,7 @@ def _source_code_functions(
         ),
         "cleanse_name": _cleanse_template_symbol,
         "raise_exception": _raise_exception,
+        "log_message": _log_message,
         "get_columns": functools.partial(get_columns, dw=dw, running_sql=running_sql),
         "itertools": {
             "combinations": combinations,
@@ -360,3 +365,43 @@ def _source_code_functions(
             "product": product,
         },
     }
+
+
+MACRO_DIR = Path("rasgoql/rasgoql/macros")
+
+
+def get_macro_names() -> List[Dict[str, Any]]:
+    """
+    Returns all available macros from the yml file
+    Includes: name, arguments
+    """
+    with open(MACRO_DIR / "macros.yml", "r") as _yml:
+        contents = yaml.safe_load(_yml)
+    return [macro for macro in contents.get("macros")]
+
+
+def serve_macros_as_templates(dw_type: str) -> List['TransformTemplate']:
+    """
+    Returns all available macros in a List of TransformTemplates
+    Includes: name, arguments, source code
+    """
+    from rasgoql.primitives.transforms import Transform, TransformTemplate
+
+    template_list = []
+    macros_list = get_macro_names()
+    for macro in macros_list:
+        macro_name = macro.get("name")
+        # TODO: Route by dw_type
+        macro_sql = Path(MACRO_DIR / f"{macro_name}.sql")
+        with open(macro_sql) as _sql:
+            contents = _sql.read()
+        template_list.append(
+            TransformTemplate(
+                name=macro_name,
+                source_code=contents,
+                arguments=macro.get("arguments"),
+                description=macro.get('description'),
+                tags=macro.get('tags'),
+            )
+        )
+    return template_list

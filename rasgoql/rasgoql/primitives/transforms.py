@@ -20,6 +20,7 @@ from rasgoql.primitives.rendering import (
     assemble_cte_chain,
     assemble_view_chain,
     create_dbt_files,
+    serve_macros_as_templates,
     _gen_udt_func_docstring,
     _gen_udt_func_signature,
 )
@@ -72,7 +73,8 @@ class TransformableClass:
         """
         Gather available transforms and create aliased functions for each
         """
-        for transform in rtx.serve_rasgo_transform_templates(self._dw.dw_type):
+        # for transform in rtx.serve_rasgo_transform_templates(self._dw.dw_type):
+        for transform in serve_macros_as_templates(self._dw.dw_type):
             f = self._create_aliased_function(transform)
             setattr(self, transform.name, f)
 
