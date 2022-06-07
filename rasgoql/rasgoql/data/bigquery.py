@@ -4,7 +4,7 @@ BigQuery Data Warehouse classes
 
 import logging
 import os
-from typing import List, Tuple, Union, Optional
+from typing import List, Optional, Tuple, Union
 
 import json
 import pandas as pd
@@ -348,7 +348,7 @@ class BigQueryDataWarehouse(DataWarehouse):
         self,
         fqtn: str,
         create_sql: str = None,
-    ) -> Tuple[str, str]:
+    ) -> List[Tuple[str, str]]:
         """
         Return the schema of a table or view
 

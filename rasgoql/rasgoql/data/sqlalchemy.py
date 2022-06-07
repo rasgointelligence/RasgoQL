@@ -4,7 +4,7 @@ Generic SQLAlchemy DataWarehouse classes
 from __future__ import annotations
 from abc import abstractmethod
 import logging
-from typing import Optional, Union
+from typing import List, Optional, Tuple, Union
 from urllib.parse import quote_plus as urlquote
 
 import pandas as pd
@@ -226,7 +226,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             obj_type = result[0].get("kind")
         return obj_exists, is_rasgo_obj, obj_type
 
-    def get_schema(self, fqtn: str, create_sql: str = None) -> dict:
+    def get_schema(self, fqtn: str, create_sql: str = None) -> List[Tuple[str, str]]:
         """
         Return the schema of a table or view
         Params:
