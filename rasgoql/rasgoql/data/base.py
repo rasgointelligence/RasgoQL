@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC
 import re
 import os
-from typing import Union, Optional
+from typing import List, Optional, Tuple, Union
 from collections import namedtuple
 
 import pandas as pd
@@ -278,7 +278,7 @@ class DataWarehouse(ABC):
         self,
         fqtn: str,
         create_sql: str = None,
-    ) -> dict:
+    ) -> List[Tuple[str, str]]:
         """
         Return the schema of a table or view
         """

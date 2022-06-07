@@ -314,26 +314,21 @@ def _set_final_select_statement(
     return sql
 
 
-def get_columns(source_table: str, running_sql: str = None, dw: 'DataWarehouse' = None) -> str:
-    if not running_sql:
-        database, schema, table_name = source_table.split('.')
-        query_string = f"""
-        SELECT COLUMN_NAME, DATA_TYPE
-        FROM {database}.information_schema.columns
-        WHERE TABLE_CATALOG = '{database.upper()}'
-            AND TABLE_SCHEMA = '{schema.upper()}'
-            AND TABLE_NAME = '{table_name.upper()}'
-        """
-    else:
-        query_string = f"""
-        SELECT COLUMN_NAME, DATA_TYPE
-        FROM {dw.default_database}.information_schema.columns
-        WHERE TABLE_CATALOG = '{dw.default_database}'
-            AND TABLE_SCHEMA = '{dw.default_schema}'
-            AND TABLE_NAME = '{source_table}'
-        """
-    df = _run_query(query_string, dw=dw, running_sql=running_sql, source_table=source_table)
-    return df.set_index('COLUMN_NAME')['DATA_TYPE'].to_dict()
+def get_columns(
+    source_table: str,
+    running_sql: str = None,
+    dw: 'DataWarehouse' = None,
+) -> Dict[str, str]:
+    """
+    Return the column names of a given table (or sql statement)
+    """
+    return {
+        row[0]: row[1]
+        for row in dw.get_schema(
+            fqtn=dw.magic_fqtn_handler(source_table, dw.default_namespace),
+            create_sql=running_sql,
+        )
+    }
 
 
 def _source_code_functions(

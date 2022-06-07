@@ -4,7 +4,7 @@ Snowflake DataWarehouse classes
 from __future__ import annotations
 import logging
 import os
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 import json
 import pandas as pd
@@ -373,7 +373,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
         self,
         fqtn: str,
         create_sql: str = None,
-    ) -> dict:
+    ) -> List[Tuple[str, str]]:
         """
         Return the schema of a table or view
 
