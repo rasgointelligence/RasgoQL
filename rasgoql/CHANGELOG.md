@@ -97,6 +97,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added db-dtypes as a dependency to optional rasgoql[bigquery] package to prevent breaking changes in google-cloud-bigquery v3.0.0
 
+## [1.5.5] - 2022-06-07
+### Fixed
+- Fixed a bug where get_columns would not render for all DW types
+
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
@@ -112,3 +116,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.5.2]: https://pypi.org/project/rasgoql/1.5.2/
 [1.5.3]: https://pypi.org/project/rasgoql/1.5.3/
 [1.5.4]: https://pypi.org/project/rasgoql/1.5.4/
+[1.5.5]: https://pypi.org/project/rasgoql/1.5.5/

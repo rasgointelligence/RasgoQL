@@ -331,13 +331,16 @@ def get_columns(
     running_sql: str = None,
     dw: 'DataWarehouse' = None,
 ) -> Dict[str, str]:
-    return [
-        row[0]
+    """
+    Return the column names of a given table (or sql statement)
+    """
+    return {
+        row[0]: row[1]
         for row in dw.get_schema(
             fqtn=dw.magic_fqtn_handler(source_table, dw.default_namespace),
             create_sql=running_sql,
         )
-    ]
+    }
 
 
 def _source_code_functions(
