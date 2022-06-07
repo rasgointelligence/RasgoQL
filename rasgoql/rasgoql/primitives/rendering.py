@@ -322,13 +322,13 @@ def get_columns(
     """
     Return the column names of a given table (or sql statement)
     """
-    return [
-        row[0]
+    return {
+        row[0]: row[1]
         for row in dw.get_schema(
             fqtn=dw.magic_fqtn_handler(source_table, dw.default_namespace),
             create_sql=running_sql,
         )
-    ]
+    }
 
 
 def _source_code_functions(
