@@ -7,12 +7,10 @@
 {%- set untouched_cols = "*" -%}
 {%- endif -%}
 
-{%- set alias = alias if alias is defined else date + '_add' + offset|string + date_part -%}
+{%- set alias = alias if alias is defined else date|string + '_add' + offset|string + date_part|string -%}
 
 SELECT {{ untouched_cols }},
   DATEADD({{ date_part }}, {{ offset }}, {{ date }}) AS {{ cleanse_name(alias) }}
 FROM {{ source_table }}
 
 {% endmacro %}
-
-{{ dateadd(source_table, date_part, date, offset, alias, overwrite_columns) }}

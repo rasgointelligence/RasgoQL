@@ -26,5 +26,3 @@ FROM {{ source_table }}
 {%- endif -%}
 
 {% endmacro %}
-
-{{ drop_columns(source_table, include_cols, exclude_cols) }}

@@ -2,6 +2,7 @@
 Primitive Classes
 """
 from __future__ import annotations
+from collections import OrderedDict
 import logging
 from typing import Callable, List, TYPE_CHECKING
 
@@ -21,8 +22,8 @@ from rasgoql.primitives.rendering import (
     assemble_view_chain,
     create_dbt_files,
     serve_macros_as_templates,
-    _gen_udt_func_docstring,
-    _gen_udt_func_signature,
+    gen_udt_func_docstring,
+    gen_udt_func_signature,
 )
 from rasgoql.utils.decorators import beta, require_dw, require_materialized, require_transforms
 from rasgoql.utils.sql import random_table_name
@@ -65,8 +66,8 @@ class TransformableClass:
             return self.transform(name=transform.name, *arg, **kwargs)
 
         f.__name__ = transform.name
-        f.__signature__ = _gen_udt_func_signature(f, transform)
-        f.__doc__ = _gen_udt_func_docstring(transform)
+        f.__signature__ = gen_udt_func_signature(f, transform)
+        f.__doc__ = gen_udt_func_docstring(transform)
         return f
 
     def _transform_sync(self):
@@ -82,7 +83,7 @@ class TransformableClass:
     def transform(
         self,
         name: str,
-        arguments: dict = None,
+        arguments: OrderedDict = None,
         output_alias: str = None,
         **kwargs,
     ) -> SQLChain:
@@ -168,7 +169,7 @@ class Dataset(TransformableClass):
         return self._dw.preview(f'SELECT * FROM {self.fqtn}')
 
     @require_dw
-    def sql(self) -> dict:
+    def sql(self) -> str:
         """
         Return the ddl to create this table
         """
@@ -233,7 +234,7 @@ class Transform:
     def __init__(
         self,
         name: str,
-        arguments: dict,
+        arguments: OrderedDict,
         namespace: str,
         output_alias: str = None,
         dw: 'DataWarehouse' = None,
