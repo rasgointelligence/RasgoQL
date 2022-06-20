@@ -365,15 +365,17 @@ class BigQueryDataWarehouse(DataWarehouse):
         try:
             if self._table_exists(fqtn):
                 table = self.connection.get_table(fqtn)
+                schema = table.schema
+                return [(schema_field.name, schema_field.field_type) for schema_field in schema]
             elif create_sql:
-                self.create(create_sql, fqtn, table_type='view')
-                table = self.connection.get_table(fqtn)
-                self.execute_query(f'DROP VIEW {fqtn}', response='none', acknowledge_risk=True)
+                query_job = self.connection.query(
+                    query=create_sql,
+                    job_config=bq.QueryJobConfig(dry_run=True),
+                )
+                schema = query_job._properties['statistics']['query']['schema']['fields']
+                return [(schema_field['name'], schema_field['type']) for schema_field in schema]
             else:
                 raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
-            for schema_field in table.schema:
-                response.append((schema_field.name, schema_field.field_type))
-            return response
         except Exception as e:
             self._error_handler(e)
 
