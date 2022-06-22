@@ -226,44 +226,47 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
             obj_type = result[0].get("kind")
         return obj_exists, is_rasgo_obj, obj_type
 
-    def get_schema(self, fqtn: str, create_sql: str = None) -> List[Tuple[str, str]]:
+    def get_schema(
+        self,
+        fqtn_or_sql: str,
+    ) -> List[Tuple[str, str]]:
         """
-        Return the schema of a table or view
+        Return the schema of a table, view, or select statement
+
         Params:
-        `fqtn`: str:
-            Fully-qualified table name (database.schema.table)
-        `create_sql`: str:
-            A SQL select statement that will create the view. If this param is passed
-            and the fqtn does not already exist, it will be created and profiled based
-            on this statement. The view will be dropped after profiling
+        `fqtn_or_sql`: str:
+            Either a Fully-qualified table name (database.schema.table)
+            or a SQL select statement that will create a view.
         """
-        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
-        database, schema, table = self.parse_fqtn(fqtn)
         query_sql = (
-            f"SELECT * FROM INFORMATION_SCHEMA.TABLES "
-            f"WHERE table_catalog = '{database}' "
-            f"AND table_schema = '{schema}' "
-            f"AND table_name = '{table}'"
+            "SELECT * FROM INFORMATION_SCHEMA.TABLES "
+            "WHERE table_catalog = '{database}' "
+            "AND table_schema = '{schema}' "
+            "AND table_name = '{table}'"
         )
-        response = []
-        try:
-            if self._table_exists(fqtn):
-                query_response = self.execute_query(query_sql, response="dict")
-            elif create_sql:
-                self.create(create_sql, fqtn, table_type="view")
-                query_response = self.execute_query(query_sql, response="dict")
-                self.execute_query(
-                    f"DROP VIEW {schema}.{table}",
-                    response="none",
-                    acknowledge_risk=True,
-                )
-            else:
-                raise TableAccessError(f"Table {fqtn} does not exist or cannot be accessed.")
-            for row in query_response:
-                response.append((row["name"], row["type"]))
-            return response
-        except Exception as e:
-            self._error_handler(e)
+        # Check for SQL
+        if 'select' in fqtn_or_sql.lower() and ' ' in fqtn_or_sql:
+            self.create(fqtn_or_sql, "temp_schema", table_type="view")
+            query_response = self.execute_query(
+                query_sql.format(database=self.default_database, schema=self.default_schema, table="temp_schema"),
+                response="dict",
+            )
+            self.execute_query(
+                "DROP VIEW temp_schema",
+                response="none",
+                acknowledge_risk=True,
+            )
+            return [(row["name"], row["type"]) for row in query_response]
+        # Otherwise assume fqtn:
+        fqtn = self.magic_fqtn_handler(fqtn_or_sql, self.default_namespace)
+        database, schema, table = self.parse_fqtn(fqtn)
+        if self._table_exists(fqtn):
+            query_response = self.execute_query(
+                query_sql.format(database=database, schema=schema, table=table), response="dict"
+            )
+            return [(row["name"], row["type"]) for row in query_response]
+        else:
+            raise TableAccessError(f"Table {fqtn} does not exist or cannot be accessed.")
 
     def list_tables(self, database: str = None, schema: str = None) -> pd.DataFrame:
         """

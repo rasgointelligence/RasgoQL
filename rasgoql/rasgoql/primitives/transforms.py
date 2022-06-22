@@ -3,7 +3,7 @@ Primitive Classes
 """
 from __future__ import annotations
 import logging
-from typing import Callable, List, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, TYPE_CHECKING, Union
 
 import pandas as pd
 import rasgotransforms as rtx
@@ -80,7 +80,7 @@ class TransformableClass:
     def transform(
         self,
         name: str,
-        arguments: dict = None,
+        arguments: Dict[str, Union[Any, Dataset, SQLChain]] = None,
         output_alias: str = None,
         **kwargs,
     ) -> SQLChain:
@@ -106,7 +106,7 @@ class TransformableClass:
         arguments = arguments if arguments else {}
         arguments.update(kwargs)
         arguments['source_table'] = source_table
-        new_transform = Transform(name, arguments, namespace, output_alias, self._dw)
+        new_transform = Transform(name, flatten_transform_arguments(arguments), namespace, output_alias, self._dw)
         transforms.append(new_transform)
         return SQLChain(entry_table, namespace, transforms, self._dw)
 
@@ -308,7 +308,7 @@ class SQLChain(TransformableClass):
 
         NOTE: This property will be dynamic until the Chain is finally saved
         """
-        return self._dw.get_schema(self.fqtn, self.sql())
+        return self._dw.get_schema(self.sql())
 
     @property
     def output_table(self) -> Dataset:
@@ -427,3 +427,21 @@ class SQLChain(TransformableClass):
             response='df',
             batches=batches,
         )
+
+
+def flatten_transform_arguments(arguments: Dict[str, Union[Any, Dataset, SQLChain]]):
+    """
+    Looks for primitive classes in a list of transform arguments and
+    flattens them into renderable SQL args
+    """
+    arguments_out = {}
+    for k, v in arguments.items():
+        # If Dataset -> set to fqtn
+        if isinstance(v, Dataset):
+            arguments_out[k] = v.fqtn
+        # If SQLChain -> render as cte
+        elif isinstance(v, SQLChain):
+            arguments_out[k] = f"({v.sql()})"
+        else:
+            arguments_out[k] = v
+    return arguments_out

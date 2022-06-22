@@ -276,11 +276,10 @@ class DataWarehouse(ABC):
 
     def get_schema(
         self,
-        fqtn: str,
-        create_sql: str = None,
+        fqtn_or_sql: str,
     ) -> List[Tuple[str, str]]:
         """
-        Return the schema of a table or view
+        Return the schema of a table, view, or select statement
         """
         raise NotImplementedError()
 

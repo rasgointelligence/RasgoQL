@@ -324,10 +324,7 @@ def get_columns(
     """
     return {
         row[0]: row[1]
-        for row in dw.get_schema(
-            fqtn=dw.magic_fqtn_handler(source_table, dw.default_namespace),
-            create_sql=running_sql,
-        )
+        for row in dw.get_schema(running_sql or dw.magic_fqtn_handler(source_table, dw.default_namespace))
     }
 
 

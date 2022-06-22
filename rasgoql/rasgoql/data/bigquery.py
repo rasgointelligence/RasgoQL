@@ -346,38 +346,32 @@ class BigQueryDataWarehouse(DataWarehouse):
 
     def get_schema(
         self,
-        fqtn: str,
-        create_sql: str = None,
+        fqtn_or_sql: str,
     ) -> List[Tuple[str, str]]:
         """
-        Return the schema of a table or view
+        Return the schema of a table, view, or select statement
 
         Params:
-        `fqtn`: str:
-            Fully-qualified table name (database.schema.table)
-        `create_sql`: str:
-            A SQL select statement that will create the view. If this param is passed
-            and the fqtn does not already exist, it will be created and profiled based
-            on this statement. The view will be dropped after profiling
+        `fqtn_or_sql`: str:
+            Either a Fully-qualified table name (database.schema.table)
+            or a SQL select statement that will create a view.
         """
-        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
-        response = []
-        try:
-            if self._table_exists(fqtn):
-                table = self.connection.get_table(fqtn)
-                schema = table.schema
-                return [(schema_field.name, schema_field.field_type) for schema_field in schema]
-            elif create_sql:
-                query_job = self.connection.query(
-                    query=create_sql,
-                    job_config=bq.QueryJobConfig(dry_run=True),
-                )
-                schema = query_job._properties['statistics']['query']['schema']['fields']
-                return [(schema_field['name'], schema_field['type']) for schema_field in schema]
-            else:
-                raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
-        except Exception as e:
-            self._error_handler(e)
+        # Check for SQL
+        if 'select' in fqtn_or_sql.lower() and ' ' in fqtn_or_sql:
+            query_job = self.connection.query(
+                query=fqtn_or_sql,
+                job_config=bq.QueryJobConfig(dry_run=True),
+            )
+            schema = query_job._properties['statistics']['query']['schema']['fields']
+            return [(schema_field['name'], schema_field['type']) for schema_field in schema]
+        # Otherwise assume fqtn:
+        fqtn = self.magic_fqtn_handler(fqtn_or_sql, self.default_namespace)
+        if self._table_exists(fqtn):
+            table = self.connection.get_table(fqtn)
+            schema = table.schema
+            return [(schema_field.name, schema_field.field_type) for schema_field in schema]
+        else:
+            raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
 
     def list_tables(
         self,
