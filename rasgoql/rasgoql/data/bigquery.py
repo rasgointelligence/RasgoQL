@@ -357,7 +357,7 @@ class BigQueryDataWarehouse(DataWarehouse):
             or a SQL select statement that will create a view.
         """
         # Check for SQL
-        if 'select' in fqtn_or_sql.lower() and ' ' in fqtn_or_sql:
+        if self._is_select_statement(fqtn_or_sql):
             query_job = self.connection.query(
                 query=fqtn_or_sql,
                 job_config=bq.QueryJobConfig(dry_run=True),

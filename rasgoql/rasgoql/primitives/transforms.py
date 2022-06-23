@@ -3,7 +3,7 @@ Primitive Classes
 """
 from __future__ import annotations
 import logging
-from typing import Any, Callable, Dict, List, TYPE_CHECKING, Union
+from typing import Any, Callable, Dict, List, TYPE_CHECKING, TypeVar, Union
 
 import pandas as pd
 import rasgotransforms as rtx
@@ -429,7 +429,10 @@ class SQLChain(TransformableClass):
         )
 
 
-def flatten_transform_arguments(arguments: Dict[str, Union[Any, Dataset, SQLChain]]):
+S = TypeVar("S")
+
+
+def flatten_transform_arguments(arguments: Dict[str, Union[S, Dataset, SQLChain]]) -> Dict[str, Union[S, str]]:
     """
     Looks for primitive classes in a list of transform arguments and
     flattens them into renderable SQL args

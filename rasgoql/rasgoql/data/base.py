@@ -317,6 +317,19 @@ class DataWarehouse(ABC):
     # ---------------------------
     # Core Data Warehouse helpers
     # ---------------------------
+    def _is_select_statement(
+        self,
+        sql: str,
+    ) -> bool:
+        """
+        Determine if a string is a valid SQL select statement and return a boolean
+        """
+        if sql.lower().startswith("with ") and 'select ' in sql.lower():
+            return True
+        if sql.lower().startswith("select "):
+            return True
+        return False
+
     def _table_exists(
         self,
         fqtn: str,

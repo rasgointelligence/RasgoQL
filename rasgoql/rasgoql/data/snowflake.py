@@ -382,7 +382,7 @@ class SnowflakeDataWarehouse(DataWarehouse):
             or a SQL select statement that will create a view.
         """
         # Check for SQL
-        if 'select' in fqtn_or_sql.lower() and ' ' in fqtn_or_sql:
+        if self._is_select_statement(fqtn_or_sql):
             query_response = self.connection.cursor().describe(fqtn_or_sql)
             return [(row[0], convert_to_type(row[1], row[4], row[5])) for row in query_response]
         # Otherwise assume fqtn:
