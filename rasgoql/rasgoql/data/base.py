@@ -317,8 +317,8 @@ class DataWarehouse(ABC):
     # ---------------------------
     # Core Data Warehouse helpers
     # ---------------------------
+    @staticmethod
     def _is_select_statement(
-        self,
         sql: str,
     ) -> bool:
         """
