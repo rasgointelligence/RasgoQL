@@ -246,7 +246,7 @@ class SQLAlchemyDataWarehouse(DataWarehouse):
         )
         # Check for SQL
         if self._is_select_statement(fqtn_or_sql):
-            self.create(fqtn_or_sql, "temp_schema", table_type="view")
+            self.create(fqtn_or_sql, "temp_schema", table_type="view", overwrite=True)
             query_response = self.execute_query(
                 query_sql.format(database=self.default_database, schema=self.default_schema, table="temp_schema"),
                 response="dict",
