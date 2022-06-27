@@ -371,37 +371,27 @@ class SnowflakeDataWarehouse(DataWarehouse):
 
     def get_schema(
         self,
-        fqtn: str,
-        create_sql: str = None,
+        fqtn_or_sql: str,
     ) -> List[Tuple[str, str]]:
         """
-        Return the schema of a table or view
+        Return the schema of a table, view, or select statement
 
         Params:
-        `fqtn`: str:
-            Fully-qualified table name (database.schema.table)
-        `create_sql`: str:
-            A SQL select statement that will create the view. If this param is passed
-            and the fqtn does not already exist, it will be created and profiled based
-            on this statement. The view will be dropped after profiling
+        `fqtn_or_sql`: str:
+            Either a Fully-qualified table name (database.schema.table)
+            or a SQL select statement that will create a view.
         """
-        fqtn = self.magic_fqtn_handler(fqtn, self.default_namespace)
-        desc_sql = f"DESC TABLE {fqtn}"
-        response = []
-        try:
-            if self._table_exists(fqtn):
-                query_response = self.execute_query(desc_sql, response='dict')
-            elif create_sql:
-                self.create(create_sql, fqtn, table_type='view')
-                query_response = self.execute_query(desc_sql, response='dict')
-                self.execute_query(f'DROP VIEW {fqtn}', response='none', acknowledge_risk=True)
-            else:
-                raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
-            for row in query_response:
-                response.append((row['name'], row['type']))
-            return response
-        except Exception as e:
-            self._error_handler(e)
+        # Check for SQL
+        if self._is_select_statement(fqtn_or_sql):
+            query_response = self.connection.cursor().describe(fqtn_or_sql)
+            return [(row[0], convert_to_type(row[1], row[4], row[5])) for row in query_response]
+        # Otherwise assume fqtn:
+        fqtn = self.magic_fqtn_handler(fqtn_or_sql, self.default_namespace)
+        if self._table_exists(fqtn):
+            query_response = self.execute_query(f"DESC TABLE {fqtn}", response='dict')
+            return [(row['name'], row['type']) for row in query_response]
+        else:
+            raise TableAccessError(f'Table {fqtn} does not exist or cannot be accessed.')
 
     def list_tables(
         self,
@@ -628,3 +618,37 @@ class SnowflakeDataWarehouse(DataWarehouse):
         finally:
             if cursor:
                 cursor.close()
+
+
+def convert_to_type(type_code: int, precision: int, scale: int) -> str:
+    """
+    Accepts values from a Snowflake ResultMetadata record
+    and returns a Snowflake data type
+
+    https://docs.snowflake.com/en/user-guide/python-connector-api.html#type-codes
+    ResultMetadata(name='', type_code=, display_size=, internal_size=, precision=, scale=, is_nullable=)
+    """
+    type_code_map = {
+        0: "FIXED",  # NUMBER/INT
+        1: "REAL",  # REAL
+        2: "TEXT",  # VARCHAR/STRING
+        3: "DATE",  # DATE
+        4: "TIMESTAMP",  # TIMESTAMP
+        5: "VARIANT",  # VARIANT
+        6: "TIMESTAMP_LTZ",  # TIMESTAMP_LTZ
+        7: "TIMESTAMP_TZ",  # TIMESTAMP_TZ
+        8: "TIMESTAMP_NTZ",  # TIMESTAMP_TZ
+        9: "OBJECT",  # OBJECT
+        10: "ARRAY",  # ARRAY
+        11: "BINARY",  # BINARY
+        12: "TIME",  # TIME
+        13: "BOOLEAN",  # BOOLEAN
+    }
+    data_type = type_code_map[type_code]
+    if data_type == 'REAL':
+        return 'FLOAT'
+    if data_type == 'FIXED':
+        return f'NUMBER({precision or 0},{scale or 0})'
+    if 'TIMESTAMP' in data_type:
+        return f'{data_type}({scale or 0})'
+    return data_type

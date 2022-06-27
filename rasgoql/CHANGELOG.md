@@ -101,6 +101,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed a bug where get_columns would not render for all DW types
 
+## [1.5.6] - 2022-06-20
+### Changed
+- Changed the `get_schema` method on Snowflake and BigQuery DW classes to get output columns without creating views
+
+## [1.6.0] - 2022-06-23
+### Changed
+- Changed the `get_schema` method on all DW classes to accept a single `fqtn_or_sql` variable
+- Changed the behavior of transform arguments: when a Dataset or SQLChain class is passed in as an argument to a transform, it is automatically flattened to its corresponding fqtn or CTE then consumed in the transform.
+
+## [1.6.1] - 2022-06-27
+### Fixed
+- Fixed a bug in the `get_schema` method of SQLAlchemy DW classes where users were being asked to enter an `overwrite` param they cannot access
+
+## [1.6.2] - 2022-06-27
+### Fixed
+- Fixed a postgres bug
 
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
@@ -117,3 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.5.3]: https://pypi.org/project/rasgoql/1.5.3/
 [1.5.4]: https://pypi.org/project/rasgoql/1.5.4/
 [1.5.5]: https://pypi.org/project/rasgoql/1.5.5/
+[1.5.6]: https://pypi.org/project/rasgoql/1.5.6/
+[1.6.0]: https://pypi.org/project/rasgoql/1.6.0/
+[1.6.1]: https://pypi.org/project/rasgoql/1.6.1/
+[1.6.2]: https://pypi.org/project/rasgoql/1.6.2/

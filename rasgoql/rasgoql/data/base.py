@@ -276,11 +276,10 @@ class DataWarehouse(ABC):
 
     def get_schema(
         self,
-        fqtn: str,
-        create_sql: str = None,
+        fqtn_or_sql: str,
     ) -> List[Tuple[str, str]]:
         """
-        Return the schema of a table or view
+        Return the schema of a table, view, or select statement
         """
         raise NotImplementedError()
 
@@ -318,6 +317,19 @@ class DataWarehouse(ABC):
     # ---------------------------
     # Core Data Warehouse helpers
     # ---------------------------
+    @staticmethod
+    def _is_select_statement(
+        sql: str,
+    ) -> bool:
+        """
+        Determine if a string is a valid SQL select statement and return a boolean
+        """
+        if sql.lower().startswith("with") and "select" in sql.lower():
+            return True
+        if sql.lower().startswith("select"):
+            return True
+        return False
+
     def _table_exists(
         self,
         fqtn: str,
