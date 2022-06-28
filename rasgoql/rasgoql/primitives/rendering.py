@@ -10,6 +10,7 @@ from typing import Callable, Dict, List, Tuple, Optional, TYPE_CHECKING
 
 import jinja2
 import pandas as pd
+import datetime
 import rasgotransforms as rtx
 
 from rasgoql.errors import TransformRenderingError
@@ -22,6 +23,7 @@ if TYPE_CHECKING:
 
 RUN_QUERY_LIMIT = 100
 JINJA_ENV = jinja2.Environment(extensions=['jinja2.ext.do', 'jinja2.ext.loopcontrols'])
+JINJA_ENV.filters['todatetime'] = datetime.datetime.fromisoformat
 
 
 def assemble_cte_chain(
