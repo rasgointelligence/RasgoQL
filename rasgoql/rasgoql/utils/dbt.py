@@ -134,16 +134,25 @@ def save_schema_file(
     Writes a table def to a dbt schema file
     """
     filepath = os.path.join(output_directory, 'schema.yml')
-    columns_list = []
-    for row in schema:
-        columns_list.append({"name:": row[0]})
-    model_dict = {"name": model_name, "columns": columns_list}
-    if config_args:
-        model_dict.update({"config": config_args})
-    if not os.path.exists(filepath):
-        schema_definition = {"version": 2, "models": [model_dict]}
+    existing_schema = None
+    if os.path.exists(filepath):
+        with open(filepath, "r") as _file:
+            existing_schema = yaml.safe_load(_file)
+    schema_definition = existing_schema or {"version": 2, "models": []}
+
+    columns_list = [{"name:": row[0]} for row in schema]
+    for mod in schema_definition["models"]:
+        if mod.get("name") == model_name:
+            mod["columns"] = columns_list
+            if config_args:
+                mod["config"] = config_args
+            break
     else:
-        schema_definition = [model_dict]
-    with open(filepath, "a") as _file:
+        model_dict = {"name": model_name, "columns": columns_list}
+        if config_args:
+            model_dict.update({"config": config_args})
+        schema_definition["models"].append(model_dict)
+
+    with open(filepath, "w") as _file:
         yaml.dump(data=schema_definition, Dumper=yaml.SafeDumper, stream=_file, sort_keys=False)
     return filepath
