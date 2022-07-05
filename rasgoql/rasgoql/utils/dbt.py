@@ -141,14 +141,13 @@ def save_schema_file(
     schema_definition = existing_schema or {"version": 2, "models": []}
 
     columns_list = [{"name:": row[0]} for row in schema]
-    model_found = False
-    for m in schema_definition["models"]:
-        if m.get("name") == model_name:
-            m["columns"] = columns_list
+    for mod in schema_definition["models"]:
+        if mod.get("name") == model_name:
+            mod["columns"] = columns_list
             if config_args:
-                m["config"] = config_args
-            model_found = True
-    if not model_found:
+                mod["config"] = config_args
+            break
+    else:
         model_dict = {"name": model_name, "columns": columns_list}
         if config_args:
             model_dict.update({"config": config_args})
