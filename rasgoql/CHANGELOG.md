@@ -118,6 +118,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed a postgres bug
 
+## [1.6.3] - 2022-06-27
+### Added
+- Added a jinja date macro
+
+## [1.6.4] - 2022-07-05
+### Changed
+- Changed default behavior of to_dbt function. Instead of always appending model details to the schema.yml file (which creates duplicate entries for existing models), rql will now check if a model entry already exists in the file and overwrite it. If the model does not exist, it will be appended.
+
+
 [1.0.0]: https://pypi.org/project/rasgoql/1.0.0/
 [1.0.1]: https://pypi.org/project/rasgoql/1.0.1/
 [1.0.2]: https://pypi.org/project/rasgoql/1.0.2/
@@ -137,3 +146,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.6.0]: https://pypi.org/project/rasgoql/1.6.0/
 [1.6.1]: https://pypi.org/project/rasgoql/1.6.1/
 [1.6.2]: https://pypi.org/project/rasgoql/1.6.2/
+[1.6.3]: https://pypi.org/project/rasgoql/1.6.3/
+[1.6.4]: https://pypi.org/project/rasgoql/1.6.4/
